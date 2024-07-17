@@ -137,6 +137,9 @@ func (gc *globalConfig) loadConfig() {
 				break
 			}
 		}
+		if format == "" {
+			log.Fatal("not found config")
+		}
 	}
 	if gc.InitConfig.ConfUrl != "" {
 		log.Infof("load config from: %s", gc.InitConfig.ConfUrl)
