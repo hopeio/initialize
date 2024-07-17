@@ -29,6 +29,7 @@ func (gc *globalConfig) genConfigTemplate(singleTemplateFileConfig bool) {
 		struct2Map(&gc.InitConfig.EnvConfig, confMap)
 		delete(confMap, fixedFieldNameConfigCenter)
 	}
+	struct2Map(&gc.BuiltinConfig, confMap)
 	struct2Map(gc.conf, confMap)
 	if gc.dao != nil {
 		daoConfig2Map(reflect.ValueOf(gc.dao).Elem(), confMap)
