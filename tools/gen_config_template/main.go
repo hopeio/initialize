@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	packageName := "D:/code/hopeio/cherry/initialize"
+	packageName := "D:/code/hopeio/initialize"
 	fs.RangeDir(packageName, func(dir string, entries []os.DirEntry) ([]os.DirEntry, error) {
 		var recursion []os.DirEntry
 		for _, entry := range entries {
