@@ -1,0 +1,1 @@
+go run _example/main.go -c _example/config.toml
