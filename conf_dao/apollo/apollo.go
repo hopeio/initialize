@@ -1,7 +1,7 @@
 package apollo
 
 import (
-	"github.com/hopeio/utils/configor/apollo"
+	"github.com/hopeio/utils/dao/apollo"
 )
 
 type Config apollo.Config

@@ -2,7 +2,7 @@ package apollo
 
 import (
 	"encoding/json"
-	"github.com/hopeio/utils/configor/apollo"
+	"github.com/hopeio/utils/dao/apollo"
 )
 
 var ConfigCenter = &Apollo{}

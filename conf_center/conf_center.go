@@ -46,3 +46,9 @@ func GetConfigCenter(configType string) ConfigCenter {
 func GetRegisteredConfigCenter() map[string]ConfigCenter {
 	return configCenter
 }
+
+type Client interface {
+	Get() ([]byte, error)
+	Set(func([]byte)) error
+	Listener(func([]byte)) error
+}

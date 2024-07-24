@@ -2,7 +2,6 @@ package redis
 
 import (
 	"context"
-	"github.com/hopeio/utils/configor"
 	"github.com/hopeio/utils/crypto/tls"
 	"github.com/hopeio/utils/log"
 	"time"
@@ -25,7 +24,7 @@ func (c *Config) Init() {
 		log.Fatal(err)
 	}
 	c.TLSConfig = tlsConfig
-	configor.DurationNotify("IdleTimeout", c.IdleTimeout, time.Second)
+	log.DurationNotify("IdleTimeout", c.IdleTimeout, time.Second)
 }
 
 func (c *Config) Build() (*redis.Client, error) {

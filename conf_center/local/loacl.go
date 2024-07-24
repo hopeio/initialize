@@ -3,7 +3,7 @@ package local
 import (
 	"errors"
 	"fmt"
-	"github.com/hopeio/utils/configor/local"
+	"github.com/hopeio/utils/io/fs/configor"
 	"os"
 )
 
@@ -13,7 +13,7 @@ type Local struct {
 	Conf Config
 }
 type Config struct {
-	local.Config
+	configor.Config
 	ConfigPath string
 }
 
@@ -35,7 +35,7 @@ func (cc *Local) Handle(handle func([]byte)) error {
 		return fmt.Errorf("找不到配置: %v", err)
 	}
 
-	err = local.New(&cc.Conf.Config).Handle(handle, cc.Conf.ConfigPath)
+	err = configor.New(&cc.Conf.Config).Handle(handle, cc.Conf.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("配置错误: %v", err)
 	}
