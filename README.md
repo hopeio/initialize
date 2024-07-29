@@ -60,12 +60,12 @@ LogLevel = "debug"
 ```
 ```go
 import(
-  "github.com/hopeio/initialize/conf_dao/server"
+  "github.com/hopeio/cherry"
 )
 type config struct {
 	//自定义的配置
 	Customize serverConfig
-	Server    server.ServerConfig
+	Server    cherry.Server
 }
 type serverConfig struct{
     TokenMaxAge time.Duration
