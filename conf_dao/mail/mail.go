@@ -7,8 +7,8 @@ import (
 )
 
 type Config struct {
-	AuthType    string `comment:"CRAMMD5Auth,PLAINAuth"`
-	PlainAuth   PlainAuth
+	AuthType    string `comment:"CRAMMD5,PLAIN"`
+	PLAINAuth   PlainAuth
 	CRAMMD5Auth CRAMMD5Auth
 }
 
@@ -16,7 +16,7 @@ type PlainAuth struct {
 	Identity string
 	Host     string
 	Port     string
-	From     string
+	UserName string
 	Password string
 }
 
@@ -34,16 +34,16 @@ func (c *Config) Init() {
 
 func (c *Config) Build() (smtp.Auth, error) {
 	c.Init()
-	if strings.ToUpper(c.AuthType) == "PLAINAUTH" {
-		pc := c.PlainAuth
-		return smtp.PlainAuth(pc.Identity, pc.From, pc.Password, pc.Host), nil
+	if strings.ToUpper(c.AuthType) == "PLAIN" {
+		pc := c.PLAINAuth
+		return smtp.PlainAuth(pc.Identity, pc.UserName, pc.Password, pc.Host), nil
 	}
-	if strings.ToUpper(c.AuthType) == "CRAMMD5AUTH" {
+	if strings.ToUpper(c.AuthType) == "CRAMMD5" {
 		cc := c.CRAMMD5Auth
 		return smtp.CRAMMD5Auth(cc.UserName, cc.Secret), nil
 	}
 
-	return nil, errors.New("邮箱配置AuthType必填")
+	return nil, errors.New("邮箱配置AuthType必填,PLAIN|CRAMMD5")
 }
 
 type Mail struct {
