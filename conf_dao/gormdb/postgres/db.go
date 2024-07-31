@@ -4,6 +4,7 @@ import (
 	"fmt"
 	pkdb "github.com/hopeio/initialize/conf_dao/gormdb"
 	"github.com/hopeio/initialize/initconf"
+	dbi "github.com/hopeio/utils/dao/database"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -30,6 +31,7 @@ func (db *DB) Config() any {
 
 func (db *DB) Init() error {
 	var err error
+	db.Conf.Type = dbi.Mysql
 	db.DB, err = (*Config)(&db.Conf).Build()
 	return err
 }

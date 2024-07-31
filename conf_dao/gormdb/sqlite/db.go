@@ -3,6 +3,7 @@ package sqlite
 import (
 	pkdb "github.com/hopeio/initialize/conf_dao/gormdb"
 	"github.com/hopeio/initialize/initconf"
+	dbi "github.com/hopeio/utils/dao/database"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -26,6 +27,7 @@ func (db *DB) Config() any {
 
 func (db *DB) Init() error {
 	var err error
+	db.Conf.Type = dbi.Sqlite
 	db.DB, err = (*Config)(&db.Conf).Build()
 	return err
 }
