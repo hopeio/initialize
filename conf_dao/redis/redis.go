@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/hopeio/utils/crypto/tls"
 	"github.com/hopeio/utils/log"
+	"github.com/hopeio/utils/validation"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -24,7 +25,7 @@ func (c *Config) Init() {
 		log.Fatal(err)
 	}
 	c.TLSConfig = tlsConfig
-	log.DurationNotify("IdleTimeout", c.IdleTimeout, time.Second)
+	validation.DurationNotify("IdleTimeout", c.IdleTimeout, time.Second)
 }
 
 func (c *Config) Build() (*redis.Client, error) {

@@ -4,6 +4,7 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/hopeio/utils/crypto/tls"
 	"github.com/hopeio/utils/log"
+	"github.com/hopeio/utils/validation"
 	"time"
 )
 
@@ -27,11 +28,11 @@ func (c *Config) Init() {
 		c.ClientOptions.AddBroker(broker)
 	}
 
-	log.DurationNotify("PingTimeout", c.PingTimeout, time.Second)
-	log.DurationNotify("ConnectTimeout", c.ConnectTimeout, time.Second)
-	log.DurationNotify("MaxReconnectInterval", c.MaxReconnectInterval, time.Second)
-	log.DurationNotify("ConnectRetryInterval", c.ConnectRetryInterval, time.Second)
-	log.DurationNotify("WriteTimeout", c.WriteTimeout, time.Second)
+	validation.DurationNotify("PingTimeout", c.PingTimeout, time.Second)
+	validation.DurationNotify("ConnectTimeout", c.ConnectTimeout, time.Second)
+	validation.DurationNotify("MaxReconnectInterval", c.MaxReconnectInterval, time.Second)
+	validation.DurationNotify("ConnectRetryInterval", c.ConnectRetryInterval, time.Second)
+	validation.DurationNotify("WriteTimeout", c.WriteTimeout, time.Second)
 }
 
 func (c *Config) Build() (mqtt.Client, error) {
