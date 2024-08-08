@@ -10,7 +10,7 @@ type Config struct {
 	groupcache.GetterFunc
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 
 }
 

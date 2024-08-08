@@ -6,7 +6,7 @@ import (
 
 type Config clientv3.Config
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 }
 
 func (c *Config) Init() {

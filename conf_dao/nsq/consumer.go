@@ -12,7 +12,7 @@ type ConsumerConfig struct {
 	*nsq.Config
 }
 
-func (c *ConsumerConfig) InitBeforeInject() {
+func (c *ConsumerConfig) BeforeInject() {
 }
 
 func (c *ConsumerConfig) Init() {

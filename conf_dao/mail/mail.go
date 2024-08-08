@@ -16,7 +16,7 @@ type Config struct {
 	From     string
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 
 }
 

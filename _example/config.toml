@@ -9,7 +9,7 @@ ConfigTemplateDir = "./_example"
 [dev.ConfigCenter]
 Format = "toml"
 Type = "local"
-NoInject = ["Apollo","Etcd", "Es"]
+NoInject = []
 
 [dev.ConfigCenter.local]
 ConfigPath = "./_example/local.toml"

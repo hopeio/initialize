@@ -1,57 +1,57 @@
 package initialize
 
 import (
-	"github.com/hopeio/initialize/initconf"
+	"github.com/hopeio/initialize/rootconf"
 	"reflect"
 )
 
-type InitBeforeInject interface {
-	InitBeforeInject()
+type BeforeInject interface {
+	BeforeInject()
 }
 
-type InitBeforeInjectWithInitConfig interface {
-	InitBeforeInjectWithInitConfig(*initconf.InitConfig)
+type BeforeInjectWithRoot interface {
+	BeforeInjectWithRoot(*rootconf.RootConfig)
 }
 
-type InitAfterInject interface {
-	InitAfterInject()
+type AfterInject interface {
+	AfterInject()
 }
 
-type InitAfterInjectWithInitConfig interface {
-	InitAfterInjectWithInitConfig(*initconf.InitConfig)
+type AfterInjectWithRoot interface {
+	AfterInjectWithRoot(*rootconf.RootConfig)
 }
 
-type InitAfterInjectConfig interface {
-	InitAfterInjectConfig()
+type AfterInjectConfig interface {
+	AfterInjectConfig()
 }
 
-type InitAfterInjectConfigWithInitConfig interface {
-	InitAfterInjectConfigWithInitConfig(*initconf.InitConfig)
+type AfterInjectConfigWithRoot interface {
+	AfterInjectConfigWithRoot(*rootconf.RootConfig)
 }
 
 type Config interface {
 	// 注入之前设置默认值
-	InitBeforeInject
+	BeforeInject
 	// 注入之后初始化
-	InitAfterInject
+	AfterInject
 }
 
 type Dao interface {
-	InitBeforeInject
+	BeforeInject
 	// 注入config后执行
-	InitAfterInjectConfig
+	AfterInjectConfig
 	// 注入dao后执行
-	InitAfterInject
+	AfterInject
 }
 
 type EmbeddedPresets struct {
 }
 
-func (u EmbeddedPresets) InitBeforeInject() {
+func (u EmbeddedPresets) BeforeInject() {
 }
-func (u EmbeddedPresets) InitAfterInjectConfig() {
+func (u EmbeddedPresets) AfterInjectConfig() {
 }
-func (u EmbeddedPresets) InitAfterInject() {
+func (u EmbeddedPresets) AfterInject() {
 }
 
 var EmbeddedPresetsType = reflect.TypeOf((*EmbeddedPresets)(nil)).Elem()

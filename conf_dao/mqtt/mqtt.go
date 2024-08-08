@@ -13,7 +13,7 @@ type Config struct {
 	CAFile  string `json:"ca_file,omitempty"`
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 	c.ClientOptions = mqtt.NewClientOptions()
 }
 

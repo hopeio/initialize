@@ -26,7 +26,7 @@ type BootQuery struct {
 	Args  []driver.NamedValue
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 
 }
 

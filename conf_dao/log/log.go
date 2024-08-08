@@ -1,18 +1,18 @@
 package log
 
 import (
-	"github.com/hopeio/initialize/initconf"
+	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/log"
 )
 
 // 全局变量,只一个实例,只提供config
 type Config log.Config
 
-func (c *Config) InitBeforeInjectWithInitConfig(conf *initconf.InitConfig) {
+func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
 	c.Development = conf.Debug
 }
 
-func (c *Config) InitAfterInject() {
+func (c *Config) AfterInject() {
 	log.SetDefaultLogger((*log.Config)(c))
 }
 

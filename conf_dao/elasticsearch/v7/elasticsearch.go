@@ -7,7 +7,7 @@ import (
 
 type Config elasticsearch.Config
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 }
 
 func (c *Config) Init() {

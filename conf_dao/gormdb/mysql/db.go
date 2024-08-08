@@ -3,7 +3,7 @@ package mysql
 import (
 	"fmt"
 	pkdb "github.com/hopeio/initialize/conf_dao/gormdb"
-	"github.com/hopeio/initialize/initconf"
+	"github.com/hopeio/initialize/rootconf"
 	dbi "github.com/hopeio/utils/dao/database"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -11,8 +11,8 @@ import (
 
 type Config pkdb.Config
 
-func (c *Config) InitBeforeInjectWithInitConfig(conf *initconf.InitConfig) {
-	(*pkdb.Config)(c).InitBeforeInjectWithInitConfig(conf)
+func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
+	(*pkdb.Config)(c).BeforeInjectWithRoot(conf)
 }
 
 func (c *Config) Build() (*gorm.DB, error) {

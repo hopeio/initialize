@@ -11,7 +11,7 @@ type Config struct {
 	buntdb.Config
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 
 }
 

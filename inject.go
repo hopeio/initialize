@@ -49,11 +49,11 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 
 			if field.CanInterface() {
 				inter := field.Interface()
-				if c, ok := inter.(InitBeforeInject); ok {
-					c.InitBeforeInject()
+				if c, ok := inter.(BeforeInject); ok {
+					c.BeforeInject()
 				}
-				if c, ok := inter.(InitBeforeInjectWithInitConfig); ok {
-					c.InitBeforeInjectWithInitConfig(&gc.InitConfig)
+				if c, ok := inter.(BeforeInjectWithRoot); ok {
+					c.BeforeInjectWithRoot(&gc.RootConfig)
 				}
 			}
 			structFields = append(structFields, reflect.StructField{
@@ -96,11 +96,11 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 
 		if field.CanInterface() {
 			inter := field.Interface()
-			if c, ok := inter.(InitBeforeInject); ok {
-				c.InitBeforeInject()
+			if c, ok := inter.(BeforeInject); ok {
+				c.BeforeInject()
 			}
-			if c, ok := inter.(InitBeforeInjectWithInitConfig); ok {
-				c.InitBeforeInjectWithInitConfig(&gc.InitConfig)
+			if c, ok := inter.(BeforeInjectWithRoot); ok {
+				c.BeforeInjectWithRoot(&gc.RootConfig)
 			}
 		}
 
@@ -142,11 +142,11 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 						name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 					}
 
-					if c, ok := daoConfig.(InitBeforeInject); ok {
-						c.InitBeforeInject()
+					if c, ok := daoConfig.(BeforeInject); ok {
+						c.BeforeInject()
 					}
-					if c, ok := inter.(InitBeforeInjectWithInitConfig); ok {
-						c.InitBeforeInjectWithInitConfig(&gc.InitConfig)
+					if c, ok := inter.(BeforeInjectWithRoot); ok {
+						c.BeforeInjectWithRoot(&gc.RootConfig)
 					}
 
 					if _, ok := nameValueMap[name]; ok {
@@ -197,14 +197,14 @@ func (gc *globalConfig) inject(conf Config, dao Dao) {
 		}
 	}
 	applyFlagConfig(gc.Viper, tmpConfig)
-	conf.InitAfterInject()
-	if c, ok := conf.(InitAfterInjectWithInitConfig); ok {
-		c.InitAfterInjectWithInitConfig(&gc.InitConfig)
+	conf.AfterInject()
+	if c, ok := conf.(AfterInjectWithRoot); ok {
+		c.AfterInjectWithRoot(&gc.RootConfig)
 	}
 	if dao != nil {
-		dao.InitAfterInjectConfig()
-		if c, ok := dao.(InitAfterInjectConfigWithInitConfig); ok {
-			c.InitAfterInjectConfigWithInitConfig(&gc.InitConfig)
+		dao.AfterInjectConfig()
+		if c, ok := dao.(AfterInjectConfigWithRoot); ok {
+			c.AfterInjectConfigWithRoot(&gc.RootConfig)
 		}
 		gc.injectDao(dao)
 	}
@@ -220,11 +220,11 @@ func (gc *globalConfig) afterInjectConfigCall(tmpConfig any) {
 		field := v.Field(i)
 		if field.CanInterface() {
 			inter := field.Interface()
-			if subconf, ok := inter.(InitAfterInject); ok {
-				subconf.InitAfterInject()
+			if subconf, ok := inter.(AfterInject); ok {
+				subconf.AfterInject()
 			}
-			if subconf, ok := inter.(InitAfterInjectWithInitConfig); ok {
-				subconf.InitAfterInjectWithInitConfig(&gc.InitConfig)
+			if subconf, ok := inter.(AfterInjectWithRoot); ok {
+				subconf.AfterInjectWithRoot(&gc.RootConfig)
 			}
 		}
 	}
@@ -248,7 +248,7 @@ func (gc *globalConfig) injectDao(dao Dao) {
 				continue
 			}
 			confName := strings.ToUpper(structFiled.Name)
-			if slices.Contains(gConfig.InitConfig.NoInject, confName) {
+			if slices.Contains(gConfig.RootConfig.NoInject, confName) {
 				continue
 			}
 
@@ -261,9 +261,9 @@ func (gc *globalConfig) injectDao(dao Dao) {
 			}
 		}
 	}
-	dao.InitAfterInject()
-	if c, ok := dao.(InitAfterInjectWithInitConfig); ok {
-		c.InitAfterInjectWithInitConfig(&gc.InitConfig)
+	dao.AfterInject()
+	if c, ok := dao.(AfterInjectWithRoot); ok {
+		c.AfterInjectWithRoot(&gc.RootConfig)
 	}
 }
 

@@ -29,7 +29,7 @@ type RemoteProvider struct {
 	SecretKeyring string
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 
 }
 func (c *Config) Init() {
@@ -38,7 +38,7 @@ func (c *Config) Init() {
 	}
 }
 
-func (c *Config) InitAfterInject() {
+func (c *Config) AfterInject() {
 	c.Init()
 	c.build(viper.GetViper())
 }

@@ -1,16 +1,20 @@
-package initconf
+package rootconf
 
-import "github.com/hopeio/initialize/conf_center"
+import (
+	"github.com/hopeio/initialize/conf_center"
+	"github.com/hopeio/utils/log"
+	"net/http"
+	"net/url"
+)
 
-type InitConfig struct {
+type RootConfig struct {
 	// 配置文件路径
-	ConfUrl string `flag:"name:config;short:c;usage:配置文件路径,默认./config.toml或./config/config.toml;env:CONFIG"`
+	ConfPath string `flag:"name:config;short:c;usage:配置文件路径,默认./config.toml或./config/config.toml;env:CONFIG"`
 	BasicConfig
 	EnvConfig
 }
 
 // BasicConfig
-// zh: 基本配置，包含模块名
 type BasicConfig struct {
 	// 模块名
 	Module string `flag:"name:mod;short:m;default:cherry-app;usage:模块名;env:MODULE"`
@@ -27,4 +31,16 @@ type EnvConfig struct {
 	NoInject    []string
 	// config字段顺序不能变,ConfigCenter 保持在最后
 	ConfigCenter conf_center.Config
+}
+
+func (c *EnvConfig) AfterInject() {
+	if c.Proxy != "" {
+		proxyURL, err := url.Parse(c.Proxy)
+		if err != nil {
+			log.Fatal(err)
+		}
+		http.DefaultClient.Transport = &http.Transport{
+			Proxy: http.ProxyURL(proxyURL),
+		}
+	}
 }

@@ -7,7 +7,7 @@ type ProducerConfig struct {
 	*nsq.Config
 }
 
-func (c *ProducerConfig) InitBeforeInject() {
+func (c *ProducerConfig) BeforeInject() {
 }
 func (c *ProducerConfig) Init() {
 }

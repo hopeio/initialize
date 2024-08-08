@@ -10,7 +10,7 @@ import (
 )
 
 func (gc *globalConfig) genConfigTemplate(singleTemplateFileConfig bool) {
-	dir := gc.InitConfig.ConfigTemplateDir
+	dir := gc.RootConfig.ConfigTemplateDir
 	if dir == "" {
 		return
 	}
@@ -18,15 +18,15 @@ func (gc *globalConfig) genConfigTemplate(singleTemplateFileConfig bool) {
 		dir += "/"
 	}
 
-	format := gc.InitConfig.ConfigCenter.Format
+	format := gc.RootConfig.ConfigCenter.Format
 	filename := prefixLocalTemplate + string(format)
 
 	confMap := make(map[string]any)
 	if singleTemplateFileConfig {
 		filename = prefixConfigTemplate + string(format)
-		struct2Map(&gc.InitConfig.BasicConfig, confMap)
+		struct2Map(&gc.RootConfig.BasicConfig, confMap)
 		delete(confMap, fixedFieldNameEnv)
-		struct2Map(&gc.InitConfig.EnvConfig, confMap)
+		struct2Map(&gc.RootConfig.EnvConfig, confMap)
 		delete(confMap, fixedFieldNameConfigCenter)
 	}
 	struct2Map(&gc.BuiltinConfig, confMap)

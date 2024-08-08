@@ -9,5 +9,5 @@ import (
 
 func main() {
 	defer initialize.Start(confdao.Conf, confdao.Dao, nacos.ConfigCenter)()
-	fmt.Println(confdao.Conf.Server.Http.Addr)
+	fmt.Println(confdao.Conf)
 }

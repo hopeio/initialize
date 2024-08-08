@@ -2,6 +2,8 @@
 基于反射自动注入的配置及dao注入初始化，并暴露一个全局变量，记录模块信息
 ![initialize](_assets/initialize.webp)
 
+## example
+`go run _example/main.go -c _example/config.toml`
 ## 一个应用的启动，应该如此简单
 ### config（配置）
 支持nacos,local file,http请求作为配置中心,可扩展支持etcd,apollo,viper(获取配置代理，底层是其他配置中心)，支持viper支持的所有格式("json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "tfvars", "dotenv", "env", "ini")的配置文件，
@@ -65,7 +67,6 @@ import(
 type config struct {
 	//自定义的配置
 	Customize serverConfig
-	Server    cherry.Server
 }
 type serverConfig struct{
     TokenMaxAge time.Duration
@@ -73,11 +74,11 @@ type serverConfig struct{
 
 var Conf = &config{}
 // 注入配置前初始化
-func (c *config) InitBeforeInject() {
+func (c *config) BeforeInject() {
     c.Customize.TokenMaxAge = time.Second * 60 * 60 * 24
 }
 // 注入配置后初始化
-func (c *config) InitAfterInject() {
+func (c *config) AfterInject() {
 	c.Customize.TokenMaxAge = time.Second * 60 * 60 * 24 * c.Customize.TokenMaxAge
 }
 
@@ -89,25 +90,23 @@ func main() {
 如果还有Dao要初始化
 ```go
 import(
-    "github.com/hopeio/initialize/conf_dao/gormdb/postgres"
+    "github.com/hopeio/initialize/conf_dao/gormdb/sqlite"
     initredis "github.com/hopeio/initialize/conf_dao/redis"
 )
 // dao dao.
 type dao struct {
 	// GORMDB 数据库连接
-	GORMDB   *postgres.DB
+	GORMDB   *sqlite.DB
 	StdDB    *sql.DB
-	// RedisPool Redis连接池
-	Redis *initredis.Client
 }
 // 注入配置前初始化
-func (c *dao) InitBeforeInject() {
+func (c *dao) BeforeInject() {
 }
 // 注入配置后初始化
-func (c *dao) InitAfterInjectConfig() {
+func (c *dao) AfterInjectConfig() {
 }
 // 注入dao后初始化
-func (d *dao) InitAfterInject() {
+func (d *dao) AfterInject() {
 	db := d.GORMDB
 	db.Callback().Create().Remove("gorm:save_before_associations")
 	db.Callback().Create().Remove("gorm:save_after_associations")

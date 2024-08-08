@@ -3,10 +3,7 @@ package confdao
 import (
 	"database/sql"
 	"fmt"
-	"github.com/hopeio/cherry"
-	"github.com/hopeio/initialize/conf_dao/gormdb/postgres"
-	"github.com/hopeio/initialize/conf_dao/redis"
-	"github.com/hopeio/utils/io/fs"
+	"github.com/hopeio/initialize/conf_dao/gormdb/sqlite"
 	timei "github.com/hopeio/utils/time"
 	"runtime"
 	"time"
@@ -20,57 +17,44 @@ var (
 type config struct {
 	//自定义的配置
 	Customize serverConfig
-	Server    cherry.Config
 }
 
 type serverConfig struct {
-	Volume fs.Dir
-
-	PassSalt string
-	// 天数
-	TokenMaxAge time.Duration
-	TokenSecret string
-	PageSize    int8
-
-	LuosimaoSuperPW   string
-	LuosimaoVerifyURL string
-	LuosimaoAPIKey    string
-
-	QrCodeSaveDir fs.Dir //二维码保存路径
-	PrefixUrl     string
-	FontSaveDir   fs.Dir //字体保存路径
-
+	Int    int
+	Float  float64
+	String string
+	Bool   bool
+	Time   time.Time
+	time.Duration
 }
 
-func (c *config) InitBeforeInject() {
-	c.Customize.TokenMaxAge = timei.Day
+func (c *config) BeforeInject() {
+	c.Customize.Duration = timei.Day
 }
 
-func (c *config) InitAfterInject() {
+func (c *config) AfterInject() {
 	if runtime.GOOS == "windows" {
 	}
 
-	c.Customize.TokenMaxAge = timei.StdDuration(c.Customize.TokenMaxAge, time.Hour)
+	c.Customize.Duration = timei.StdDuration(c.Customize.Duration, time.Hour)
 }
 
 // dao dao.
 type dao struct {
 	// GORMDB 数据库连接
-	GORMDB postgres.DB
+	GORMDB sqlite.DB
 	StdDB  *sql.DB
-	// RedisPool Redis连接池
-	Redis redis.Client
 }
 
-func (d *dao) InitBeforeInject() {
+func (d *dao) BeforeInject() {
 	d.GORMDB.Conf.Gorm.NowFunc = time.Now
 }
 
-func (d *dao) InitAfterInjectConfig() {
+func (d *dao) AfterInjectConfig() {
 	fmt.Println("这里后执行")
 }
 
-func (d *dao) InitAfterInject() {
+func (d *dao) AfterInject() {
 	db := d.GORMDB
 	db.Callback().Create().Remove("gorm:save_before_associations")
 	db.Callback().Create().Remove("gorm:save_after_associations")

@@ -8,8 +8,6 @@ import (
 	reflecti "github.com/hopeio/utils/reflect"
 	"github.com/hopeio/utils/reflect/converter"
 	"github.com/spf13/pflag"
-	"net/http"
-	"net/url"
 	"os"
 	"reflect"
 )
@@ -22,7 +20,7 @@ const flagTagName = "flag"
 	// environment
 	Env string `flag:"name:env;short:e;default:dev;usage:环境"`
 	// 配置文件路径
-	ConfUrl string `flag:"name:confdao;short:c;default:config.toml;usage:配置文件路径,默认./config.toml或./config/config.toml"`
+	ConfPath string `flag:"name:confdao;short:c;default:config.toml;usage:配置文件路径,默认./config.toml或./config/config.toml"`
 }*/
 
 type FlagTagSettings struct {
@@ -37,21 +35,8 @@ func init() {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 
 	// TODO: 绑定flag会在Unmarshal覆盖同名配置,parseFlag会纠正,但设计似乎不太合理,还是有不一致的情况
-	applyFlagConfig(gConfig.Viper, &gConfig.InitConfig)
-
-	if gConfig.InitConfig.Proxy != "" {
-		proxyURL, err := url.Parse(gConfig.InitConfig.Proxy)
-		if err != nil {
-			log.Fatal(err)
-		}
-		http.DefaultClient.Transport = &http.Transport{
-			Proxy: http.ProxyURL(proxyURL),
-		}
-	} else {
-		http.DefaultClient.Transport = &http.Transport{
-			Proxy: http.ProxyFromEnvironment,
-		}
-	}
+	applyFlagConfig(gConfig.Viper, &gConfig.RootConfig)
+	gConfig.RootConfig.AfterInject()
 }
 
 type anyValue reflect.Value

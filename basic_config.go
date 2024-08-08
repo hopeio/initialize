@@ -1,34 +1,28 @@
 package initialize
 
 import (
-	"github.com/hopeio/initialize/initconf"
 	"github.com/hopeio/utils/log"
 	stringsi "github.com/hopeio/utils/strings"
 	"os"
 	"path/filepath"
 )
 
-// SingleFileConfig This is for illustrative purposes only and is not for practical use
-type SingleFileConfig struct {
-	initconf.BasicConfig
-	initconf.EnvConfig
-}
-
 func (gc *globalConfig) setBasicConfig() {
-	format := gc.InitConfig.ConfigCenter.Format
-	basicConfig := &SingleFileConfig{}
+	format := gc.RootConfig.ConfigCenter.Format
+	confPath := gc.RootConfig.ConfPath
 
-	err := gc.Viper.Unmarshal(basicConfig, decoderConfigOptions...)
+	err := gc.Viper.Unmarshal(&gc.RootConfig, decoderConfigOptions...)
 	if err != nil {
 		log.Fatal(err)
 	}
-	applyFlagConfig(nil, basicConfig)
-	gc.InitConfig.BasicConfig = basicConfig.BasicConfig
-	gc.InitConfig.EnvConfig = basicConfig.EnvConfig
-	if gc.InitConfig.ConfigCenter.Format == "" {
-		gc.InitConfig.ConfigCenter.Format = format
+	applyFlagConfig(nil, &gc.RootConfig)
+	if gc.RootConfig.ConfigCenter.Format == "" {
+		gc.RootConfig.ConfigCenter.Format = format
 	}
-	if gc.InitConfig.Module == "" {
-		gc.InitConfig.Module = stringsi.CutPart(filepath.Base(os.Args[0]), ".")
+	if gc.RootConfig.Module == "" {
+		gc.RootConfig.Module = stringsi.CutPart(filepath.Base(os.Args[0]), ".")
+	}
+	if gc.RootConfig.ConfPath != confPath {
+		gc.RootConfig.ConfPath = confPath
 	}
 }

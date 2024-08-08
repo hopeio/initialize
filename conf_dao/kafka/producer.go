@@ -6,7 +6,7 @@ import (
 
 type ProducerConfig Config
 
-func (c *ProducerConfig) InitBeforeInject() {
+func (c *ProducerConfig) BeforeInject() {
 }
 func (c *ProducerConfig) Init() {
 	(*Config)(c).Init()

@@ -4,7 +4,7 @@ import (
 	"github.com/hopeio/initialize/conf_center"
 	"github.com/hopeio/initialize/conf_center/local"
 	"github.com/hopeio/initialize/conf_dao"
-	"github.com/hopeio/initialize/initconf"
+	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/errors/multierr"
 	"github.com/hopeio/utils/io/fs"
 	"github.com/hopeio/utils/slices"
@@ -22,9 +22,9 @@ import (
 // 约定大于配置
 var (
 	gConfig = &globalConfig{
-		InitConfig: initconf.InitConfig{
-			ConfUrl:   "",
-			EnvConfig: initconf.EnvConfig{Debug: true},
+		RootConfig: rootconf.RootConfig{
+			ConfPath:  "",
+			EnvConfig: rootconf.EnvConfig{Debug: true},
 		},
 
 		Viper: viper.New(),
@@ -49,7 +49,7 @@ func GlobalConfig() *globalConfig {
 // globalConfig
 // 全局配置
 type globalConfig struct {
-	InitConfig initconf.InitConfig `mapstructure:",squash"`
+	RootConfig rootconf.RootConfig `mapstructure:",squash"`
 	BuiltinConfig
 
 	conf Config
@@ -92,8 +92,8 @@ func Start(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) func(
 		for i := len(gConfig.defers) - 1; i > 0; i-- {
 			gConfig.defers[i]()
 		}
-		if gConfig.InitConfig.ConfigCenter.ConfigCenter != nil {
-			if err := gConfig.InitConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
+		if gConfig.RootConfig.ConfigCenter.ConfigCenter != nil {
+			if err := gConfig.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
 				log.Errorf("close config center error: %v", err)
 			}
 		}
@@ -126,13 +126,13 @@ func (gc *globalConfig) loadConfig() {
 	gc.Viper.AutomaticEnv()
 	var format string
 	// find config
-	if gc.InitConfig.ConfUrl == "" {
+	if gc.RootConfig.ConfPath == "" {
 		log.Debug("searching for config in .")
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if b := fs.Exist(filePath); b {
 				log.Debug("found file", "file", filePath)
-				gc.InitConfig.ConfUrl = filePath
+				gc.RootConfig.ConfPath = filePath
 				format = ext
 				break
 			}
@@ -141,10 +141,10 @@ func (gc *globalConfig) loadConfig() {
 			log.Fatal("not found config")
 		}
 	}
-	if gc.InitConfig.ConfUrl != "" {
-		log.Infof("load config from: %s", gc.InitConfig.ConfUrl)
+	if gc.RootConfig.ConfPath != "" {
+		log.Infof("load config from: %s", gc.RootConfig.ConfPath)
 		if format == "" {
-			format = path.Ext(gc.InitConfig.ConfUrl)
+			format = path.Ext(gc.RootConfig.ConfPath)
 			if format != "" {
 				// remove .
 				format = format[1:]
@@ -156,9 +156,9 @@ func (gc *globalConfig) loadConfig() {
 			}
 		}
 
-		gc.InitConfig.ConfigCenter.Format = format
+		gc.RootConfig.ConfigCenter.Format = format
 		gc.Viper.SetConfigType(format)
-		gc.Viper.SetConfigFile(gc.InitConfig.ConfUrl)
+		gc.Viper.SetConfigFile(gc.RootConfig.ConfPath)
 		err := gc.Viper.ReadInConfig()
 		if err != nil {
 			log.Fatal(err)
@@ -167,29 +167,29 @@ func (gc *globalConfig) loadConfig() {
 
 	gc.setBasicConfig()
 	gc.setEnvConfig()
-	for i := range gc.InitConfig.NoInject {
-		gc.InitConfig.NoInject[i] = strings.ToUpper(gc.InitConfig.NoInject[i])
+	for i := range gc.RootConfig.NoInject {
+		gc.RootConfig.NoInject[i] = strings.ToUpper(gc.RootConfig.NoInject[i])
 	}
 
 	var singleTemplateFileConfig bool
-	if gc.InitConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
-		if gc.InitConfig.Env == "" {
+	if gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
+		if gc.RootConfig.Env == "" {
 			singleTemplateFileConfig = true
 		}
 		// 单配置文件
-		gc.InitConfig.ConfigCenter.ConfigCenter = &local.Local{
+		gc.RootConfig.ConfigCenter.ConfigCenter = &local.Local{
 			Conf: local.Config{
-				ConfigPath: gc.InitConfig.ConfUrl,
+				ConfigPath: gc.RootConfig.ConfPath,
 			},
 		}
-		applyFlagConfig(gc.Viper, gc.InitConfig.ConfigCenter.ConfigCenter)
+		applyFlagConfig(gc.Viper, gc.RootConfig.ConfigCenter.ConfigCenter)
 	}
 
 	// hook function
 	gc.beforeInjectCall(gc.conf, gc.dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
 
-	cfgcenter := gc.InitConfig.ConfigCenter.ConfigCenter
+	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
 	err := cfgcenter.Handle(gc.UnmarshalAndSet)
 	if err != nil {
 		log.Fatalf("配置错误: %v", err)
@@ -197,14 +197,14 @@ func (gc *globalConfig) loadConfig() {
 }
 
 func (gc *globalConfig) beforeInjectCall(conf Config, dao Dao) {
-	conf.InitBeforeInject()
-	if c, ok := conf.(InitBeforeInjectWithInitConfig); ok {
-		c.InitBeforeInjectWithInitConfig(&gc.InitConfig)
+	conf.BeforeInject()
+	if c, ok := conf.(BeforeInjectWithRoot); ok {
+		c.BeforeInjectWithRoot(&gc.RootConfig)
 	}
 	if dao != nil {
-		dao.InitBeforeInject()
-		if c, ok := dao.(InitBeforeInjectWithInitConfig); ok {
-			c.InitBeforeInjectWithInitConfig(&gc.InitConfig)
+		dao.BeforeInject()
+		if c, ok := dao.(BeforeInjectWithRoot); ok {
+			c.BeforeInjectWithRoot(&gc.RootConfig)
 		}
 	}
 }

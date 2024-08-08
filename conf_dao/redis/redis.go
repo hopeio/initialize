@@ -15,7 +15,7 @@ type Config struct {
 	KeyFile  string `json:"key_file,omitempty"`
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 }
 
 func (c *Config) Init() {

@@ -14,7 +14,7 @@ type Config struct {
 	TargetSizes     []uint64
 }
 
-func (c *Config) InitBeforeInject() {
+func (c *Config) BeforeInject() {
 
 }
 
