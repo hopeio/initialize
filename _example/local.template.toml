@@ -1,0 +1,101 @@
+[Customize]
+Bool = false
+Duration = 86400000000000
+Float = 0.0
+Int = 0
+String = ''
+
+[GORMDB]
+Charset = ''
+ConnMaxIdleTime = 0
+ConnMaxLifetime = 0
+Database = ''
+EnablePrometheus = false
+EnableStdLogger = false
+Host = ''
+MaxIdleConns = 0
+MaxOpenConns = 0
+Password = ''
+Port = 0
+PrometheusConfigs = []
+TimeZone = ''
+Type = ''
+User = ''
+
+[GORMDB.Gorm]
+AllowGlobalUpdate = false
+CreateBatchSize = 0
+DisableAutomaticPing = false
+DisableForeignKeyConstraintWhenMigrating = false
+DisableNestedTransaction = false
+DryRun = false
+FullSaveAssociations = false
+IgnoreRelationshipsWhenMigrating = false
+PrepareStmt = false
+QueryFields = false
+SkipDefaultTransaction = false
+TranslateError = false
+
+[GORMDB.Logger]
+Colorful = false
+IgnoreRecordNotFoundError = false
+LogLevel = 0
+ParameterizedQueries = false
+SlowThreshold = 0
+
+[GORMDB.Mysql]
+Loc = ''
+ParseTime = ''
+
+[GORMDB.NamingStrategy]
+IdentifierMaxLength = 0
+NoLowerCase = false
+SingularTable = false
+TablePrefix = ''
+
+[GORMDB.Postgres]
+SSLMode = ''
+Schema = ''
+
+[GORMDB.Prometheus]
+DBName = ''
+HTTPServerPort = 0
+PushAddr = ''
+PushPassword = ''
+PushUser = ''
+RefreshInterval = 0
+StartServer = false
+
+[GORMDB.Prometheus.Labels]
+
+[GORMDB.Sqlite]
+DSN = ''
+
+[Log]
+Development = false
+DisableCaller = false
+DisableStacktrace = false
+EncodeLevelType = ''
+ErrorOutputPaths = []
+Level = 'info'
+Name = ''
+
+[Log.EncoderConfig]
+CallerKey = ''
+ConsoleSeparator = ''
+FunctionKey = ''
+LevelKey = ''
+LineEnding = ''
+MessageKey = ''
+NameKey = ''
+SkipLineEnding = false
+StacktraceKey = ''
+TimeKey = ''
+
+[Log.OutputPaths]
+Console = []
+Json = []
+
+[Log.Sampling]
+Initial = 0
+Thereafter = 0
