@@ -1,6 +1,8 @@
 module github.com/hopeio/initialize
 
-go 1.22
+go 1.23
+
+toolchain go1.23.0
 
 require (
 	github.com/IBM/sarama v1.43.2
@@ -46,7 +48,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.13.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/grafana/loki-client-go v0.0.0-20230116142646-e7494d0ef70c
-	github.com/hopeio/utils v0.0.45
+	github.com/hopeio/utils v0.1.0
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/linxGnu/grocksdb v1.9.1
 	github.com/marcboeker/go-duckdb v1.7.0

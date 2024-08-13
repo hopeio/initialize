@@ -6,7 +6,7 @@ import (
 	"github.com/hopeio/initialize/conf_dao"
 	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/errors/multierr"
-	"github.com/hopeio/utils/io/fs"
+	"github.com/hopeio/utils/fs"
 	"github.com/hopeio/utils/slices"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
@@ -153,7 +153,7 @@ func (gc *globalConfig) loadConfig() {
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if b := fs.Exist(filePath); b {
-				log.Debug("found file", "file", filePath)
+				log.Debug("found file: ", filePath)
 				gc.RootConfig.ConfPath = filePath
 				format = ext
 				break

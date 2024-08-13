@@ -3,7 +3,7 @@ package local
 import (
 	"errors"
 	"fmt"
-	"github.com/hopeio/utils/io/fs/loader"
+	"github.com/hopeio/utils/fs/loader"
 	"os"
 )
 
