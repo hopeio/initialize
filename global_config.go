@@ -28,7 +28,7 @@ var (
 		},
 
 		Viper: viper.New(),
-		lock:  sync.RWMutex{},
+		mu:    sync.RWMutex{},
 	}
 	decoderConfigOptions = []viper.DecoderConfigOption{
 		viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
@@ -43,6 +43,9 @@ var (
 )
 
 func GlobalConfig() *globalConfig {
+	if !gConfig.initialized {
+		log.Fatalf("not initialize, please call initialize.Init or initialize.Start")
+	}
 	return gConfig
 }
 
@@ -61,20 +64,23 @@ type globalConfig struct {
 	editTimes   uint32
 	defers      []func()
 	initialized bool
-	lock        sync.RWMutex
+	mu          sync.RWMutex
 
 	// 为后续仍有需要注入的config和dao保留的后门,与Inject(Config,Dao) 配合
 	injectConfs []Config
 	injectDaos  []Dao
 }
 
-func Start(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) func() {
+//	func init(){
+//	  	initialize.Init(conf, dao)
+//	}
+func Init(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) {
 	if gConfig.initialized {
-		return func() {}
+		return
 	}
 
 	if reflect.ValueOf(conf).IsNil() {
-		log.Fatalf("初始化错误: 配置不能为空")
+		log.Fatalf("init error: configuration cannot be empty")
 	}
 
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
@@ -87,18 +93,34 @@ func Start(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) func(
 	gConfig.setConfDao(conf, dao)
 	gConfig.loadConfig()
 	gConfig.initialized = true
-	return func() {
-		// 倒序调用defer
-		for i := len(gConfig.defers) - 1; i > 0; i-- {
-			gConfig.defers[i]()
-		}
-		if gConfig.RootConfig.ConfigCenter.ConfigCenter != nil {
-			if err := gConfig.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
-				log.Errorf("close config center error: %v", err)
-			}
-		}
-		log.Sync()
+}
+
+// func main(){
+// 		defer initialize.Defer()
+// }
+
+func Defer() {
+	if !gConfig.initialized {
+		log.Fatalf("not initialize, please call initialize.Init or initialize.Start")
 	}
+	// 倒序调用defer
+	for i := len(gConfig.defers) - 1; i > 0; i-- {
+		gConfig.defers[i]()
+	}
+	if gConfig.RootConfig.ConfigCenter.ConfigCenter != nil {
+		if err := gConfig.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
+			log.Errorf("close config center error: %v", err)
+		}
+	}
+	log.Sync()
+}
+
+//	func main(){
+//		defer initialize.Start(conf, dao)()
+//	}
+func Start(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) func() {
+	Init(conf, dao, configCenter...)
+	return Defer
 }
 
 func (gc *globalConfig) setConfDao(conf Config, dao Dao) {
@@ -192,7 +214,7 @@ func (gc *globalConfig) loadConfig() {
 	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
 	err := cfgcenter.Handle(gc.UnmarshalAndSet)
 	if err != nil {
-		log.Fatalf("配置错误: %v", err)
+		log.Fatalf("config error: %v", err)
 	}
 }
 
@@ -210,14 +232,14 @@ func (gc *globalConfig) beforeInjectCall(conf Config, dao Dao) {
 }
 
 func (gc *globalConfig) DeferFunc(deferf ...func()) {
-	gc.lock.Lock()
-	defer gc.lock.Unlock()
+	gc.mu.Lock()
+	defer gc.mu.Unlock()
 	gc.defers = append(gc.defers, deferf...)
 }
 
 func RegisterDeferFunc(deferf ...func()) {
-	gConfig.lock.Lock()
-	defer gConfig.lock.Unlock()
+	gConfig.mu.Lock()
+	defer gConfig.mu.Unlock()
 	gConfig.defers = append(gConfig.defers, deferf...)
 }
 

@@ -12,7 +12,7 @@ import (
 )
 
 func (gc *globalConfig) UnmarshalAndSet(data []byte) {
-	gc.lock.Lock()
+	gc.mu.Lock()
 	err := gc.Viper.MergeConfig(bytes.NewReader(data))
 	if err != nil {
 		if gc.editTimes == 0 {
@@ -25,7 +25,7 @@ func (gc *globalConfig) UnmarshalAndSet(data []byte) {
 
 	gc.inject(gc.conf, gc.dao)
 	gc.editTimes++
-	gc.lock.Unlock()
+	gc.mu.Unlock()
 }
 
 func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
@@ -208,7 +208,7 @@ func (gc *globalConfig) inject(conf Config, dao Dao) {
 		}
 		gc.injectDao(dao)
 	}
-	log.Debugf("config:  %+v", tmpConfig)
+	//log.Debugf("config:  %+v", tmpConfig)
 }
 
 func (gc *globalConfig) afterInjectConfigCall(tmpConfig any) {
@@ -270,7 +270,7 @@ func (gc *globalConfig) injectDao(dao Dao) {
 // 当初始化完成后,仍然有需要注入的config和dao
 func (gc *globalConfig) Inject(conf Config, dao Dao) error {
 	if !gc.initialized {
-		return errors.New("not initialize, please call Start")
+		return errors.New("not initialize, please call initialize.Init or initialize.Start")
 	}
 	gc.setConfDao(conf, dao)
 	gc.beforeInjectCall(conf, dao)
