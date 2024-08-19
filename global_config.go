@@ -149,11 +149,15 @@ func (gc *globalConfig) loadConfig() {
 	var format string
 	// find config
 	if gc.RootConfig.ConfPath == "" {
-		log.Debugf("lack flag -c or --config, searching 'config.*' in %s\r", filepath.Dir(os.Args[0]))
+		executable, err := os.Executable()
+		if err != nil {
+			log.Fatalf("get executable error: %v", err)
+		}
+		log.NoLEDebugf("lack flag -c or --config, searching 'config.*' in %s\r", filepath.Dir(executable))
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if b := fs.Exist(filePath); b {
-				log.Debugf("found file: '%s'\r", filePath)
+				log.NoLEDebugf("found file: '%s'\r", filePath)
 				gc.RootConfig.ConfPath = filePath
 				format = ext
 				break
@@ -164,7 +168,7 @@ func (gc *globalConfig) loadConfig() {
 		}
 	}
 	if gc.RootConfig.ConfPath != "" {
-		log.Infof("load config from: '%s'\r", gc.RootConfig.ConfPath)
+		log.NoLEInfof("load config from: '%s'\r", gc.RootConfig.ConfPath)
 		if format == "" {
 			format = path.Ext(gc.RootConfig.ConfPath)
 			if format != "" {
