@@ -149,11 +149,11 @@ func (gc *globalConfig) loadConfig() {
 	var format string
 	// find config
 	if gc.RootConfig.ConfPath == "" {
-		executable, err := os.Executable()
+		wd, err := os.Getwd()
 		if err != nil {
-			log.Fatalf("get executable error: %v", err)
+			log.Fatalf("get work dir error: %v", err)
 		}
-		log.NoLEDebugf("lack flag -c or --config, searching 'config.*' in %s\r", filepath.Dir(executable))
+		log.NoLEDebugf("lack flag -c or --config, searching 'config.*' in %s\r", wd)
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if b := fs.Exist(filePath); b {
