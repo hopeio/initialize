@@ -153,11 +153,11 @@ func (gc *globalConfig) loadConfig() {
 		if err != nil {
 			log.Fatalf("get work dir error: %v", err)
 		}
-		log.NoLEDebugf("lack flag -c or --config, searching 'config.*' in %s\r", wd)
+		log.Debugf("lack flag -c or --config, searching 'config.*' in %s", wd)
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if b := fs.Exist(filePath); b {
-				log.NoLEDebugf("found file: '%s'\r", filePath)
+				log.Debugf("found file: '%s'", filePath)
 				gc.RootConfig.ConfPath = filePath
 				format = ext
 				break
@@ -168,7 +168,7 @@ func (gc *globalConfig) loadConfig() {
 		}
 	}
 	if gc.RootConfig.ConfPath != "" {
-		log.NoLEInfof("load config from: '%s'\r", gc.RootConfig.ConfPath)
+		log.Infof("load config from: '%s'", gc.RootConfig.ConfPath)
 		if format == "" {
 			format = path.Ext(gc.RootConfig.ConfPath)
 			if format != "" {
