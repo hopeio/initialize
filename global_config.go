@@ -7,16 +7,16 @@ import (
 	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/errors/multierr"
 	"github.com/hopeio/utils/fs"
+	"github.com/hopeio/utils/log"
 	"github.com/hopeio/utils/slices"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
+	"os"
 	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
-
-	"github.com/hopeio/utils/log"
 )
 
 // 约定大于配置
@@ -149,11 +149,11 @@ func (gc *globalConfig) loadConfig() {
 	var format string
 	// find config
 	if gc.RootConfig.ConfPath == "" {
-		log.Debug("searching for config in .")
+		log.Debugf("lack flag -c or --config, searching 'config.*' in %s\r", filepath.Dir(os.Args[0]))
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if b := fs.Exist(filePath); b {
-				log.Debug("found file: ", filePath)
+				log.Debugf("found file: '%s'\r", filePath)
 				gc.RootConfig.ConfPath = filePath
 				format = ext
 				break
@@ -164,7 +164,7 @@ func (gc *globalConfig) loadConfig() {
 		}
 	}
 	if gc.RootConfig.ConfPath != "" {
-		log.Infof("load config from: %s", gc.RootConfig.ConfPath)
+		log.Infof("load config from: '%s'\r", gc.RootConfig.ConfPath)
 		if format == "" {
 			format = path.Ext(gc.RootConfig.ConfPath)
 			if format != "" {

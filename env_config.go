@@ -24,7 +24,7 @@ const (
 
 func (gc *globalConfig) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
-		log.Warn("lack of env configuration, try single config file")
+		log.Warn("lack of env configuration, try single config file mode")
 		return
 	}
 	format := gc.RootConfig.ConfigCenter.Format
