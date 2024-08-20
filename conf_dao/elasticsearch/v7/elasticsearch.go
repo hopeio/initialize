@@ -2,7 +2,7 @@ package elasticsearch
 
 import (
 	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/hopeio/utils/net/http/auth"
+	"github.com/hopeio/utils/net/http"
 )
 
 type Config elasticsearch.Config
@@ -17,7 +17,7 @@ func (c *Config) Init() {
 func (c *Config) Build() (*elasticsearch.Client, error) {
 	c.Init()
 	if c.Username != "" && c.Password != "" {
-		auth.SetBasicAuth(c.Header, c.Username, c.Password)
+		http.SetBasicAuth(c.Header, c.Username, c.Password)
 	}
 
 	return elasticsearch.NewClient((elasticsearch.Config)(*c))
