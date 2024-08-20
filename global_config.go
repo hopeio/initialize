@@ -12,7 +12,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -170,7 +169,7 @@ func (gc *globalConfig) loadConfig() {
 	if gc.RootConfig.ConfPath != "" {
 		log.Infof("load config from: '%s'", gc.RootConfig.ConfPath)
 		if format == "" {
-			format = path.Ext(gc.RootConfig.ConfPath)
+			format = filepath.Ext(gc.RootConfig.ConfPath)
 			if format != "" {
 				// remove .
 				format = format[1:]
