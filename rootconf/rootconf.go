@@ -8,6 +8,8 @@ import (
 )
 
 type RootConfig struct {
+	Executable string
+	ExecDir    string
 	// 配置文件路径
 	ConfPath string `flag:"name:config;short:c;usage:配置文件路径,默认./config.toml或./config/config.toml;env:CONFIG"`
 	BasicConfig

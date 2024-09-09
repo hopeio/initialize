@@ -144,14 +144,20 @@ func (gc *globalConfig) setConfDao(conf Config, dao Dao) {
 const defaultConfigName = "config"
 
 func (gc *globalConfig) loadConfig() {
+	executable, err := os.Executable()
+	if err != nil {
+		log.Fatalf("get executable error: %v", err)
+	}
+	gc.RootConfig.Executable = executable
+	wd, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("get work dir error: %v", err)
+	}
+	gc.RootConfig.ExecDir = wd
 	gc.Viper.AutomaticEnv()
 	var format string
 	// find config
 	if gc.RootConfig.ConfPath == "" {
-		wd, err := os.Getwd()
-		if err != nil {
-			log.Fatalf("get work dir error: %v", err)
-		}
 		log.Debugf("lack flag -c or --config, searching 'config.*' in %s", wd)
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
@@ -215,7 +221,7 @@ func (gc *globalConfig) loadConfig() {
 	gc.genConfigTemplate(singleTemplateFileConfig)
 
 	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
-	err := cfgcenter.Handle(gc.UnmarshalAndSet)
+	err = cfgcenter.Handle(gc.UnmarshalAndSet)
 	if err != nil {
 		log.Fatalf("config error: %v", err)
 	}
