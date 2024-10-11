@@ -158,7 +158,7 @@ func (gc *globalConfig) loadConfig() {
 	var format string
 	// find config
 	if gc.RootConfig.ConfPath == "" {
-		log.Debugf("lack flag -c or --config, searching 'config.*' in %s", wd)
+		log.Debugf("lack of flag -c or --config, searching 'config.*' in %s", wd)
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if b := fs.Exist(filePath); b {
