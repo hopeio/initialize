@@ -2,6 +2,7 @@ package initialize
 
 import (
 	"flag"
+	"github.com/hopeio/utils/reflect/mtos"
 	"github.com/spf13/viper"
 
 	"github.com/hopeio/utils/log"
@@ -50,7 +51,7 @@ func (a anyValue) Type() string {
 }
 
 func (a anyValue) Set(v string) error {
-	return converter.SetValueByString(reflect.Value(a), v)
+	return mtos.SetValueByString(reflect.Value(a), v)
 }
 
 func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue reflect.Value) {
@@ -87,7 +88,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 					}
 				}
 				if value, ok := os.LookupEnv(flagTagSettings.Env); ok {
-					err := converter.SetValueByString(fcValue.Field(i), value)
+					err := mtos.SetValueByString(fcValue.Field(i), value)
 					if err != nil {
 						log.Fatal(err)
 					}
