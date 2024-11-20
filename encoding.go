@@ -2,11 +2,11 @@ package initialize
 
 import (
 	"github.com/hopeio/utils/encoding"
-	"github.com/hopeio/utils/slices"
 	stringsi "github.com/hopeio/utils/strings"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"reflect"
+	"slices"
 )
 
 type Encoder interface {

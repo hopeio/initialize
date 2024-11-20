@@ -8,12 +8,12 @@ import (
 	"github.com/hopeio/utils/errors/multierr"
 	"github.com/hopeio/utils/fs"
 	"github.com/hopeio/utils/log"
-	"github.com/hopeio/utils/slices"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 )
