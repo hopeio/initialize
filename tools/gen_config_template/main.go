@@ -8,7 +8,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/hopeio/utils/fs"
+	"github.com/hopeio/utils/os/fs"
 	"go/ast"
 	"go/parser"
 	"go/token"

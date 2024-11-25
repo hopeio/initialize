@@ -9,7 +9,7 @@ package local
 import (
 	"errors"
 	"fmt"
-	"github.com/hopeio/utils/fs/loader"
+	"github.com/hopeio/utils/os/fs/loader"
 	"os"
 )
 

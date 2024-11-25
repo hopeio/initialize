@@ -948,6 +948,8 @@ github.com/hopeio/utils v0.3.1-0.20241120100001-901d02672003 h1:9/PDBO/AgaQ6Ed/w
 github.com/hopeio/utils v0.3.1-0.20241120100001-901d02672003/go.mod h1:rLOo6KASzkt8ZFkmCRDNO9kMLmEqPtTX+jGIyrE58xw=
 github.com/hopeio/utils v0.3.2 h1:lEfYit/ddyRxvgTtwGYBH5Um31NBqTL4XFXR0Q9Ph/o=
 github.com/hopeio/utils v0.3.2/go.mod h1:rLOo6KASzkt8ZFkmCRDNO9kMLmEqPtTX+jGIyrE58xw=
+github.com/hopeio/utils v0.3.3 h1:jdZS56KjsU4UfiD4AYDvflMkAGf3Ec0wV1x3iBinUVQ=
+github.com/hopeio/utils v0.3.3/go.mod h1:DPP3gDrq5wfbmJYbeQYEx8vXb08aO6xZBQhfBT4wAHE=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/hudl/fargo v1.3.0/go.mod h1:y3CKSmjA+wD2gak7sUSXTAoopbhU08POFhmITJgmKTg=
 github.com/iancoleman/strcase v0.2.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
