@@ -67,7 +67,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 	}
 	fcTyp := fcValue.Type()
 
-	for i := 0; i < fcTyp.NumField(); i++ {
+	for i := range fcTyp.NumField() {
 		fieldType := fcTyp.Field(i)
 		if !fieldType.IsExported() {
 			continue

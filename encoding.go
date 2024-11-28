@@ -35,7 +35,7 @@ func struct2Map(v any, confMap map[string]any) {
 // 递归的根据反射将对象中的指针变量赋值
 func structValue2Map(value reflect.Value, confMap map[string]any) {
 	typ := value.Type()
-	for i := 0; i < value.NumField(); i++ {
+	for i := range value.NumField() {
 		field := value.Field(i)
 		fileKind := field.Kind()
 		fieldType := typ.Field(i)

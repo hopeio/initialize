@@ -56,7 +56,7 @@ func (gc *globalConfig) genConfigTemplate(singleTemplateFileConfig bool) {
 
 func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 	typ := value.Type()
-	for i := 0; i < value.NumField(); i++ {
+	for i := range value.NumField() {
 		field := value.Field(i)
 		if field.Addr().Type().Implements(conf_dao.DaoFieldType) {
 			newconfMap := make(map[string]any)

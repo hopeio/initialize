@@ -43,7 +43,7 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 	if !gc.initialized {
 		confValue = reflect.ValueOf(&gc.BuiltinConfig).Elem()
 		confType = confValue.Type()
-		for i := 0; i < confValue.NumField(); i++ {
+		for i := range confValue.NumField() {
 			field := confValue.Field(i).Addr()
 
 			structField := confType.Field(i)
@@ -74,7 +74,7 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 	}
 	confValue = reflect.ValueOf(conf).Elem()
 	confType = confValue.Type()
-	for i := 0; i < confValue.NumField(); i++ {
+	for i := range confValue.NumField() {
 		field := confValue.Field(i)
 		fieldType := field.Type()
 		// panic: reflect: embedded type with methods not implemented if type is not first field // Issue 15924.
@@ -123,7 +123,7 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 	if dao != nil {
 		daoValue := reflect.ValueOf(dao).Elem()
 		daoType := daoValue.Type()
-		for i := 0; i < daoValue.NumField(); i++ {
+		for i := range daoValue.NumField() {
 			field := daoValue.Field(i)
 			if field.Type().Kind() == reflect.Struct {
 				field = field.Addr()
@@ -177,7 +177,7 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 
 func (gc *globalConfig) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) {
 	typ := value.Type()
-	for i := 0; i < value.NumField(); i++ {
+	for i := range value.NumField() {
 		structField := typ.Field(i)
 		name := structField.Name
 		tagSettings := ParseInitTagSettings(structField.Tag.Get(initTagName))
@@ -243,7 +243,7 @@ func (gc *globalConfig) injectDao(dao Dao) {
 	}
 	typ := v.Type()
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		field := v.Field(i)
 		structFiled := typ.Field(i)
 		if field.Addr().CanInterface() {

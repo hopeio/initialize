@@ -261,7 +261,7 @@ func RegisterDeferFunc(deferf ...func()) {
 func closeDao(dao Dao) error {
 	var errs multierr.MultiError
 	daoValue := reflect.ValueOf(dao).Elem()
-	for i := 0; i < daoValue.NumField(); i++ {
+	for i := range daoValue.NumField() {
 		fieldV := daoValue.Field(i)
 		if fieldV.Type().Kind() == reflect.Struct {
 			fieldV = daoValue.Field(i).Addr()
