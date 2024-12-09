@@ -2,8 +2,6 @@ module github.com/hopeio/initialize
 
 go 1.23
 
-toolchain go1.23.0
-
 require (
 	github.com/IBM/sarama v1.43.2
 	github.com/cockroachdb/pebble v1.1.0
