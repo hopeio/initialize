@@ -49,7 +49,7 @@ var (
 
 func GlobalConfig() *globalConfig {
 	if !gConfig.initialized {
-		log.Fatalf("not initialize, please call initialize.Init or initialize.Start")
+		log.Fatalf("not initialize, please call initialize.initHandler or initialize.Start")
 	}
 	return gConfig
 }
@@ -57,8 +57,8 @@ func GlobalConfig() *globalConfig {
 // globalConfig
 // 全局配置
 type globalConfig struct {
-	RootConfig rootconf.RootConfig `mapstructure:",squash"`
-	BuiltinConfig
+	RootConfig    rootconf.RootConfig `mapstructure:",squash"`
+	BuiltinConfig builtinConfig
 
 	conf Config
 	dao  Dao
@@ -77,9 +77,9 @@ type globalConfig struct {
 }
 
 //	func init(){
-//	  	initialize.Init(conf, dao)
+//	  	initialize.initHandler(conf, dao)
 //	}
-func Init(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) {
+func initHandler(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) {
 	if gConfig.initialized {
 		return
 	}
@@ -101,12 +101,12 @@ func Init(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) {
 }
 
 // func main(){
-// 		defer initialize.Defer()
+// 		defer initialize.deferHandler()
 // }
 
-func Defer() {
+func deferHandler() {
 	if !gConfig.initialized {
-		log.Fatalf("not initialize, please call initialize.Init or initialize.Start")
+		log.Fatalf("not initialize, please call initialize.initHandler or initialize.Start")
 	}
 	// 倒序调用defer
 	for i := len(gConfig.defers) - 1; i > 0; i-- {
@@ -124,8 +124,8 @@ func Defer() {
 //		defer initialize.Start(conf, dao)()
 //	}
 func Start(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) func() {
-	Init(conf, dao, configCenter...)
-	return Defer
+	initHandler(conf, dao, configCenter...)
+	return deferHandler
 }
 
 func (gc *globalConfig) setConfDao(conf Config, dao Dao) {
@@ -235,12 +235,12 @@ func (gc *globalConfig) loadConfig() {
 
 func (gc *globalConfig) beforeInjectCall(conf Config, dao Dao) {
 	conf.BeforeInject()
-	if c, ok := conf.(BeforeInjectWithRoot); ok {
+	if c, ok := conf.(beforeInjectWithRoot); ok {
 		c.BeforeInjectWithRoot(&gc.RootConfig)
 	}
 	if dao != nil {
 		dao.BeforeInject()
-		if c, ok := dao.(BeforeInjectWithRoot); ok {
+		if c, ok := dao.(beforeInjectWithRoot); ok {
 			c.BeforeInjectWithRoot(&gc.RootConfig)
 		}
 	}

@@ -11,43 +11,43 @@ import (
 	"reflect"
 )
 
-type BeforeInject interface {
+type beforeInject interface {
 	BeforeInject()
 }
 
-type BeforeInjectWithRoot interface {
+type beforeInjectWithRoot interface {
 	BeforeInjectWithRoot(*rootconf.RootConfig)
 }
 
-type AfterInject interface {
+type afterInject interface {
 	AfterInject()
 }
 
-type AfterInjectWithRoot interface {
+type afterInjectWithRoot interface {
 	AfterInjectWithRoot(*rootconf.RootConfig)
 }
 
-type AfterInjectConfig interface {
+type afterInjectConfig interface {
 	AfterInjectConfig()
 }
 
-type AfterInjectConfigWithRoot interface {
+type afterInjectConfigWithRoot interface {
 	AfterInjectConfigWithRoot(*rootconf.RootConfig)
 }
 
 type Config interface {
 	// 注入之前设置默认值
-	BeforeInject
+	beforeInject
 	// 注入之后初始化
-	AfterInject
+	afterInject
 }
 
 type Dao interface {
-	BeforeInject
+	beforeInject
 	// 注入config后执行
-	AfterInjectConfig
+	afterInjectConfig
 	// 注入dao后执行
-	AfterInject
+	afterInject
 }
 
 type EmbeddedPresets struct {

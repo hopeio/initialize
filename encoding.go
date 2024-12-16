@@ -15,7 +15,7 @@ import (
 	"slices"
 )
 
-type Encoder interface {
+type encoder interface {
 	Encode(format string, v map[string]any) ([]byte, error)
 }
 
@@ -73,7 +73,7 @@ func structValue2Map(value reflect.Value, confMap map[string]any) {
 				if opt == "squash" || fieldType.Anonymous {
 					structValue2Map(newValue, confMap)
 				} else {
-					tagSettings := ParseInitTagSettings(fieldType.Tag.Get(initTagName))
+					tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
 					if tagSettings.ConfigName != "" {
 						name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 					}
@@ -94,7 +94,7 @@ func structValue2Map(value reflect.Value, confMap map[string]any) {
 				continue
 			}
 
-			tagSettings := ParseInitTagSettings(fieldType.Tag.Get(initTagName))
+			tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
 			if tagSettings.ConfigName != "" {
 				name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 			}

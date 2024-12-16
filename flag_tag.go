@@ -30,7 +30,7 @@ const flagTagName = "flag"
 	ConfPath string `flag:"name:confdao;short:c;default:config.toml;usage:配置文件路径,默认./config.toml或./config/config.toml"`
 }*/
 
-type FlagTagSettings struct {
+type flagTagSettings struct {
 	Name    string `meta:"name"`
 	Short   string `meta:"short"`
 	Env     string `meta:"env" explain:"从环境变量读取"`
@@ -83,8 +83,8 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 			kind = fieldValue.Kind()
 		}
 		if flagTag != "" {
-			var flagTagSettings FlagTagSettings
-			ParseTagSetting(flagTag, ";", &flagTagSettings)
+			var flagTagSettings flagTagSettings
+			parseTagSetting(flagTag, ";", &flagTagSettings)
 			// 从环境变量设置
 			if flagTagSettings.Env != "" {
 				if viper != nil {

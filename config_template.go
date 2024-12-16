@@ -43,7 +43,7 @@ func (gc *globalConfig) genConfigTemplate(singleTemplateFileConfig bool) {
 
 	encoderRegistry := reflect.ValueOf(gc.Viper).Elem().FieldByName(fixedFieldNameEncoderRegistry).Elem()
 	fieldValue := reflect.NewAt(encoderRegistry.Type(), unsafe.Pointer(encoderRegistry.UnsafeAddr()))
-	data, err := fieldValue.Interface().(Encoder).Encode(format, confMap)
+	data, err := fieldValue.Interface().(encoder).Encode(format, confMap)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,7 +62,7 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 			newconfMap := make(map[string]any)
 			fieldType := typ.Field(i)
 			name := fieldType.Name
-			tagSettings := ParseInitTagSettings(fieldType.Tag.Get(initTagName))
+			tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
 			if tagSettings.ConfigName != "" {
 				name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 			}

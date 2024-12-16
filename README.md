@@ -122,7 +122,16 @@ func main() {
 原生集成了redis,gormdb(mysql,postgressql,sqlite),kafka,pebbledb,apollo,badgerdb,etcd,elasticsearch,nsq,ristretto,viper等，并且非常简单的支持自定义扩展,不局限于Dao对象，任何对象都支持根据配置自动注入生成
 
 
-
+```go
+// initWithRootConfig
+import "github.com/hopeio/initialize/rootconf"
+func (c *conf) BeforeInjectWithRoot(root *rootconf.RootConfig) {
+}
+func (c *dao) BeforeInjectWithRoot(root *rootconf.RootConfig) {
+}
+// AfterInjectConfigWithRoot(*rootconf.RootConfig)
+// AfterInjectWithRoot(*rootconf.RootConfig)
+```
 # 基于环境的配置
 需要配置中心的配置
 ## 生成模板

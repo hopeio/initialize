@@ -34,22 +34,22 @@ const (
 	metaTagName = "meta"
 )
 
-type InitTagSettings struct {
+type initTagSettings struct {
 	ConfigName   string `meta:"config"`
 	DefaultValue string `meta:"default"`
 }
 
-func ParseInitTagSettings(str string) *InitTagSettings {
+func parseInitTagSettings(str string) *initTagSettings {
 	if str == "" {
-		return &InitTagSettings{}
+		return &initTagSettings{}
 	}
-	var settings InitTagSettings
-	ParseTagSetting(str, ";", &settings)
+	var settings initTagSettings
+	parseTagSetting(str, ";", &settings)
 	return &settings
 }
 
-// ParseTagSetting default sep ;
-func ParseTagSetting(str string, sep string, settings any) {
+// parseTagSetting default sep ;
+func parseTagSetting(str string, sep string, settings any) {
 	err := structtag.ParseTagSettingIntoStruct(str, sep, settings, metaTagName)
 	if err != nil {
 		log.Fatal(err)

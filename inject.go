@@ -48,17 +48,17 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 
 			structField := confType.Field(i)
 			name := structField.Name
-			tagSettings := ParseInitTagSettings(structField.Tag.Get(initTagName))
+			tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 			if tagSettings.ConfigName != "" {
 				name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 			}
 
 			if field.CanInterface() {
 				inter := field.Interface()
-				if c, ok := inter.(BeforeInject); ok {
+				if c, ok := inter.(beforeInject); ok {
 					c.BeforeInject()
 				}
-				if c, ok := inter.(BeforeInjectWithRoot); ok {
+				if c, ok := inter.(beforeInjectWithRoot); ok {
 					c.BeforeInjectWithRoot(&gc.RootConfig)
 				}
 			}
@@ -87,7 +87,7 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 
 		structField := confType.Field(i)
 		name := structField.Name
-		tagSettings := ParseInitTagSettings(structField.Tag.Get(initTagName))
+		tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 		if tagSettings.ConfigName != "" {
 			name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 		}
@@ -102,10 +102,10 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 
 		if field.CanInterface() {
 			inter := field.Interface()
-			if c, ok := inter.(BeforeInject); ok {
+			if c, ok := inter.(beforeInject); ok {
 				c.BeforeInject()
 			}
-			if c, ok := inter.(BeforeInjectWithRoot); ok {
+			if c, ok := inter.(beforeInjectWithRoot); ok {
 				c.BeforeInjectWithRoot(&gc.RootConfig)
 			}
 		}
@@ -143,15 +143,15 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 					name := structField.Name
 					daoConfigValue := reflect.ValueOf(daoConfig)
 					daoConfigType := reflect.TypeOf(daoConfig)
-					tagSettings := ParseInitTagSettings(structField.Tag.Get(initTagName))
+					tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 					if tagSettings.ConfigName != "" {
 						name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 					}
 
-					if c, ok := daoConfig.(BeforeInject); ok {
+					if c, ok := daoConfig.(beforeInject); ok {
 						c.BeforeInject()
 					}
-					if c, ok := inter.(BeforeInjectWithRoot); ok {
+					if c, ok := inter.(beforeInjectWithRoot); ok {
 						c.BeforeInjectWithRoot(&gc.RootConfig)
 					}
 
@@ -180,7 +180,7 @@ func (gc *globalConfig) setNewStruct(value reflect.Value, typValueMap map[string
 	for i := range value.NumField() {
 		structField := typ.Field(i)
 		name := structField.Name
-		tagSettings := ParseInitTagSettings(structField.Tag.Get(initTagName))
+		tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 		if tagSettings.ConfigName != "" {
 			name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
 		}
@@ -204,12 +204,12 @@ func (gc *globalConfig) inject(conf Config, dao Dao) {
 	}
 	applyFlagConfig(gc.Viper, tmpConfig)
 	conf.AfterInject()
-	if c, ok := conf.(AfterInjectWithRoot); ok {
+	if c, ok := conf.(afterInjectWithRoot); ok {
 		c.AfterInjectWithRoot(&gc.RootConfig)
 	}
 	if dao != nil {
 		dao.AfterInjectConfig()
-		if c, ok := dao.(AfterInjectConfigWithRoot); ok {
+		if c, ok := dao.(afterInjectConfigWithRoot); ok {
 			c.AfterInjectConfigWithRoot(&gc.RootConfig)
 		}
 		gc.injectDao(dao)
@@ -226,10 +226,10 @@ func (gc *globalConfig) afterInjectConfigCall(tmpConfig any) {
 		field := v.Field(i)
 		if field.CanInterface() {
 			inter := field.Interface()
-			if subconf, ok := inter.(AfterInject); ok {
+			if subconf, ok := inter.(afterInject); ok {
 				subconf.AfterInject()
 			}
-			if subconf, ok := inter.(AfterInjectWithRoot); ok {
+			if subconf, ok := inter.(afterInjectWithRoot); ok {
 				subconf.AfterInjectWithRoot(&gc.RootConfig)
 			}
 		}
@@ -268,7 +268,7 @@ func (gc *globalConfig) injectDao(dao Dao) {
 		}
 	}
 	dao.AfterInject()
-	if c, ok := dao.(AfterInjectWithRoot); ok {
+	if c, ok := dao.(afterInjectWithRoot); ok {
 		c.AfterInjectWithRoot(&gc.RootConfig)
 	}
 }
@@ -276,7 +276,7 @@ func (gc *globalConfig) injectDao(dao Dao) {
 // 当初始化完成后,仍然有需要注入的config和dao
 func (gc *globalConfig) Inject(conf Config, dao Dao) error {
 	if !gc.initialized {
-		return errors.New("not initialize, please call initialize.Init or initialize.Start")
+		return errors.New("not initialize, please call initialize.initHandler or initialize.Start")
 	}
 	gc.setConfDao(conf, dao)
 	gc.beforeInjectCall(conf, dao)

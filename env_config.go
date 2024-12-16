@@ -54,7 +54,7 @@ func (gc *globalConfig) setEnvConfig() {
 			// unsafe
 			encoderRegistry := reflect.ValueOf(gc.Viper).Elem().FieldByName(fixedFieldNameEncoderRegistry).Elem()
 			fieldValue := reflect.NewAt(encoderRegistry.Type(), unsafe.Pointer(encoderRegistry.UnsafeAddr()))
-			data, err := fieldValue.Interface().(Encoder).Encode(format, confMap)
+			data, err := fieldValue.Interface().(encoder).Encode(format, confMap)
 
 			dir := gc.RootConfig.EnvConfig.ConfigTemplateDir
 			if dir[len(dir)-1] != '/' {
