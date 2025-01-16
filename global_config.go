@@ -277,9 +277,5 @@ func closeDao(dao Dao) error {
 
 		}
 	}
-
-	if errs.HasErrors() {
-		return &errs
-	}
-	return nil
+	return errs.Error()
 }
