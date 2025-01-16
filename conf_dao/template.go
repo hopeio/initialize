@@ -9,7 +9,7 @@ package conf_dao
 type CloseFunc func() error
 
 type DaoConfig[D any] interface {
-	Build() (*D, CloseFunc)
+	Build() (*D, CloseFunc, error)
 }
 
 type DaoT[C DaoConfig[D], D any] struct {
@@ -22,8 +22,10 @@ func (d *DaoT[C, D]) Config() any {
 	return d.Conf
 }
 
-func (d *DaoT[C, D]) Set() {
-	d.Client, d.close = d.Conf.Build()
+func (d *DaoT[C, D]) Init() error {
+	var err error
+	d.Client, d.close, err = d.Conf.Build()
+	return err
 }
 
 func (d *DaoT[C, D]) Close() error {

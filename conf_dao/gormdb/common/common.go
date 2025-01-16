@@ -24,8 +24,10 @@ func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
 	(*pkdb.Config)(c).BeforeInjectWithRoot(conf)
 }
 
+func (c *Config) AfterInject() {
+	(*pkdb.Config)(c).AfterInject()
+}
 func (c *Config) Build() (*gorm.DB, error) {
-	(*pkdb.Config)(c).Init()
 	if c.Type == dbi.Mysql {
 		return (*mysql.Config)(c).Build()
 	} else if c.Type == dbi.Postgres {

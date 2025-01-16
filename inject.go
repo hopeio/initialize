@@ -203,6 +203,7 @@ func (gc *globalConfig) inject(conf Config, dao Dao) {
 		}
 	}
 	applyFlagConfig(gc.Viper, tmpConfig)
+	gc.afterInjectConfigCall(tmpConfig)
 	conf.AfterInject()
 	if c, ok := conf.(afterInjectWithRoot); ok {
 		c.AfterInjectWithRoot(&gc.RootConfig)

@@ -20,7 +20,12 @@ func (c *Config) BeforeInject() {
 
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
+	c.Init()
+}
+
+func (c *Config) Init() *Config {
+	return c
 }
 
 func (c *Config) Build() (config_client.IConfigClient, error) {

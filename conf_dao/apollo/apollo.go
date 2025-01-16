@@ -7,26 +7,28 @@
 package apollo
 
 import (
-	"github.com/hopeio/utils/dao/apollo"
+	"github.com/apolloconfig/agollo/v4"
+	"github.com/apolloconfig/agollo/v4/env/config"
 )
 
-type Config apollo.Config
+type Config config.AppConfig
 
 func (c *Config) BeforeInject() {
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 
 }
 
-func (c *Config) Build() (*apollo.Client, error) {
-	c.Init()
+func (c *Config) Build() (agollo.Client, error) {
 	//初始化更新配置，这里不需要，开启实时更新时初始化会更新一次
-	return (*apollo.Config)(c).NewClient()
+	return agollo.StartWithConfig(func() (*config.AppConfig, error) {
+		return (*config.AppConfig)(c), nil
+	})
 }
 
 type Client struct {
-	*apollo.Client
+	agollo.Client
 	Conf Config
 }
 
@@ -41,5 +43,6 @@ func (c *Client) Init() error {
 }
 
 func (c *Client) Close() error {
-	return c.Client.Close()
+	c.Client.Close()
+	return nil
 }

@@ -20,12 +20,11 @@ type Config struct {
 func (c *Config) BeforeInject() {
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 
 }
 
 func (c *Config) Build() (*grpc.ClientConn, error) {
-	c.Init()
 	if c.TLS {
 		return grpci.NewTLSClient(c.Addr, c.Options...)
 	}

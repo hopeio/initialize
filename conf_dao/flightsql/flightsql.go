@@ -21,9 +21,8 @@ func (c *Config) BeforeInject() {
 
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 }
-
 func (c *Config) Build() (*sql.DB, error) {
 	return sql.Open("flightsql", c.DNS)
 }

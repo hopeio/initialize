@@ -19,6 +19,18 @@ type Config struct {
 	Url string
 }
 
+func (c *Config) BeforeInject() {
+
+}
+
+func (c *Config) AfterInject() {
+	c.Init()
+}
+
+func (c *Config) Init() *Config {
+	return c
+}
+
 func (c *Config) Build() (*loki.Client, error) {
 	var u urlutil.URLValue
 	f := &flag.FlagSet{}

@@ -14,12 +14,11 @@ type ProducerConfig Config
 
 func (c *ProducerConfig) BeforeInject() {
 }
-func (c *ProducerConfig) Init() {
-	(*Config)(c).Init()
+func (c *ProducerConfig) AfterInject() {
+	(*Config)(c).AfterInject()
 }
 
 func (c *ProducerConfig) Build() (sarama.SyncProducer, error) {
-	c.Init()
 	// 使用给定代理地址和配置创建一个同步生产者
 	return sarama.NewSyncProducer(c.Addrs, c.Config)
 

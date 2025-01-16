@@ -26,7 +26,7 @@ func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
 	c.EnableStdLogger = conf.Debug
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 	(*gormi.Config)(c).Init()
 }
 

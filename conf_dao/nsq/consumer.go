@@ -21,11 +21,13 @@ type ConsumerConfig struct {
 func (c *ConsumerConfig) BeforeInject() {
 }
 
+func (c *ConsumerConfig) AfterInject() {
+}
+
 func (c *ConsumerConfig) Init() {
 }
 
 func (c *ConsumerConfig) Build() (*nsq.Consumer, error) {
-	c.Init()
 	consumer, err := nsq.NewConsumer(c.Topic, c.Channel, c.Config)
 	if err != nil {
 		return nil, err

@@ -18,11 +18,14 @@ type Config struct {
 
 func (c *Config) BeforeInject() {
 }
+func (c *Config) AfterInject() {
+	c.Init()
+}
+
 func (c *Config) Init() {
 }
 
 func (c *Config) Build() (*pebble.DB, error) {
-	c.Init()
 	if c.DirName == "" {
 		return nil, errors.New("pebble dir name is empty")
 	}

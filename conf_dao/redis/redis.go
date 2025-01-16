@@ -24,7 +24,7 @@ type Config struct {
 func (c *Config) BeforeInject() {
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 	tlsConfig, err := tls.NewServerTLSConfig(c.CertFile, c.KeyFile)
 	if err != nil {
 		log.Fatal(err)
@@ -34,7 +34,6 @@ func (c *Config) Init() {
 }
 
 func (c *Config) Build() (*redis.Client, error) {
-	c.Init()
 	client := redis.NewClient(&c.Options)
 	return client, client.Ping(context.Background()).Err()
 }

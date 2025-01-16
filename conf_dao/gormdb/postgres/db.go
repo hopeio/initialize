@@ -22,8 +22,11 @@ func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
 	(*pkdb.Config)(c).BeforeInjectWithRoot(conf)
 }
 
+func (c *Config) AfterInject() {
+	(*pkdb.Config)(c).AfterInject()
+}
+
 func (c *Config) Build() (*gorm.DB, error) {
-	(*pkdb.Config)(c).Init()
 	dsn := fmt.Sprintf("host=%s user=%s dbname=%s port=%d sslmode=%s password=%s TimeZone=%s",
 		c.Host, c.User, c.Database, c.Port, c.Postgres.SSLMode, c.Password, c.TimeZone)
 	return (*pkdb.Config)(c).Build(postgres.Open(dsn))

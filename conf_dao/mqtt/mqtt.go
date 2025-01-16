@@ -23,7 +23,11 @@ func (c *Config) BeforeInject() {
 	c.ClientOptions = mqtt.NewClientOptions()
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
+	c.Init()
+}
+
+func (c *Config) Init() *Config {
 	tlsConfig, err := tls.NewClientTLSConfig(c.CAFile, "")
 	if err != nil {
 		log.Fatal(err)
@@ -38,10 +42,10 @@ func (c *Config) Init() {
 	log.DurationNotify("MaxReconnectInterval", c.MaxReconnectInterval, time.Second)
 	log.DurationNotify("ConnectRetryInterval", c.ConnectRetryInterval, time.Second)
 	log.DurationNotify("WriteTimeout", c.WriteTimeout, time.Second)
+	return c
 }
 
 func (c *Config) Build() (mqtt.Client, error) {
-	c.Init()
 	client := mqtt.NewClient(c.ClientOptions)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
 		return client, token.Error()

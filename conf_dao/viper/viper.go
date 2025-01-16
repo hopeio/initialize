@@ -38,19 +38,18 @@ type RemoteProvider struct {
 func (c *Config) BeforeInject() {
 
 }
-func (c *Config) Init() {
-	if c.ConfigType == "" {
-		c.ConfigType = "toml"
-	}
-}
 
 func (c *Config) AfterInject() {
 	c.Init()
-	c.build(viper.GetViper())
+}
+func (c *Config) Init() *Config {
+	if c.ConfigType == "" {
+		c.ConfigType = "toml"
+	}
+	return c
 }
 
 func (c *Config) Build() (*viper.Viper, error) {
-	c.Init()
 	var runtimeViper = viper.New()
 	return runtimeViper, c.build(runtimeViper)
 }

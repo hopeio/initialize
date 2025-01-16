@@ -15,11 +15,12 @@ type ProducerConfig struct {
 
 func (c *ProducerConfig) BeforeInject() {
 }
-func (c *ProducerConfig) Init() {
+func (c *ProducerConfig) AfterInject() {
 }
 
+func (c *ProducerConfig) Init() {
+}
 func (c *ProducerConfig) Build() (*nsq.Producer, error) {
-	c.Init()
 	return nsq.NewProducer(c.Addr, c.Config)
 }
 

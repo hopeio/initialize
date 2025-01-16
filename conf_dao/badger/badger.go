@@ -14,11 +14,10 @@ type Config badger.Options
 
 func (c *Config) BeforeInject() {
 }
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 
 }
 func (c *Config) Build() (*badger.DB, error) {
-	c.Init()
 	return badger.Open(badger.Options(*c))
 }
 

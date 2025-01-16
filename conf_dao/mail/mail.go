@@ -26,11 +26,15 @@ func (c *Config) BeforeInject() {
 
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
+	c.Init()
+}
+
+func (c *Config) Init() *Config {
+	return c
 }
 
 func (c *Config) Build() (smtp.Auth, error) {
-	c.Init()
 	if strings.ToUpper(c.AuthType) == "PLAIN" {
 		return smtp.PlainAuth(c.Identity, c.UserName, c.Password, c.Host), nil
 	}

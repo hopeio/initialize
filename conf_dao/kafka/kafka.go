@@ -17,6 +17,6 @@ type Config struct {
 
 func (c *Config) Default() {
 }
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 	c.Config.Version = sarama.V3_1_0_0
 }

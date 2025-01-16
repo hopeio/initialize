@@ -20,9 +20,11 @@ type Config pkdb.Config
 func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
 	(*pkdb.Config)(c).BeforeInjectWithRoot(conf)
 }
+func (c *Config) AfterInject() {
+	(*pkdb.Config)(c).AfterInject()
+}
 
 func (c *Config) Build() (*gorm.DB, error) {
-	(*pkdb.Config)(c).Init()
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=%s&parseTime=%s&loc=%s",
 		c.User, c.Password, c.Host,
 		c.Port, c.Database, c.Charset, c.Mysql.ParseTime, c.Mysql.Loc)

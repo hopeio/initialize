@@ -14,7 +14,7 @@ type Config[K ristretto.Key, V any] ristretto.Config[K, V]
 
 func (c *Config[K, V]) BeforeInject() {
 }
-func (c *Config[K, V]) Init() {
+func (c *Config[K, V]) AfterInject() {
 	if c.NumCounters == 0 {
 		c.NumCounters = 1e7
 	}
@@ -26,8 +26,11 @@ func (c *Config[K, V]) Init() {
 	}
 }
 
+func (c *Config[K, V]) Init() *Config[K, V] {
+	return c
+}
+
 func (c *Config[K, V]) Build() (*ristretto.Cache[K, V], error) {
-	c.Init()
 	return ristretto.NewCache((*ristretto.Config[K, V])(c))
 }
 

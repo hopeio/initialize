@@ -16,12 +16,11 @@ type Config config.Config
 func (c *Config) BeforeInject() {
 }
 
-func (c *Config) Init() {
+func (c *Config) AfterInject() {
 
 }
 
 func (c *Config) Build() (*elastic.Client, error) {
-	c.Init()
 	return elastic.NewClientFromConfig((*config.Config)(c))
 }
 
