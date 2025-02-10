@@ -84,7 +84,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 		}
 		if flagTag != "" {
 			var flagTagSettings flagTagSettings
-			parseTagSetting(flagTag, ";", &flagTagSettings)
+			parseTagSetting(flagTag, ';', &flagTagSettings)
 			// 从环境变量设置
 			if flagTagSettings.Env != "" {
 				if viper != nil {

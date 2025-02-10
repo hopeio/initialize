@@ -30,8 +30,6 @@ type Config struct {
 const (
 	initTagName = "init"
 	exprTagName = "expr"
-
-	metaTagName = "meta"
 )
 
 type initTagSettings struct {
@@ -44,13 +42,13 @@ func parseInitTagSettings(str string) *initTagSettings {
 		return &initTagSettings{}
 	}
 	var settings initTagSettings
-	parseTagSetting(str, ";", &settings)
+	parseTagSetting(str, ';', &settings)
 	return &settings
 }
 
 // parseTagSetting default sep ;
-func parseTagSetting(str string, sep string, settings any) {
-	err := structtag.ParseTagSettingIntoStruct(str, sep, settings, metaTagName)
+func parseTagSetting(str string, sep byte, settings any) {
+	err := structtag.ParseSettingTagIntoStruct(str, sep, settings)
 	if err != nil {
 		log.Fatal(err)
 	}
