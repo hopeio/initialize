@@ -8,14 +8,15 @@ package apollo
 
 import (
 	"encoding/json"
-	"github.com/hopeio/utils/dao/apollo"
+	"github.com/apolloconfig/agollo/v4"
+	"github.com/apolloconfig/agollo/v4/env/config"
 )
 
 var ConfigCenter = &Apollo{}
 
 type Apollo struct {
-	Conf   apollo.Config
-	Client *apollo.Client
+	Conf   config.AppConfig
+	Client agollo.Client
 }
 
 func (e *Apollo) Type() string {
@@ -30,17 +31,16 @@ func (cc *Apollo) Config() any {
 func (e *Apollo) Handle(handle func([]byte)) error {
 	var err error
 	if e.Client == nil {
-		e.Client, err = e.Conf.NewClient()
+		e.Client, err = agollo.StartWithConfig(func() (*config.AppConfig, error) {
+			return &e.Conf, nil
+		})
 		if err != nil {
 			return err
 		}
 	}
 
-	config, err := e.Client.GetDefaultConfig()
-	if err != nil {
-		return err
-	}
-	data, err := json.Marshal(config)
+	config := e.Client.GetConfig(e.Conf.NamespaceName)
+	data, err := json.Marshal(config.GetContent())
 	if err != nil {
 		return err
 	}
