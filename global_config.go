@@ -14,6 +14,7 @@ import (
 	"github.com/hopeio/utils/errors/multierr"
 	"github.com/hopeio/utils/log"
 	"github.com/hopeio/utils/os/fs"
+	pathi "github.com/hopeio/utils/os/fs/path"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"os"
@@ -167,7 +168,7 @@ func (gc *globalConfig) loadConfig() {
 		log.Debugf("lack of flag -c or --config, searching 'config.*' in %s", wd)
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
-			if b := fs.Exist(filePath); b {
+			if fs.Exist(filePath) {
 				log.Debugf("found file: '%s'", filePath)
 				gc.RootConfig.ConfPath = filePath
 				format = ext
@@ -179,6 +180,10 @@ func (gc *globalConfig) loadConfig() {
 		}
 	}
 	if gc.RootConfig.ConfPath != "" {
+		gc.RootConfig.ConfPath, err = filepath.Abs(gc.RootConfig.ConfPath)
+		if err != nil {
+			log.Fatalf("get abs path error: %v", err)
+		}
 		log.Infof("load config from: '%s'", gc.RootConfig.ConfPath)
 		if format == "" {
 			format = filepath.Ext(gc.RootConfig.ConfPath)
@@ -228,12 +233,21 @@ func (gc *globalConfig) loadConfig() {
 	gc.beforeInjectCall(gc.conf, gc.dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
 	if gc.RootConfig.Env != "" {
-		defaultEnvConfigName := gc.RootConfig.ConfPath + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
-		log.Debugf("will loader file: '%s'", defaultEnvConfigName)
-		gc.Viper.AddConfigPath(defaultEnvConfigName)
-		err = gc.Viper.MergeInConfig()
-		if err != nil {
-			log.Fatal(err)
+		defaultEnvConfigName := pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+		log.Debugf("loader file: '%s' if exist", defaultEnvConfigName)
+		if fs.Exist(defaultEnvConfigName) {
+			defaultEnvConfig, err := os.Open(defaultEnvConfigName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = gc.Viper.MergeConfig(defaultEnvConfig)
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = defaultEnvConfig.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
