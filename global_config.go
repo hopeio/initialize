@@ -234,7 +234,7 @@ func (gc *globalConfig) loadConfig() {
 	gc.genConfigTemplate(singleTemplateFileConfig)
 	if gc.RootConfig.Env != "" {
 		defaultEnvConfigName := pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
-		log.Debugf("loader file: '%s' if exist", defaultEnvConfigName)
+		log.Debugf("load config from: '%s' if exist", defaultEnvConfigName)
 		if fs.Exist(defaultEnvConfigName) {
 			defaultEnvConfig, err := os.Open(defaultEnvConfigName)
 			if err != nil {
