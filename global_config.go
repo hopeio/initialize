@@ -213,19 +213,29 @@ func (gc *globalConfig) loadConfig() {
 		if gc.RootConfig.Env == "" {
 			singleTemplateFileConfig = true
 		}
-		// 单配置文件
-		gc.RootConfig.ConfigCenter.ConfigCenter = &local.Local{
-			Conf: local.Config{
-				ConfigPath: gc.RootConfig.ConfPath,
-			},
+		if gc.RootConfig.ConfigCenter.Type != "" {
+			gc.RootConfig.ConfigCenter.ConfigCenter = conf_center.GetConfigCenter(gc.RootConfig.ConfigCenter.Type)
+		} else {
+			gc.RootConfig.ConfigCenter.ConfigCenter = &local.Local{ // 单配置文件
+				Conf: local.Config{
+					ConfigPath: gc.RootConfig.ConfPath,
+				},
+			}
 		}
-		applyFlagConfig(gc.Viper, gc.RootConfig.ConfigCenter.ConfigCenter)
 	}
-
+	applyFlagConfig(gc.Viper, gc.RootConfig.ConfigCenter.ConfigCenter)
 	// hook function
 	gc.beforeInjectCall(gc.conf, gc.dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
-
+	if gc.RootConfig.Env != "" {
+		defaultEnvConfigName := gc.RootConfig.ConfPath + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+		log.Debugf("will loader file: '%s'", defaultEnvConfigName)
+		gc.Viper.AddConfigPath(defaultEnvConfigName)
+		err = gc.Viper.MergeInConfig()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
 	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
 	err = cfgcenter.Handle(gc.UnmarshalAndSet)
 	if err != nil {
