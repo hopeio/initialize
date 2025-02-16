@@ -80,7 +80,7 @@ type globalConfig struct {
 //	func init(){
 //	  	initialize.initHandler(conf, dao)
 //	}
-func initHandler(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) {
+func initHandler(conf Config, dao Dao, options ...Option) {
 	if gConfig.initialized {
 		return
 	}
@@ -92,8 +92,8 @@ func initHandler(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter)
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
 	// 注册配置中心,默认注册本地文件
 	conf_center.RegisterConfigCenter(local.ConfigCenter)
-	for _, cc := range configCenter {
-		conf_center.RegisterConfigCenter(cc)
+	for _, option := range options {
+		option(gConfig)
 	}
 
 	gConfig.setConfDao(conf, dao)
@@ -124,8 +124,8 @@ func deferHandler() {
 //	func main(){
 //		defer initialize.Start(conf, dao)()
 //	}
-func Start(conf Config, dao Dao, configCenter ...conf_center.ConfigCenter) func() {
-	initHandler(conf, dao, configCenter...)
+func Start(conf Config, dao Dao, options ...Option) func() {
+	initHandler(conf, dao, options...)
 	return deferHandler
 }
 
