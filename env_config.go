@@ -12,9 +12,7 @@ import (
 	"github.com/hopeio/utils/reflect/mtos"
 	"github.com/spf13/viper"
 	"os"
-	"reflect"
 	"strings"
-	"unsafe"
 )
 
 const (
@@ -28,7 +26,7 @@ const (
 	skipTypeTlsConfig             = "tls.Config"
 )
 
-func (gc *globalConfig) setEnvConfig() {
+func (gc *globalConfig[C, D]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
 		log.Warn("lack of env configuration, try single config file mode")
 		return
@@ -51,10 +49,14 @@ func (gc *globalConfig) setEnvConfig() {
 				struct2Map(v.Config(), cc)
 				ccMap[name] = cc
 			}
-			// unsafe
-			encoderRegistry := reflect.ValueOf(gc.Viper).Elem().FieldByName(fixedFieldNameEncoderRegistry).Elem()
-			fieldValue := reflect.NewAt(encoderRegistry.Type(), unsafe.Pointer(encoderRegistry.UnsafeAddr()))
-			data, err := fieldValue.Interface().(encoder).Encode(format, confMap)
+			endocer, err := codecRegistry.Encoder(format)
+			if err != nil {
+				log.Fatal(err)
+			}
+			data, err := endocer.Encode(confMap)
+			if err != nil {
+				log.Fatal(err)
+			}
 
 			dir := gc.RootConfig.EnvConfig.ConfigTemplateDir
 			if dir[len(dir)-1] != '/' {

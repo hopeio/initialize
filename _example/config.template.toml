@@ -13,7 +13,7 @@ Format = 'toml'
 Type = 'local'
 
 [dev.ConfigCenter.local]
-AutoReloadType = ''
+AutoReloadType = 'none'
 ConfigPath = './_example/local.toml'
 TimerInterval = 0
 

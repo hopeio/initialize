@@ -33,17 +33,13 @@ const flagTagName = "flag"
 type flagTagSettings struct {
 	Name    string `meta:"name"`
 	Short   string `meta:"short"`
-	Env     string `meta:"env" explain:"从环境变量读取"`
+	Env     string `meta:"env" comment:"从环境变量读取"`
 	Default string `meta:"default"`
 	Usage   string `meta:"usage"`
 }
 
 func init() {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
-
-	// TODO: 绑定flag会在Unmarshal覆盖同名配置,parseFlag会纠正,但设计似乎不太合理,还是有不一致的情况
-	applyFlagConfig(gConfig.Viper, &gConfig.RootConfig)
-	gConfig.RootConfig.AfterInject()
 }
 
 type anyValue reflect.Value

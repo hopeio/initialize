@@ -72,7 +72,7 @@ type serverConfig struct{
     TokenMaxAge time.Duration
 }
 
-var Conf = &config{}
+
 // 注入配置前初始化
 func (c *config) BeforeInject() {
     c.Customize.TokenMaxAge = time.Second * 60 * 60 * 24
@@ -83,8 +83,9 @@ func (c *config) AfterInject() {
 }
 
 func main() {
+	global:= initialize.NewGlobal[*config,*initialize.EmbeddedPresets]()
     //配置初始化应该在第一位
-    defer initialize.Start(Conf, nil)()
+    defer global.Cleanup()
 }
 ```
 如果还有Dao要初始化
@@ -116,7 +117,8 @@ func (d *dao) AfterInject() {
 	d.StdDB, _ = db.DB()
 }
 func main() {
-    defer initialize.Start(Conf, dao)()
+    global:= initialize.NewGlobal[*config,*dao]()
+    defer global.Cleanup()
 }
 ```
 原生集成了redis,gormdb(mysql,postgressql,sqlite),kafka,pebbledb,apollo,badgerdb,etcd,elasticsearch,nsq,ristretto,viper等，并且非常简单的支持自定义扩展,不局限于Dao对象，任何对象都支持根据配置自动注入生成

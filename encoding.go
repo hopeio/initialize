@@ -7,12 +7,26 @@
 package initialize
 
 import (
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/hopeio/utils/encoding"
 	stringsi "github.com/hopeio/utils/strings"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"reflect"
 	"slices"
+)
+
+var (
+	codecRegistry        = viper.NewCodecRegistry()
+	decoderConfigOptions = []viper.DecoderConfigOption{
+		viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.TextUnmarshallerHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+		)),
+		func(config *mapstructure.DecoderConfig) {
+			config.Squash = true
+		},
+	}
 )
 
 type encoder interface {

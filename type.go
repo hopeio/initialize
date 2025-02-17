@@ -53,11 +53,11 @@ type Dao interface {
 type EmbeddedPresets struct {
 }
 
-func (u EmbeddedPresets) BeforeInject() {
+func (u *EmbeddedPresets) BeforeInject() {
 }
-func (u EmbeddedPresets) AfterInjectConfig() {
+func (u *EmbeddedPresets) AfterInjectConfig() {
 }
-func (u EmbeddedPresets) AfterInject() {
+func (u *EmbeddedPresets) AfterInject() {
 }
 
 var EmbeddedPresetsType = reflect.TypeOf((*EmbeddedPresets)(nil)).Elem()

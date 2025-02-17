@@ -12,10 +12,9 @@ import (
 	stringsi "github.com/hopeio/utils/strings"
 	"os"
 	"reflect"
-	"unsafe"
 )
 
-func (gc *globalConfig) genConfigTemplate(singleTemplateFileConfig bool) {
+func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
 	dir := gc.RootConfig.ConfigTemplateDir
 	if dir == "" {
 		return
@@ -36,18 +35,17 @@ func (gc *globalConfig) genConfigTemplate(singleTemplateFileConfig bool) {
 		delete(confMap, fixedFieldNameConfigCenter)
 	}
 	struct2Map(&gc.BuiltinConfig, confMap)
-	struct2Map(gc.conf, confMap)
-	if gc.dao != nil {
-		daoConfig2Map(reflect.ValueOf(gc.dao).Elem(), confMap)
-	}
+	struct2Map(gc.Config, confMap)
+	daoConfig2Map(reflect.ValueOf(gc.Dao).Elem(), confMap)
 
-	encoderRegistry := reflect.ValueOf(gc.Viper).Elem().FieldByName(fixedFieldNameEncoderRegistry).Elem()
-	fieldValue := reflect.NewAt(encoderRegistry.Type(), unsafe.Pointer(encoderRegistry.UnsafeAddr()))
-	data, err := fieldValue.Interface().(encoder).Encode(format, confMap)
+	endocer, err := codecRegistry.Encoder(format)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	data, err := endocer.Encode(confMap)
+	if err != nil {
+		log.Fatal(err)
+	}
 	err = os.WriteFile(dir+filename, data, 0644)
 	if err != nil {
 		log.Fatal(err)

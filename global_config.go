@@ -15,7 +15,6 @@ import (
 	"github.com/hopeio/utils/log"
 	"github.com/hopeio/utils/os/fs"
 	pathi "github.com/hopeio/utils/os/fs/path"
-	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"os"
 	"path/filepath"
@@ -25,44 +24,14 @@ import (
 	"sync"
 )
 
-// 约定大于配置
-var (
-	gConfig = &globalConfig{
-		RootConfig: rootconf.RootConfig{
-			ConfPath:  "",
-			EnvConfig: rootconf.EnvConfig{Debug: true},
-		},
-
-		Viper: viper.New(),
-		mu:    sync.RWMutex{},
-	}
-	decoderConfigOptions = []viper.DecoderConfigOption{
-		viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
-			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.TextUnmarshallerHookFunc(),
-			mapstructure.StringToSliceHookFunc(","),
-		)),
-		func(config *mapstructure.DecoderConfig) {
-			config.Squash = true
-		},
-	}
-)
-
-func GlobalConfig() *globalConfig {
-	if !gConfig.initialized {
-		log.Fatalf("not initialize, please call initialize.initHandler or initialize.Start")
-	}
-	return gConfig
-}
-
 // globalConfig
 // 全局配置
-type globalConfig struct {
+type globalConfig[C Config, D Dao] struct {
 	RootConfig    rootconf.RootConfig `mapstructure:",squash"`
 	BuiltinConfig builtinConfig
 
-	conf Config
-	dao  Dao
+	Config C
+	Dao    D
 
 	*viper.Viper
 	/*
@@ -77,18 +46,51 @@ type globalConfig struct {
 	injectDaos  []Dao
 }
 
-//	func init(){
-//	  	initialize.initHandler(conf, dao)
-//	}
-func initHandler(conf Config, dao Dao, options ...Option) {
-	if gConfig.initialized {
-		return
-	}
+func newGlobal[C Config, D Dao](options ...Option) *globalConfig[C, D] {
+	gc := &globalConfig[C, D]{
+		RootConfig: rootconf.RootConfig{
+			ConfPath:  "",
+			EnvConfig: rootconf.EnvConfig{Debug: true},
+		},
 
-	if reflect.ValueOf(conf).IsNil() {
-		log.Fatalf("init error: configuration cannot be empty")
+		Viper: viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry)),
+		mu:    sync.RWMutex{},
 	}
+	return gc
+}
+func NewGlobalWith[C Config, D Dao](conf C, dao D, options ...Option) *globalConfig[C, D] {
+	gc := newGlobal[C, D](options...)
+	gc.Config = conf
+	gc.Dao = dao
+	gc.init(options...)
+	return gc
+}
 
+// var Global = initialize.NewGlobal[C,D]()
+func NewGlobal[C Config, D Dao](options ...Option) *globalConfig[C, D] {
+	gc := newGlobal[C, D](options...)
+	v := reflect.ValueOf(&gc.Config).Elem()
+	if v.Kind() == reflect.Struct {
+		log.Fatalf("generic type should be a pointer type")
+	}
+	v.Set(reflect.New(reflect.TypeOf(gc.Config).Elem()))
+	v = reflect.ValueOf(&gc.Dao).Elem()
+	if v.Kind() == reflect.Struct {
+		log.Fatalf("generic type should be a pointer type")
+	}
+	v.Set(reflect.New(reflect.TypeOf(gc.Dao).Elem()))
+	gc.init(options...)
+	return gc
+}
+
+func Start[C Config, D Dao](conf C, dao D, options ...Option) func() {
+	gc := NewGlobalWith[C, D](conf, dao, options...)
+	return gc.Cleanup
+}
+
+func (gc *globalConfig[C, D]) init(options ...Option) {
+	applyFlagConfig(gc.Viper, &gc.RootConfig)
+	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
 	// 注册配置中心,默认注册本地文件
 	conf_center.RegisterConfigCenter(local.ConfigCenter)
@@ -96,61 +98,39 @@ func initHandler(conf Config, dao Dao, options ...Option) {
 		option()
 	}
 
-	gConfig.setConfDao(conf, dao)
-	gConfig.loadConfig()
-	gConfig.initialized = true
+	gc.defers = append(gc.defers, func() {
+		if err := closeDao(gc.Dao); err != nil {
+			log.Errorf("close Dao error: %v", err)
+		}
+	})
+	gc.loadConfig()
+	gc.initialized = true
 }
 
+// var Global = initialize.NewGlobal[C,D]()
 // func main(){
-// 		defer initialize.deferHandler()
+// 		defer global.Global.Cleanup()
 // }
 
-func deferHandler() {
-	if !gConfig.initialized {
+func (gc *globalConfig[C, D]) Cleanup() {
+	if !gc.initialized {
 		log.Fatalf("not initialize, please call initialize.initHandler or initialize.Start")
 	}
 	// 倒序调用defer
-	for i := len(gConfig.defers) - 1; i > 0; i-- {
-		gConfig.defers[i]()
+	for i := len(gc.defers) - 1; i > 0; i-- {
+		gc.defers[i]()
 	}
-	if gConfig.RootConfig.ConfigCenter.ConfigCenter != nil {
-		if err := gConfig.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
+	if gc.RootConfig.ConfigCenter.ConfigCenter != nil {
+		if err := gc.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
 			log.Errorf("close config center error: %v", err)
 		}
 	}
 	log.Sync()
 }
 
-//	func main(){
-//		defer initialize.Start(conf, dao)()
-//	}
-func Start(conf Config, dao Dao, options ...Option) func() {
-	initHandler(conf, dao, options...)
-	return deferHandler
-}
-
-func (gc *globalConfig) setConfDao(conf Config, dao Dao) {
-	if !gc.initialized {
-		gc.conf = conf
-		gc.dao = dao
-	} else {
-		gc.injectConfs = append(gc.injectConfs, conf)
-		gc.injectDaos = append(gc.injectDaos, dao)
-	}
-
-	if dao != nil {
-		gc.defers = append(gc.defers, func() {
-			if err := closeDao(dao); err != nil {
-				log.Errorf("close dao error: %v", err)
-			}
-		})
-	}
-
-}
-
 const defaultConfigName = "config"
 
-func (gc *globalConfig) loadConfig() {
+func (gc *globalConfig[C, D]) loadConfig() {
 	executable, err := os.Executable()
 	if err != nil {
 		log.Fatalf("get executable error: %v", err)
@@ -230,7 +210,7 @@ func (gc *globalConfig) loadConfig() {
 	}
 	applyFlagConfig(gc.Viper, gc.RootConfig.ConfigCenter.ConfigCenter)
 	// hook function
-	gc.beforeInjectCall(gc.conf, gc.dao)
+	gc.beforeInjectCall(gc.Config, gc.Dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
 	if gc.RootConfig.Env != "" {
 		defaultEnvConfigName := pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
@@ -257,7 +237,7 @@ func (gc *globalConfig) loadConfig() {
 	}
 }
 
-func (gc *globalConfig) beforeInjectCall(conf Config, dao Dao) {
+func (gc *globalConfig[C, D]) beforeInjectCall(conf Config, dao Dao) {
 	conf.BeforeInject()
 	if c, ok := conf.(beforeInjectWithRoot); ok {
 		c.BeforeInjectWithRoot(&gc.RootConfig)
@@ -270,21 +250,18 @@ func (gc *globalConfig) beforeInjectCall(conf Config, dao Dao) {
 	}
 }
 
-func (gc *globalConfig) DeferFunc(deferf ...func()) {
+func (gc *globalConfig[C, D]) Defer(deferf ...func()) {
 	gc.mu.Lock()
 	defer gc.mu.Unlock()
 	gc.defers = append(gc.defers, deferf...)
 }
 
-func RegisterDeferFunc(deferf ...func()) {
-	gConfig.mu.Lock()
-	defer gConfig.mu.Unlock()
-	gConfig.defers = append(gConfig.defers, deferf...)
-}
-
 func closeDao(dao Dao) error {
 	var errs multierr.MultiError
-	daoValue := reflect.ValueOf(dao).Elem()
+	daoValue := reflect.ValueOf(dao)
+	if daoValue.Kind() != reflect.Pointer {
+		daoValue = daoValue.Elem()
+	}
 	for i := range daoValue.NumField() {
 		fieldV := daoValue.Field(i)
 		if fieldV.Type().Kind() == reflect.Struct {

@@ -32,6 +32,7 @@ DryRun = false
 FullSaveAssociations = false
 IgnoreRelationshipsWhenMigrating = false
 PrepareStmt = false
+PropagateUnscoped = false
 QueryFields = false
 SkipDefaultTransaction = false
 TranslateError = false
@@ -72,21 +73,19 @@ StartServer = false
 DSN = ''
 
 [Log]
+CallerKey = ''
+ConsoleSeparator = ''
 Development = false
 DisableCaller = false
 DisableStacktrace = false
 EncodeLevelType = ''
 ErrorOutputPaths = []
-Level = 'info'
-Name = ''
-
-[Log.EncoderConfig]
-CallerKey = ''
-ConsoleSeparator = ''
 FunctionKey = ''
+Level = 'info'
 LevelKey = ''
 LineEnding = ''
 MessageKey = ''
+Name = ''
 NameKey = ''
 SkipLineEnding = false
 StacktraceKey = ''

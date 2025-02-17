@@ -8,12 +8,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/hopeio/initialize"
-	"github.com/hopeio/initialize/_example/confdao"
-	"github.com/hopeio/initialize/conf_center/nacos"
+	"github.com/hopeio/initialize/_example/global"
 )
 
 func main() {
-	defer initialize.Start(confdao.Conf, confdao.Dao, nacos.ConfigCenter)()
-	fmt.Println(confdao.Conf)
+	defer global.Global.Cleanup()
+	global.Global.Defer(func() {
+		fmt.Println("defer")
+	})
+	fmt.Println(global.Global.Config)
+	fmt.Println(global.Global.RootConfig.Env)
 }

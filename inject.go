@@ -17,8 +17,9 @@ import (
 	"strings"
 )
 
-func (gc *globalConfig) UnmarshalAndSet(data []byte) {
-	gc.mu.Lock()
+func (gc *globalConfig[C, D]) UnmarshalAndSet(data []byte) {
+	gc.mu.TryLock()
+	defer gc.mu.Unlock()
 	err := gc.Viper.MergeConfig(bytes.NewReader(data))
 	if err != nil {
 		if gc.editTimes == 0 {
@@ -29,12 +30,11 @@ func (gc *globalConfig) UnmarshalAndSet(data []byte) {
 		}
 	}
 
-	gc.inject(gc.conf, gc.dao)
+	gc.inject(gc.Config, gc.Dao)
 	gc.editTimes++
-	gc.mu.Unlock()
 }
 
-func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
+func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 	nameValueMap := make(map[string]reflect.Value)
 	var structFields []reflect.StructField
 	var confValue reflect.Value
@@ -137,7 +137,7 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 					// TODO: 加强校验,必须不为nil
 					daoConfig := daoField.Config()
 					if daoConfig == nil {
-						log.Fatalf("dao %s Config() return nil", structField.Name)
+						log.Fatalf("Dao %s Config() return nil", structField.Name)
 					}
 
 					name := structField.Name
@@ -175,7 +175,7 @@ func (gc *globalConfig) newStruct(conf Config, dao Dao) any {
 	return newStruct.Interface()
 }
 
-func (gc *globalConfig) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) {
+func (gc *globalConfig[C, D]) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) {
 	typ := value.Type()
 	for i := range value.NumField() {
 		structField := typ.Field(i)
@@ -191,7 +191,7 @@ func (gc *globalConfig) setNewStruct(value reflect.Value, typValueMap map[string
 }
 
 // 注入配置及生成DAO
-func (gc *globalConfig) inject(conf Config, dao Dao) {
+func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 	tmpConfig := gc.newStruct(conf, dao)
 	err := gc.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
 	if err != nil {
@@ -218,7 +218,7 @@ func (gc *globalConfig) inject(conf Config, dao Dao) {
 	//log.Debugf("config:  %+v", tmpConfig)
 }
 
-func (gc *globalConfig) afterInjectConfigCall(tmpConfig any) {
+func (gc *globalConfig[C, D]) afterInjectConfigCall(tmpConfig any) {
 	v := reflect.ValueOf(tmpConfig).Elem()
 	if !v.IsValid() {
 		return
@@ -237,7 +237,7 @@ func (gc *globalConfig) afterInjectConfigCall(tmpConfig any) {
 	}
 }
 
-func (gc *globalConfig) injectDao(dao Dao) {
+func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 	v := reflect.ValueOf(dao).Elem()
 	if !v.IsValid() {
 		return
@@ -255,7 +255,7 @@ func (gc *globalConfig) injectDao(dao Dao) {
 				continue
 			}
 			confName := strings.ToUpper(structFiled.Name)
-			if slices.Contains(gConfig.RootConfig.NoInject, confName) {
+			if slices.Contains(gc.RootConfig.NoInject, confName) {
 				continue
 			}
 
@@ -275,11 +275,20 @@ func (gc *globalConfig) injectDao(dao Dao) {
 }
 
 // 当初始化完成后,仍然有需要注入的config和dao
-func (gc *globalConfig) Inject(conf Config, dao Dao) error {
+func (gc *globalConfig[C, D]) Inject(conf Config, dao Dao) error {
 	if !gc.initialized {
 		return errors.New("not initialize, please call initialize.initHandler or initialize.Start")
 	}
-	gc.setConfDao(conf, dao)
+	gc.injectConfs = append(gc.injectConfs, conf)
+	gc.injectDaos = append(gc.injectDaos, dao)
+
+	if dao != nil {
+		gc.defers = append(gc.defers, func() {
+			if err := closeDao(dao); err != nil {
+				log.Errorf("close Dao error: %v", err)
+			}
+		})
+	}
 	gc.beforeInjectCall(conf, dao)
 	gc.inject(conf, dao)
 	return nil

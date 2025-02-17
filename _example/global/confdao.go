@@ -4,11 +4,13 @@
  * @Created by jyb
  */
 
-package confdao
+package global
 
 import (
 	"database/sql"
 	"fmt"
+	"github.com/hopeio/initialize"
+	"github.com/hopeio/initialize/conf_center/nacos"
 	"github.com/hopeio/initialize/conf_dao/gormdb/sqlite"
 	timei "github.com/hopeio/utils/time"
 	"runtime"
@@ -16,11 +18,11 @@ import (
 )
 
 var (
-	Conf      = &config{}
-	Dao  *dao = &dao{}
+	Global = initialize.NewGlobal[*config, *dao](initialize.WithConfigCenter(nacos.ConfigCenter))
 )
 
 type config struct {
+	initialize.EmbeddedPresets
 	//自定义的配置
 	Customize serverConfig
 }
@@ -47,6 +49,7 @@ func (c *config) AfterInject() {
 
 // dao dao.
 type dao struct {
+	initialize.EmbeddedPresets
 	// GORMDB 数据库连接
 	GORMDB sqlite.DB
 	StdDB  *sql.DB
