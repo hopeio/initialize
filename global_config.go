@@ -46,29 +46,26 @@ type globalConfig[C Config, D Dao] struct {
 	injectDaos  []Dao
 }
 
-func newGlobal[C Config, D Dao](options ...Option) *globalConfig[C, D] {
+func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 	gc := &globalConfig[C, D]{
 		RootConfig: rootconf.RootConfig{
-			ConfPath:  "",
 			EnvConfig: rootconf.EnvConfig{Debug: true},
 		},
-
 		Viper: viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry)),
-		mu:    sync.RWMutex{},
 	}
 	return gc
 }
-func NewGlobalWith[C Config, D Dao](conf C, dao D, options ...Option) *globalConfig[C, D] {
-	gc := newGlobal[C, D](options...)
+func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...conf_center.ConfigCenter) *globalConfig[C, D] {
+	gc := newGlobal[C, D]()
 	gc.Config = conf
 	gc.Dao = dao
-	gc.init(options...)
+	gc.init(configCenter...)
 	return gc
 }
 
 // var Global = initialize.NewGlobal[C,D]()
-func NewGlobal[C Config, D Dao](options ...Option) *globalConfig[C, D] {
-	gc := newGlobal[C, D](options...)
+func NewGlobal[C Config, D Dao](configCenter ...conf_center.ConfigCenter) *globalConfig[C, D] {
+	gc := newGlobal[C, D]()
 	v := reflect.ValueOf(&gc.Config).Elem()
 	if v.Kind() == reflect.Struct {
 		log.Fatalf("generic type should be a pointer type")
@@ -79,23 +76,23 @@ func NewGlobal[C Config, D Dao](options ...Option) *globalConfig[C, D] {
 		log.Fatalf("generic type should be a pointer type")
 	}
 	v.Set(reflect.New(reflect.TypeOf(gc.Dao).Elem()))
-	gc.init(options...)
+	gc.init(configCenter...)
 	return gc
 }
 
-func Start[C Config, D Dao](conf C, dao D, options ...Option) func() {
-	gc := NewGlobalWith[C, D](conf, dao, options...)
+func Start[C Config, D Dao](conf C, dao D, configCenter ...conf_center.ConfigCenter) func() {
+	gc := NewGlobalWith[C, D](conf, dao, configCenter...)
 	return gc.Cleanup
 }
 
-func (gc *globalConfig[C, D]) init(options ...Option) {
+func (gc *globalConfig[C, D]) init(configCenter ...conf_center.ConfigCenter) {
 	applyFlagConfig(gc.Viper, &gc.RootConfig)
 	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
 	// 注册配置中心,默认注册本地文件
 	conf_center.RegisterConfigCenter(local.ConfigCenter)
-	for _, option := range options {
-		option()
+	for _, cc := range configCenter {
+		conf_center.RegisterConfigCenter(cc)
 	}
 
 	gc.defers = append(gc.defers, func() {
