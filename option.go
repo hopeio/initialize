@@ -2,10 +2,10 @@ package initialize
 
 import "github.com/hopeio/initialize/conf_center"
 
-type Option func(*globalConfig)
+type Option func()
 
 func WithConfigCenter(configCenter ...conf_center.ConfigCenter) Option {
-	return func(*globalConfig) {
+	return func() {
 		for _, cc := range configCenter {
 			conf_center.RegisterConfigCenter(cc)
 		}

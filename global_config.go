@@ -93,7 +93,7 @@ func initHandler(conf Config, dao Dao, options ...Option) {
 	// 注册配置中心,默认注册本地文件
 	conf_center.RegisterConfigCenter(local.ConfigCenter)
 	for _, option := range options {
-		option(gConfig)
+		option()
 	}
 
 	gConfig.setConfDao(conf, dao)
