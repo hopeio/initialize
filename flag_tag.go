@@ -135,3 +135,10 @@ func parseFlag(commandLine *pflag.FlagSet) {
 		log.Fatal(err)
 	}
 }
+
+func InjectByFlag(args []string, conf any) error {
+	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
+	commandLine.ParseErrorsWhitelist.UnknownFlags = true
+	injectFlagConfig(commandLine, nil, reflect.ValueOf(conf))
+	return commandLine.Parse(args[1:])
+}
