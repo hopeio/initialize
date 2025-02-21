@@ -28,7 +28,11 @@ const (
 
 func (gc *globalConfig[C, D]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
-		log.Warn("lack of env configuration, try single config file mode")
+		if gc.RootConfig.ConfPath == "" {
+			log.Warn("not found config, use env and flag")
+		} else {
+			log.Warn("lack of env configuration, try single config file mode")
+		}
 		return
 	}
 	format := gc.RootConfig.ConfigCenter.Format
@@ -71,7 +75,11 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 
 	envConfig, ok := gc.Viper.Get(gc.RootConfig.Env).(map[string]any)
 	if !ok {
-		log.Warn("lack of environment configuration, try single config file")
+		if gc.RootConfig.ConfPath == "" {
+			log.Warn("not found config, use env and flag")
+		} else {
+			log.Warn("lack of env configuration, try single config file mode")
+		}
 		return
 	}
 	err := mtos.Unmarshal(&gc.RootConfig.EnvConfig, envConfig)

@@ -73,10 +73,10 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 		kind := fieldValue.Kind()
 		if kind == reflect.Pointer || kind == reflect.Interface {
 			fieldValue = reflecti.DerefValue(fieldValue)
-			if fieldValue.Kind() == reflect.Pointer && fieldValue.IsNil() {
+			kind = fieldValue.Kind()
+			if !fieldValue.IsValid() {
 				continue
 			}
-			kind = fieldValue.Kind()
 		}
 		if flagTag != "" {
 			var flagTagSettings flagTagSettings
@@ -112,8 +112,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 func applyFlagConfig(viper *viper.Viper, confs ...any) {
 	commandLine := newCommandLine()
 	for _, conf := range confs {
-		fcValue := reflect.ValueOf(conf).Elem()
-		injectFlagConfig(commandLine, viper, fcValue)
+		injectFlagConfig(commandLine, viper, reflect.ValueOf(conf))
 	}
 	if viper != nil {
 		err := viper.BindPFlags(commandLine)

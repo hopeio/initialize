@@ -85,6 +85,10 @@ func Start[C Config, D Dao](conf C, dao D, configCenter ...conf_center.ConfigCen
 	return gc.Cleanup
 }
 
+func NewGlobal2[C Config](configCenter ...conf_center.ConfigCenter) *globalConfig[C, *EmbeddedPresets] {
+	return NewGlobal[C, *EmbeddedPresets](configCenter...)
+}
+
 func (gc *globalConfig[C, D]) init(configCenter ...conf_center.ConfigCenter) {
 	applyFlagConfig(gc.Viper, &gc.RootConfig)
 	gc.RootConfig.AfterInject()
@@ -152,9 +156,9 @@ func (gc *globalConfig[C, D]) loadConfig() {
 				break
 			}
 		}
-		if format == "" {
-			log.Fatal("not found config")
-		}
+		/*		if format == "" {
+				log.Warn("not found config, use env and flag")
+			}*/
 	}
 	if gc.RootConfig.ConfPath != "" {
 		gc.RootConfig.ConfPath, err = filepath.Abs(gc.RootConfig.ConfPath)
@@ -184,7 +188,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		}
 	}
 
-	gc.setBasicConfig()
+	gc.setRootConfig()
 	gc.setEnvConfig()
 	for i := range gc.RootConfig.NoInject {
 		gc.RootConfig.NoInject[i] = strings.ToUpper(gc.RootConfig.NoInject[i])
@@ -197,7 +201,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		}
 		if gc.RootConfig.ConfigCenter.Type != "" {
 			gc.RootConfig.ConfigCenter.ConfigCenter = conf_center.GetConfigCenter(gc.RootConfig.ConfigCenter.Type)
-		} else {
+		} else if gc.RootConfig.ConfPath != "" {
 			gc.RootConfig.ConfigCenter.ConfigCenter = &local.Local{ // 单配置文件
 				Conf: local.Config{
 					ConfigPath: gc.RootConfig.ConfPath,
@@ -210,27 +214,40 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	gc.beforeInjectCall(gc.Config, gc.Dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
 	if gc.RootConfig.Env != "" {
-		defaultEnvConfigName := pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
-		log.Debugf("load config from: '%s' if exist", defaultEnvConfigName)
-		if fs.Exist(defaultEnvConfigName) {
-			defaultEnvConfig, err := os.Open(defaultEnvConfigName)
-			if err != nil {
-				log.Fatal(err)
+		var defaultEnvConfigName string
+		if gc.RootConfig.ConfPath != "" {
+			defaultEnvConfigName = pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+			log.Debugf("load config from: '%s' if exist", defaultEnvConfigName)
+		} else if gc.RootConfig.ConfigCenter.Format != "" {
+			defaultEnvConfigName = defaultConfigName + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+		} else {
+			for _, ext := range viper.SupportedExts {
+				filePath := filepath.Join(".", defaultConfigName+"."+gc.RootConfig.Env+"."+ext)
+				if fs.Exist(filePath) {
+					log.Debugf("found file: '%s'", filePath)
+					gc.RootConfig.ConfPath = filePath
+					gc.RootConfig.ConfigCenter.Format = ext
+					break
+				}
 			}
-			err = gc.Viper.MergeConfig(defaultEnvConfig)
-			if err != nil {
-				log.Fatal(err)
-			}
-			err = defaultEnvConfig.Close()
+		}
+
+		if defaultEnvConfigName != "" && fs.Exist(defaultEnvConfigName) {
+			gc.Viper.SetConfigFile(defaultEnvConfigName)
+			err = gc.Viper.MergeInConfig()
 			if err != nil {
 				log.Fatal(err)
 			}
 		}
 	}
 	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
-	err = cfgcenter.Handle(gc.UnmarshalAndSet)
-	if err != nil {
-		log.Fatalf("config error: %v", err)
+	if cfgcenter != nil {
+		err = cfgcenter.Handle(gc.UnmarshalAndSet)
+		if err != nil {
+			log.Fatalf("config error: %v", err)
+		}
+	} else {
+		gc.inject(gc.Config, gc.Dao)
 	}
 }
 

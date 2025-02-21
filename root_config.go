@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 )
 
-func (gc *globalConfig[C, D]) setBasicConfig() {
+func (gc *globalConfig[C, D]) setRootConfig() {
 	format := gc.RootConfig.ConfigCenter.Format
 	confPath := gc.RootConfig.ConfPath
 

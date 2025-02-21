@@ -11,6 +11,7 @@ import (
 	"errors"
 	"github.com/hopeio/initialize/conf_dao"
 	"github.com/hopeio/utils/log"
+	reflecti "github.com/hopeio/utils/reflect"
 	stringsi "github.com/hopeio/utils/strings"
 	"reflect"
 	"slices"
@@ -219,12 +220,19 @@ func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 }
 
 func (gc *globalConfig[C, D]) afterInjectConfigCall(tmpConfig any) {
-	v := reflect.ValueOf(tmpConfig).Elem()
-	if !v.IsValid() {
+	v := reflecti.DerefValue(reflect.ValueOf(tmpConfig))
+	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return
 	}
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
+		kind := field.Kind()
+		if !v.Type().Field(i).IsExported() {
+			continue
+		}
+		if kind == reflect.Ptr || kind == reflect.Struct || kind == reflect.Interface {
+			gc.afterInjectConfigCall(field.Interface())
+		}
 		if field.CanInterface() {
 			inter := field.Interface()
 			if subconf, ok := inter.(afterInject); ok {
