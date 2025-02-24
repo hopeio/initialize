@@ -10,6 +10,7 @@ import (
 	"flag"
 	"github.com/hopeio/utils/reflect/mtos"
 	"github.com/spf13/viper"
+	"strings"
 
 	"github.com/hopeio/utils/log"
 	reflecti "github.com/hopeio/utils/reflect"
@@ -89,7 +90,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 						log.Fatal(err)
 					}
 				}
-				if value, ok := os.LookupEnv(flagTagSettings.Env); ok {
+				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
 					err := mtos.SetValueByString(fcValue.Field(i), value)
 					if err != nil {
 						log.Fatal(err)
