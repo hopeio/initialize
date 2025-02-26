@@ -91,8 +91,8 @@ func main() {
 如果还有Dao要初始化
 ```go
 import(
-    "github.com/hopeio/initialize/conf_dao/gormdb/sqlite"
-    initredis "github.com/hopeio/initialize/conf_dao/redis"
+    "github.com/hopeio/initialize/dao/gormdb/sqlite"
+    initredis "github.com/hopeio/initialize/dao/redis"
 )
 // dao dao.
 type dao struct {

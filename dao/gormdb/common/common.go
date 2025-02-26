@@ -8,10 +8,10 @@ package common
 
 import (
 	"errors"
-	pkdb "github.com/hopeio/initialize/conf_dao/gormdb"
-	"github.com/hopeio/initialize/conf_dao/gormdb/mysql"
-	"github.com/hopeio/initialize/conf_dao/gormdb/postgres"
-	"github.com/hopeio/initialize/conf_dao/gormdb/sqlite"
+	pkdb "github.com/hopeio/initialize/dao/gormdb"
+	"github.com/hopeio/initialize/dao/gormdb/mysql"
+	"github.com/hopeio/initialize/dao/gormdb/postgres"
+	"github.com/hopeio/initialize/dao/gormdb/sqlite"
 	"github.com/hopeio/initialize/rootconf"
 	dbi "github.com/hopeio/utils/dao/database"
 	"gorm.io/gorm"

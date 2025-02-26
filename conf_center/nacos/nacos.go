@@ -7,7 +7,7 @@
 package nacos
 
 import (
-	"github.com/hopeio/initialize/conf_dao/nacos"
+	"github.com/hopeio/initialize/dao/nacos"
 	"github.com/hopeio/utils/log"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/cache"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"

@@ -7,7 +7,7 @@
 package initialize
 
 import (
-	"github.com/hopeio/initialize/conf_dao"
+	"github.com/hopeio/initialize/dao"
 	"github.com/hopeio/utils/log"
 	stringsi "github.com/hopeio/utils/strings"
 	"os"
@@ -56,7 +56,7 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 	typ := value.Type()
 	for i := range value.NumField() {
 		field := value.Field(i)
-		if field.Addr().Type().Implements(conf_dao.DaoFieldType) {
+		if field.Addr().Type().Implements(dao.DaoFieldType) {
 			newconfMap := make(map[string]any)
 			fieldType := typ.Field(i)
 			name := fieldType.Name
@@ -66,7 +66,7 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 			}
 
 			confMap[name] = newconfMap
-			struct2Map(field.Addr().Interface().(conf_dao.DaoField).Config(), newconfMap)
+			struct2Map(field.Addr().Interface().(dao.DaoField).Config(), newconfMap)
 		}
 	}
 }

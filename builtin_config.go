@@ -6,7 +6,7 @@
 
 package initialize
 
-import "github.com/hopeio/initialize/conf_dao/log"
+import "github.com/hopeio/initialize/dao/log"
 
 type builtinConfig struct {
 	Log log.Config

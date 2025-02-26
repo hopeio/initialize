@@ -9,12 +9,10 @@ package flightsql
 import (
 	"database/sql"
 	_ "github.com/apache/arrow-adbc/go/adbc/sqldriver/flightsql"
-	"github.com/tidwall/buntdb"
 )
 
 type Config struct {
 	DNS string
-	buntdb.Config
 }
 
 func (c *Config) BeforeInject() {

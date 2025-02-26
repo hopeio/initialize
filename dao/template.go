@@ -4,7 +4,7 @@
  * @Created by jyb
  */
 
-package conf_dao
+package dao
 
 type CloseFunc func() error
 
