@@ -9,7 +9,7 @@ package initialize
 import (
 	"github.com/hopeio/initialize/conf_center"
 	"github.com/hopeio/initialize/conf_center/local"
-	"github.com/hopeio/initialize/dao"
+	daopkg "github.com/hopeio/initialize/dao"
 	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/errors/multierr"
 	"github.com/hopeio/utils/log"
@@ -285,7 +285,7 @@ func closeDao(dao Dao) error {
 			continue
 		}
 		inter := fieldV.Interface()
-		if daofield, ok := inter.(dao.DaoField); ok {
+		if daofield, ok := inter.(daopkg.DaoField); ok {
 			if err := daofield.Close(); err != nil {
 				errs.Append(err)
 			}

@@ -9,7 +9,7 @@ package initialize
 import (
 	"bytes"
 	"errors"
-	"github.com/hopeio/initialize/dao"
+	daopkg "github.com/hopeio/initialize/dao"
 	"github.com/hopeio/utils/log"
 	reflecti "github.com/hopeio/utils/reflect"
 	stringsi "github.com/hopeio/utils/strings"
@@ -131,7 +131,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 			}
 			if field.CanInterface() {
 				inter := field.Interface()
-				if daoField, ok := inter.(dao.DaoField); ok {
+				if daoField, ok := inter.(daopkg.DaoField); ok {
 
 					structField := daoType.Field(i)
 
@@ -268,7 +268,7 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 			}
 
 			// 根据DaoField接口实现获取配置和要注入的类型
-			if daofield, ok := inter.(dao.DaoField); ok {
+			if daofield, ok := inter.(daopkg.DaoField); ok {
 				err := daofield.Init()
 				if err != nil {
 					log.Fatal(err)
