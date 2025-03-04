@@ -13,7 +13,7 @@ NoInject = []
 
 [dev.ConfigCenter.local]
 ConfigPath = "./_example/local.toml"
-ReloadType = "fsnotify"
+AutoReloadInterval = "10s"
 
 [test]
 Debug = false

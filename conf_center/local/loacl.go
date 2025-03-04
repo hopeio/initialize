@@ -16,9 +16,6 @@ import (
 var ConfigCenter = &Local{}
 
 type Local struct {
-	Conf Config
-}
-type Config struct {
 	loader.Loader
 	ConfigPath string
 }
@@ -28,20 +25,20 @@ func (cc *Local) Type() string {
 }
 
 func (cc *Local) Config() any {
-	return &cc.Conf
+	return cc
 }
 
 // 本地配置
 func (cc *Local) Handle(handle func([]byte)) error {
-	if cc.Conf.ConfigPath == "" {
+	if cc.ConfigPath == "" {
 		return errors.New("empty local config path")
 	}
-	_, err := os.Stat(cc.Conf.ConfigPath)
+	_, err := os.Stat(cc.ConfigPath)
 	if os.IsNotExist(err) {
 		return fmt.Errorf("找不到配置: %v", err)
 	}
 
-	err = cc.Conf.Loader.Handle(handle, cc.Conf.ConfigPath)
+	err = cc.Loader.Handle(handle, cc.ConfigPath)
 	if err != nil {
 		return fmt.Errorf("配置错误: %v", err)
 	}

@@ -203,9 +203,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 			gc.RootConfig.ConfigCenter.ConfigCenter = conf_center.GetConfigCenter(gc.RootConfig.ConfigCenter.Type)
 		} else if gc.RootConfig.ConfPath != "" {
 			gc.RootConfig.ConfigCenter.ConfigCenter = &local.Local{ // 单配置文件
-				Conf: local.Config{
-					ConfigPath: gc.RootConfig.ConfPath,
-				},
+				ConfigPath: gc.RootConfig.ConfPath,
 			}
 		}
 	}
