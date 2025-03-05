@@ -7,9 +7,10 @@
 package apollo
 
 import (
-	"encoding/json"
 	"github.com/apolloconfig/agollo/v4"
 	"github.com/apolloconfig/agollo/v4/env/config"
+	"io"
+	"strings"
 )
 
 var ConfigCenter = &Apollo{}
@@ -28,7 +29,7 @@ func (cc *Apollo) Config() any {
 }
 
 // TODD: 更改监听
-func (e *Apollo) Handle(handle func([]byte)) error {
+func (e *Apollo) Handle(handle func(io.Reader)) error {
 	var err error
 	if e.Client == nil {
 		e.Client, err = agollo.StartWithConfig(func() (*config.AppConfig, error) {
@@ -40,11 +41,7 @@ func (e *Apollo) Handle(handle func([]byte)) error {
 	}
 
 	config := e.Client.GetConfig(e.Conf.NamespaceName)
-	data, err := json.Marshal(config.GetContent())
-	if err != nil {
-		return err
-	}
-	handle(data)
+	handle(strings.NewReader(config.GetContent()))
 	return nil
 }
 

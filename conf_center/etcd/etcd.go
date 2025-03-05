@@ -7,8 +7,10 @@
 package etcd
 
 import (
+	"bytes"
 	"context"
 	clientv3 "go.etcd.io/etcd/client/v3"
+	"io"
 )
 
 var ConfigCenter = &Etcd{}
@@ -32,7 +34,7 @@ func (cc *Etcd) Config() any {
 }
 
 // TODO: 监听更改
-func (e *Etcd) Handle(handle func([]byte)) error {
+func (e *Etcd) Handle(handle func(io.Reader)) error {
 	var err error
 	if e.Client == nil {
 		e.Client, err = clientv3.New(e.Conf.Config)
@@ -45,7 +47,7 @@ func (e *Etcd) Handle(handle func([]byte)) error {
 	if err != nil {
 		return err
 	}
-	handle(resp.Kvs[0].Value)
+	handle(bytes.NewReader(resp.Kvs[0].Value))
 	return nil
 }
 

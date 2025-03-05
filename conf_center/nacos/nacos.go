@@ -14,7 +14,9 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/common/file"
 	"github.com/nacos-group/nacos-sdk-go/v2/util"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"io"
 	"os"
+	"strings"
 )
 
 var ConfigCenter = &Nacos{}
@@ -37,7 +39,7 @@ func (cc *Nacos) Config() any {
 	return &cc.Conf
 }
 
-func (cc *Nacos) Handle(handle func([]byte)) error {
+func (cc *Nacos) Handle(handle func(io.Reader)) error {
 	if cc.Client == nil {
 		var err error
 		cc.Client, err = cc.Conf.Config.Build()
@@ -54,9 +56,9 @@ func (cc *Nacos) Handle(handle func([]byte)) error {
 	cacheDir := file.GetCurrentPath() + string(os.PathSeparator) + "cache/config"
 	cacheKey := util.GetConfigCacheKey(cc.Conf.DataId, cc.Conf.Group, cc.Conf.ClientConfig.NamespaceId)
 	cache.WriteConfigToFile(cacheKey, cacheDir, config)
-	handle([]byte(config))
+	handle(strings.NewReader(config))
 	cc.Conf.OnChange = func(namespace, group, dataId, data string) {
-		handle([]byte(data))
+		handle(strings.NewReader(data))
 	}
 
 	return cc.Client.ListenConfig(cc.Conf.ConfigParam)

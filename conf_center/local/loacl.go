@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hopeio/utils/os/fs/loader"
+	"io"
 	"os"
 )
 
@@ -29,7 +30,7 @@ func (cc *Local) Config() any {
 }
 
 // 本地配置
-func (cc *Local) Handle(handle func([]byte)) error {
+func (cc *Local) Handle(handle func(io.Reader)) error {
 	if cc.ConfigPath == "" {
 		return errors.New("empty local config path")
 	}

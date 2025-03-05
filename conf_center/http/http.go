@@ -9,6 +9,7 @@ package http
 import (
 	http_fs "github.com/hopeio/utils/net/http/fs"
 	http_fs_watch "github.com/hopeio/utils/net/http/fs/watch"
+	"io"
 	"net/http"
 	"time"
 )
@@ -27,32 +28,32 @@ func (cc *Http) Type() string {
 }
 
 // 本地配置
-func (cc *Http) HandleConfig(handle func([]byte)) error {
-
-	req, _ := http.NewRequest(http.MethodGet, cc.Url, nil)
-	if cc.AuthBasic != "" {
-		req.Header.Add("Authorization", cc.AuthBasic)
-	}
-	if cc.Headers != nil {
-		for k, v := range cc.Headers {
-			req.Header.Add(k, v)
-		}
-	}
+func (cc *Http) Handle(handle func(io.Reader)) error {
 
 	if cc.Interval == 0 {
-		file, err := http_fs.FetchFile(req)
+		file, err := http_fs.FetchFile(cc.Url, func(r *http.Request) {
+			if cc.AuthBasic != "" {
+				r.Header.Add("Authorization", cc.AuthBasic)
+			}
+			if cc.Headers != nil {
+				for k, v := range cc.Headers {
+					r.Header.Add(k, v)
+				}
+			}
+		})
 		if err != nil {
 			return err
 		}
-		handle(file.Binary)
-		return nil
+		handle(file.Body)
+		return file.Body.Close()
 	}
 
 	watch := http_fs_watch.New(time.Second * cc.Interval)
 
 	callback := func(hfile *http_fs.FileInfo) {
-		handle(hfile.Binary)
+		handle(hfile.Body)
+		hfile.Body.Close()
 	}
 
-	return watch.Add(req, callback)
+	return watch.Add(cc.Url, callback)
 }

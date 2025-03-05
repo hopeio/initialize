@@ -7,21 +7,21 @@
 package initialize
 
 import (
-	"bytes"
 	"errors"
 	daopkg "github.com/hopeio/initialize/dao"
 	"github.com/hopeio/utils/log"
 	reflecti "github.com/hopeio/utils/reflect"
 	stringsi "github.com/hopeio/utils/strings"
+	"io"
 	"reflect"
 	"slices"
 	"strings"
 )
 
-func (gc *globalConfig[C, D]) UnmarshalAndSet(data []byte) {
+func (gc *globalConfig[C, D]) UnmarshalAndSet(data io.Reader) {
 	gc.mu.TryLock()
 	defer gc.mu.Unlock()
-	err := gc.Viper.MergeConfig(bytes.NewReader(data))
+	err := gc.Viper.MergeConfig(data)
 	if err != nil {
 		if gc.editTimes == 0 {
 			log.Fatal(err)
