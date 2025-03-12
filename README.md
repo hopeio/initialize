@@ -30,13 +30,13 @@ debug = true
 NoInject = ["Apollo","Etcd", "Es"]
 ConfigTemplateDir = "." # 将会生成配置模板
 # 上方是一个个初始配置,如果不知道如何进行接下来的配置,可以先启动生成配置模板
+[dev.localConfig]
+Paths = ["local.toml"]
+ReloadInterval = "1s"
+
 [dev.ConfigCenter]
 Format = "toml"
-Type = "local"
-
-[dev.ConfigCenter.local]
-Path = "local.toml"
-ReloadInterval = "1s"
+Type = "nacos"
 
 [dev.ConfigCenter.http]
 Url = "http://localhost:6666/local.toml"
@@ -61,7 +61,7 @@ LogLevel = "debug"
 ```
 ```go
 import(
-  "github.com/hopeio/cherry"
+  "github.com/hopeio/initialize"
 )
 type config struct {
 	//自定义的配置
