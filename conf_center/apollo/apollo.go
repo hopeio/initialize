@@ -29,7 +29,7 @@ func (cc *Apollo) Config() any {
 }
 
 // TODD: 更改监听
-func (e *Apollo) Handle(handle func(io.Reader)) error {
+func (e *Apollo) Handle(handle func(io.Reader) error) error {
 	var err error
 	if e.Client == nil {
 		e.Client, err = agollo.StartWithConfig(func() (*config.AppConfig, error) {
@@ -41,8 +41,7 @@ func (e *Apollo) Handle(handle func(io.Reader)) error {
 	}
 
 	config := e.Client.GetConfig(e.Conf.NamespaceName)
-	handle(strings.NewReader(config.GetContent()))
-	return nil
+	return handle(strings.NewReader(config.GetContent()))
 }
 
 func (cc *Apollo) Close() error {

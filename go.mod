@@ -44,7 +44,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.16.0
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/grafana/loki-client-go v0.0.0-20240913122146-e119d400c3a5
-	github.com/hopeio/utils v0.10.2
+	github.com/hopeio/utils v0.10.7
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/linxGnu/grocksdb v1.9.1
 	github.com/marcboeker/go-duckdb v1.7.0

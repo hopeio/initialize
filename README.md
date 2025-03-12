@@ -27,21 +27,20 @@ Env = "dev" # 将会选择与Env名字相同的环境配置
 
 [dev] 
 debug = true
+NoInject = ["Apollo","Etcd", "Es"]
 ConfigTemplateDir = "." # 将会生成配置模板
 # 上方是一个个初始配置,如果不知道如何进行接下来的配置,可以先启动生成配置模板
 [dev.ConfigCenter]
+Format = "toml"
 Type = "local"
-Watch  = true
-NoInject = ["Apollo","Etcd", "Es"]
 
 [dev.ConfigCenter.local]
-Debug = true
-ConfigPath = "local.toml"
-ReloadType = "fsnotify"
+Path = "local.toml"
+ReloadInterval = "1s"
 
 [dev.ConfigCenter.http]
-Interval = 10000000000
 Url = "http://localhost:6666/local.toml"
+ReloadInterval = "1s"
 
 [dev.ConfigCenter.nacos]
 DataId = "pro"

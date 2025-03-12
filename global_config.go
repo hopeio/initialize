@@ -8,7 +8,6 @@ package initialize
 
 import (
 	"github.com/hopeio/initialize/conf_center"
-	"github.com/hopeio/initialize/conf_center/local"
 	daopkg "github.com/hopeio/initialize/dao"
 	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/errors/multierr"
@@ -16,6 +15,7 @@ import (
 	"github.com/hopeio/utils/os/fs"
 	pathi "github.com/hopeio/utils/os/fs/path"
 	"github.com/spf13/viper"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -94,7 +94,6 @@ func (gc *globalConfig[C, D]) init(configCenter ...conf_center.ConfigCenter) {
 	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
 	// 注册配置中心,默认注册本地文件
-	conf_center.RegisterConfigCenter(local.ConfigCenter)
 	for _, cc := range configCenter {
 		conf_center.RegisterConfigCenter(cc)
 	}
@@ -201,46 +200,88 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		}
 		if gc.RootConfig.ConfigCenter.Type != "" {
 			gc.RootConfig.ConfigCenter.ConfigCenter = conf_center.GetConfigCenter(gc.RootConfig.ConfigCenter.Type)
-		} else if gc.RootConfig.ConfPath != "" {
-			gc.RootConfig.ConfigCenter.ConfigCenter = &local.Local{ // 单配置文件
-				ConfigPath: gc.RootConfig.ConfPath,
-			}
 		}
 	}
-	applyFlagConfig(gc.Viper, gc.RootConfig.ConfigCenter.ConfigCenter)
+	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
+	if cfgcenter != nil {
+		applyFlagConfig(gc.Viper, cfgcenter)
+	}
 	// hook function
 	gc.beforeInjectCall(gc.Config, gc.Dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
+	localConfig := newLocal(gc.RootConfig.LocalConfig.ReloadInterval, gc.RootConfig.LocalConfig.Paths...)
 	if gc.RootConfig.Env != "" {
-		var defaultEnvConfigName string
+		var defaultEnvConfigPath string
 		if gc.RootConfig.ConfPath != "" {
-			defaultEnvConfigName = pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
-			log.Debugf("load config from: '%s' if exist", defaultEnvConfigName)
+			defaultEnvConfigPath = pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
 		} else if gc.RootConfig.ConfigCenter.Format != "" {
-			defaultEnvConfigName = defaultConfigName + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+			gc.Viper.SetConfigType(format)
+			defaultEnvConfigPath = defaultConfigName + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
 		} else {
 			for _, ext := range viper.SupportedExts {
 				filePath := filepath.Join(".", defaultConfigName+"."+gc.RootConfig.Env+"."+ext)
 				if fs.Exist(filePath) {
+					defaultEnvConfigPath = filePath
 					log.Debugf("found file: '%s'", filePath)
-					gc.RootConfig.ConfPath = filePath
 					gc.RootConfig.ConfigCenter.Format = ext
+					gc.Viper.SetConfigType(ext)
 					break
 				}
 			}
 		}
 
-		if defaultEnvConfigName != "" && fs.Exist(defaultEnvConfigName) {
-			gc.Viper.SetConfigFile(defaultEnvConfigName)
-			err = gc.Viper.MergeInConfig()
-			if err != nil {
-				log.Fatal(err)
-			}
+		if defaultEnvConfigPath != "" && fs.Exist(defaultEnvConfigPath) && !slices.Contains(localConfig.Paths, defaultEnvConfigPath) {
+			localConfig.Paths = append([]string{defaultEnvConfigPath}, localConfig.Paths...)
 		}
 	}
-	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
+	if len(localConfig.Paths) > 0 {
+		err = localConfig.Handle(func(data io.Reader) error {
+			gc.mu.TryLock()
+			defer gc.mu.Unlock()
+			err := gc.Viper.MergeConfig(data)
+			if err != nil {
+				if gc.editTimes == 0 {
+					log.Fatal(err)
+				} else {
+					log.Error(err)
+					return err
+				}
+			}
+			return nil
+		}, func() error {
+			gc.mu.TryLock()
+			defer gc.mu.Unlock()
+			gc.inject(gc.Config, gc.Dao)
+			gc.editTimes++
+			return nil
+		})
+		if err != nil {
+			return
+		}
+		gc.defers = append(gc.defers, func() {
+			if err := localConfig.Close(); err != nil {
+				log.Errorf("close local config error: %v", err)
+			}
+		})
+	}
+
 	if cfgcenter != nil {
-		err = cfgcenter.Handle(gc.UnmarshalAndSet)
+		err = cfgcenter.Handle(func(data io.Reader) error {
+			gc.mu.TryLock()
+			defer gc.mu.Unlock()
+			err := gc.Viper.MergeConfig(data)
+			if err != nil {
+				if gc.editTimes == 0 {
+					log.Fatal(err)
+				} else {
+					log.Error(err)
+					return err
+				}
+			}
+			gc.inject(gc.Config, gc.Dao)
+			gc.editTimes++
+			return nil
+		})
 		if err != nil {
 			log.Fatalf("config error: %v", err)
 		}

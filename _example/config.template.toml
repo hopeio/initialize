@@ -10,12 +10,7 @@ Proxy = ''
 
 [dev.ConfigCenter]
 Format = 'toml'
-Type = 'local'
-
-[dev.ConfigCenter.local]
-AutoReloadType = 'none'
-ConfigPath = './_example/local.toml'
-TimerInterval = 0
+Type = ''
 
 [dev.ConfigCenter.nacos]
 AppName = ''
@@ -85,3 +80,7 @@ CertFile = ''
 Enable = false
 KeyFile = ''
 ServerNameOverride = ''
+
+[dev.LocalConfig]
+Paths = ['D:\code\hopeio\hoper\thirdparty\initialize\_example\local.toml']
+ReloadInterval = 10000000000

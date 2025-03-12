@@ -12,28 +12,10 @@ import (
 	"github.com/hopeio/utils/log"
 	reflecti "github.com/hopeio/utils/reflect"
 	stringsi "github.com/hopeio/utils/strings"
-	"io"
 	"reflect"
 	"slices"
 	"strings"
 )
-
-func (gc *globalConfig[C, D]) UnmarshalAndSet(data io.Reader) {
-	gc.mu.TryLock()
-	defer gc.mu.Unlock()
-	err := gc.Viper.MergeConfig(data)
-	if err != nil {
-		if gc.editTimes == 0 {
-			log.Fatal(err)
-		} else {
-			log.Error(err)
-			return
-		}
-	}
-
-	gc.inject(gc.Config, gc.Dao)
-	gc.editTimes++
-}
 
 func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 	nameValueMap := make(map[string]reflect.Value)

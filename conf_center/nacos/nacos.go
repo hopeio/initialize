@@ -39,7 +39,7 @@ func (cc *Nacos) Config() any {
 	return &cc.Conf
 }
 
-func (cc *Nacos) Handle(handle func(io.Reader)) error {
+func (cc *Nacos) Handle(handle func(io.Reader) error) error {
 	if cc.Client == nil {
 		var err error
 		cc.Client, err = cc.Conf.Config.Build()

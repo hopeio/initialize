@@ -34,7 +34,7 @@ func (cc *Etcd) Config() any {
 }
 
 // TODO: 监听更改
-func (e *Etcd) Handle(handle func(io.Reader)) error {
+func (e *Etcd) Handle(handle func(io.Reader) error) error {
 	var err error
 	if e.Client == nil {
 		e.Client, err = clientv3.New(e.Conf.Config)
@@ -47,8 +47,7 @@ func (e *Etcd) Handle(handle func(io.Reader)) error {
 	if err != nil {
 		return err
 	}
-	handle(bytes.NewReader(resp.Kvs[0].Value))
-	return nil
+	return handle(bytes.NewReader(resp.Kvs[0].Value))
 }
 
 func (cc *Etcd) Close() error {

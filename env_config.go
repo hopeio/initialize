@@ -87,6 +87,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		log.Fatal(err)
 	}
 	applyFlagConfig(nil, &gc.RootConfig.EnvConfig)
+	gc.RootConfig.EnvConfig.AfterInject()
 	if gc.RootConfig.EnvConfig.ConfigCenter.Format == "" {
 		log.Fatalf("lack of configCenter format, support format:%v", viper.SupportedExts)
 	}
