@@ -1,14 +1,19 @@
 # initialize
-基于反射自动注入的配置及dao注入初始化，并暴露一个全局变量，记录模块信息
+基于反射自动注入的`config及dao(data access object)`初始化，暴露一个全局变量，记录模块信息
 ![initialize](_assets/initialize.webp)
 
 ## example
 `go run _example/main.go -c _example/config.toml`
-## 一个应用的启动，应该如此简单
-### config（配置）
-支持nacos,local file,http请求作为配置中心,可扩展支持etcd,apollo,viper(获取配置代理，底层是其他配置中心)，支持viper支持的所有格式("json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "tfvars", "dotenv", "env", "ini")的配置文件，
-支持dev，test，prod环境本，启动命令区分
+## feature
+- 默认支持local config,支持本地多配置文件
+- 支持环境区分(dev，test，prod,可自定义)
+- 支持环境变量
+- 支持命令行flag
+- 支持监听文件变更
+- 支持viper支持的所有格式("json", "toml", "yaml", "yml", "properties", "props", "prop", "hcl", "tfvars", "dotenv", "env", "ini")
+- 支持远程配置中心,支持nacos,apollo,etcd,http请求作为配置中心,可自定义扩展
 
+## quick start
 ### 配置模板
 ```toml
 # dev | test | stage | prod |...
@@ -17,9 +22,9 @@ Env = "dev" # 将会选择与Env名字相同的环境配置
 ConfigTemplateDir = "." # 模板目录,将会生成配置模板
 ```
 仅需以上最小配置,点击启动,即可生成配置模板
-如果还是麻烦,试试直接用 `--format ${配置格式} -e ${环境} -p ${模板路径}`  启动吧
-## 启动配置
-仅需配置配置中心,后续配置均从配置中心拉取及自动更新
+如果还是麻烦,试试直接用 `${your app}.exe --format ${配置格式} -e ${环境} -p ${模板路径}`  启动吧
+### 启动配置
+启动配置作为根配置,不会监听更改,用于记录应用名称,区分环境,配置不同环境所需的本地配置及配置中心,后续配置均从本地配置及配置中心加载及自动更新
 ```toml
 Module = "hoper"
 # dev | test | stage | prod |...
@@ -87,7 +92,7 @@ func main() {
     defer global.Cleanup()
 }
 ```
-如果还有Dao要初始化
+### Dao注入
 ```go
 import(
     "github.com/hopeio/initialize/dao/gormdb/sqlite"
@@ -122,7 +127,7 @@ func main() {
 ```
 原生集成了redis,gormdb(mysql,postgressql,sqlite),kafka,pebbledb,apollo,badgerdb,etcd,elasticsearch,nsq,ristretto,viper等，并且非常简单的支持自定义扩展,不局限于Dao对象，任何对象都支持根据配置自动注入生成
 
-
+### 注入时使用root config
 ```go
 // initWithRootConfig
 import "github.com/hopeio/initialize/rootconf"
@@ -133,21 +138,10 @@ func (c *dao) BeforeInjectWithRoot(root *rootconf.RootConfig) {
 // AfterInjectConfigWithRoot(*rootconf.RootConfig)
 // AfterInjectWithRoot(*rootconf.RootConfig)
 ```
-# 基于环境的配置
-需要配置中心的配置
-## 生成模板
-配置中心模板最少配置
-```toml
-env = "dev"
 
-[dev]
-ConfigTemplateDir = "."
-```
 
-如果单纯想生成模板,可以不用基本配置,直接用`--format ${配置格式} -e ${环境} -p ${模板路径}` 启动
-
-# 单配置文件
+## 单配置文件
 如果你的项目不需要分环境,那么不要env这个配置,不要 -e flag,直接在启动目录放一个config.xxx文件即可
 或者可以手动指定`-c ${配置文件}`
-## 生成模板
+### 生成模板
 要为单配置文件生成模板`--format ${配置格式} -p ${模板路径}`
