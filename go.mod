@@ -7,7 +7,7 @@ require (
 	github.com/cockroachdb/pebble v1.1.0
 	github.com/dgraph-io/badger/v3 v3.2103.5
 	github.com/dgraph-io/ristretto v0.1.2-0.20240116140435-c67e07994f91
-	github.com/fsnotify/fsnotify v1.8.0 // indirect
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
@@ -16,9 +16,9 @@ require (
 	github.com/nsqio/go-nsq v1.1.0
 	github.com/olivere/elastic/v7 v7.0.32
 	github.com/prometheus/client_golang v1.21.0 // indirect
-	github.com/spf13/viper v1.20.0-alpha.6.0.20250217005313-66e3e2877d2a
+	github.com/spf13/viper v1.20.0
 	github.com/tidwall/pretty v1.2.1 // indirect
-	go.etcd.io/etcd/client/v3 v3.5.13
+	go.etcd.io/etcd/client/v3 v3.5.15
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
@@ -42,17 +42,18 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-elasticsearch/v8 v8.16.0
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/grafana/loki-client-go v0.0.0-20240913122146-e119d400c3a5
-	github.com/hopeio/utils v0.10.7
+	github.com/hopeio/utils v0.12.0
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/linxGnu/grocksdb v1.9.1
 	github.com/marcboeker/go-duckdb v1.7.0
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.5
 	github.com/nats-io/nats-server/v2 v2.10.18
-	github.com/nats-io/nats.go v1.36.0
+	github.com/nats-io/nats.go v1.37.0
 	github.com/spf13/pflag v1.0.6
+	github.com/spf13/viper/remote v1.20.0
 	github.com/tidwall/buntdb v1.3.2
 	gopkg.in/ini.v1 v1.67.0
 )
@@ -78,6 +79,7 @@ require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.62.712 // indirect
 	github.com/aliyun/alibabacloud-dkms-gcs-go-sdk v0.5.1 // indirect
 	github.com/aliyun/alibabacloud-dkms-transfer-go-sdk v0.1.9 // indirect
+	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/apache/arrow/go/v14 v14.0.2 // indirect
 	github.com/apache/arrow/go/v17 v17.0.0-20240503231747-7cd9c6fbd313 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
@@ -114,7 +116,6 @@ require (
 	github.com/go-playground/universal-translator v0.18.1 // indirect
 	github.com/go-playground/validator/v10 v10.25.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
-	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -135,7 +136,6 @@ require (
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -157,13 +157,13 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/minio/highwayhash v1.0.3 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
+	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
@@ -182,9 +182,8 @@ require (
 	github.com/prometheus/prometheus v0.302.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	github.com/sagikazarmark/crypt v0.20.0 // indirect
+	github.com/sagikazarmark/crypt v0.26.0 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect
-	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
 	github.com/spf13/cast v1.7.1 // indirect
@@ -197,9 +196,9 @@ require (
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.etcd.io/etcd/api/v3 v3.5.13 // indirect
-	go.etcd.io/etcd/client/pkg/v3 v3.5.13 // indirect
-	go.etcd.io/etcd/client/v2 v2.305.13 // indirect
+	go.etcd.io/etcd/api/v3 v3.5.15 // indirect
+	go.etcd.io/etcd/client/pkg/v3 v3.5.15 // indirect
+	go.etcd.io/etcd/client/v2 v2.305.15 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0 // indirect
