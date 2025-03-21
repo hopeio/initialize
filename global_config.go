@@ -156,7 +156,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 			}
 		}
 		// find in config dir
-		if gc.RootConfig.ConfPath != "" {
+		if gc.RootConfig.ConfPath == "" {
 			configDir := filepath.Join(wd, "config")
 			fileInfo, err := os.Stat(configDir)
 			if err == nil && fileInfo.IsDir() {
