@@ -45,10 +45,11 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/grafana/loki-client-go v0.0.0-20240913122146-e119d400c3a5
-	github.com/hopeio/utils v0.12.1
+	github.com/hopeio/utils v0.12.2
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/linxGnu/grocksdb v1.9.1
 	github.com/marcboeker/go-duckdb v1.7.0
+	github.com/minio/minio-go/v7 v7.0.88
 	github.com/nacos-group/nacos-sdk-go/v2 v2.2.5
 	github.com/nats-io/nats-server/v2 v2.10.18
 	github.com/nats-io/nats.go v1.37.0
@@ -165,7 +166,6 @@ require (
 	github.com/minio/crc64nvme v1.0.1 // indirect
 	github.com/minio/highwayhash v1.0.3 // indirect
 	github.com/minio/md5-simd v1.1.2 // indirect
-	github.com/minio/minio-go/v7 v7.0.88 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

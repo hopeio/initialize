@@ -155,6 +155,23 @@ func (gc *globalConfig[C, D]) loadConfig() {
 				break
 			}
 		}
+		// find in config dir
+		if gc.RootConfig.ConfPath != "" {
+			configDir := filepath.Join(wd, "config")
+			fileInfo, err := os.Stat(configDir)
+			if err == nil && fileInfo.IsDir() {
+				for _, ext := range viper.SupportedExts {
+					filePath := filepath.Join(configDir, defaultConfigName+"."+ext)
+					if fs.Exist(filePath) {
+						log.Debugf("found file: '%s'", filePath)
+						gc.RootConfig.ConfPath = filePath
+						format = ext
+						break
+					}
+				}
+			}
+		}
+
 		/*		if format == "" {
 				log.Warn("not found config, use env and flag")
 			}*/
