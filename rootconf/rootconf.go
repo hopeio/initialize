@@ -27,7 +27,7 @@ type RootConfig struct {
 // BasicConfig
 type BasicConfig struct {
 	// 模块名
-	Module string `flag:"name:mod;short:m;default:cherry-app;usage:模块名;env:MODULE"`
+	Name string `flag:"name:mod;short:m;default:cherry-app;usage:模块名;env:APP_NAME"`
 	// environment
 	Env string `flag:"name:env;short:e;default:dev;usage:环境;env:ENV"`
 }

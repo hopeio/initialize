@@ -25,8 +25,8 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 	if gc.RootConfig.ConfigCenter.Format == "" {
 		gc.RootConfig.ConfigCenter.Format = format
 	}
-	if gc.RootConfig.Module == "" {
-		gc.RootConfig.Module = stringsi.CutPart(filepath.Base(os.Args[0]), ".")
+	if gc.RootConfig.Name == "" {
+		gc.RootConfig.Name = stringsi.CutPart(filepath.Base(os.Args[0]), ".")
 	}
 	if gc.RootConfig.ConfPath != confPath {
 		gc.RootConfig.ConfPath = confPath

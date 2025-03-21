@@ -24,6 +24,9 @@ type Config gormi.Config
 
 func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
 	c.EnableStdLogger = conf.Debug
+	if c.Charset == "" {
+		c.Charset = "utf8mb4"
+	}
 }
 
 func (c *Config) AfterInject() {

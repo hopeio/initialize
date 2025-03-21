@@ -7,6 +7,7 @@
 package log
 
 import (
+	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/log"
 	"reflect"
 )
@@ -14,7 +15,11 @@ import (
 // 全局变量,只一个实例,只提供config
 type Config log.Config
 
-func (c *Config) AfterInject() {
+func (c *Config) AfterInjectWithRoot(rootconfig *rootconf.RootConfig) {
+	c.Development = rootconfig.Debug
+	if rootconfig.Name != "" {
+		c.Name = rootconfig.Name
+	}
 	if !reflect.ValueOf(c).Elem().IsZero() {
 		log.SetDefaultLogger((*log.Config)(c))
 	}

@@ -26,7 +26,7 @@ ConfigTemplateDir = "." # 模板目录,将会生成配置模板
 ### 启动配置
 启动配置作为根配置,不会监听更改,用于记录应用名称,区分环境,配置不同环境所需的本地配置及配置中心,后续配置均从本地配置及配置中心加载及自动更新
 ```toml
-Module = "hoper"
+Name = "hoper"
 # dev | test | stage | prod |...
 Env = "dev" # 将会选择与Env名字相同的环境配置
 
