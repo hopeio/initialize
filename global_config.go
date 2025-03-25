@@ -145,7 +145,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	var format string
 	// find config
 	if gc.RootConfig.ConfPath == "" {
-		log.Debugf("lack of flag -c or --config, searching 'config.*' in %s", wd)
+		log.Debugf("lack of flag -c or --config, searching 'config.*' in %s or %s", wd, wd+fs.PathSeparator+"config")
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if fs.Exist(filePath) {
@@ -163,7 +163,6 @@ func (gc *globalConfig[C, D]) loadConfig() {
 				for _, ext := range viper.SupportedExts {
 					filePath := filepath.Join(configDir, defaultConfigName+"."+ext)
 					if fs.Exist(filePath) {
-						log.Debugf("found file: '%s'", filePath)
 						gc.RootConfig.ConfPath = filePath
 						format = ext
 						break
@@ -286,6 +285,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		err = cfgcenter.Handle(func(data io.Reader) error {
 			gc.mu.TryLock()
 			defer gc.mu.Unlock()
+			gc.Viper.SetConfigType(gc.RootConfig.ConfigCenter.Format)
 			err := gc.Viper.MergeConfig(data)
 			if err != nil {
 				if gc.editTimes == 0 {

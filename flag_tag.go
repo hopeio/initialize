@@ -82,6 +82,12 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 		if flagTag != "" {
 			var flagTagSettings flagTagSettings
 			parseTagSetting(flagTag, ';', &flagTagSettings)
+			if flagTagSettings.Default != "" {
+				err := mtos.SetValueByString(fcValue.Field(i), flagTagSettings.Default)
+				if err != nil {
+					log.Fatal(err)
+				}
+			}
 			// 从环境变量设置
 			if flagTagSettings.Env != "" {
 				if viper != nil {

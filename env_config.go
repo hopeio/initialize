@@ -29,7 +29,7 @@ const (
 func (gc *globalConfig[C, D]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
 		if gc.RootConfig.ConfPath == "" {
-			log.Warn("not found config, use env and flag")
+			log.Warn("not found config file, use env and flag")
 		} else {
 			log.Warn("lack of env configuration, try single config file mode")
 		}
@@ -75,11 +75,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 
 	envConfig, ok := gc.Viper.Get(gc.RootConfig.Env).(map[string]any)
 	if !ok {
-		if gc.RootConfig.ConfPath == "" {
-			log.Warn("not found config, use env and flag")
-		} else {
-			log.Warn("lack of env configuration, try single config file mode")
-		}
+		log.Warnf("lack of env configuration: %s", gc.RootConfig.Env)
 		return
 	}
 	err := mtos.Unmarshal(&gc.RootConfig.EnvConfig, envConfig)
@@ -88,31 +84,31 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 	}
 	applyFlagConfig(nil, &gc.RootConfig.EnvConfig)
 	gc.RootConfig.EnvConfig.AfterInject()
-	if gc.RootConfig.EnvConfig.ConfigCenter.Format == "" {
-		log.Fatalf("lack of configCenter format, support format:%v", viper.SupportedExts)
-	}
-	gc.Viper.SetConfigType(gc.RootConfig.EnvConfig.ConfigCenter.Format)
-	if gc.RootConfig.EnvConfig.ConfigCenter.Type == "" {
-		log.Warn("lack of configCenter type, try single config file")
-		return
-	}
 
-	configCenter, ok := conf_center.GetRegisteredConfigCenter()[strings.ToLower(gc.RootConfig.EnvConfig.ConfigCenter.Type)]
-	if !ok {
-		log.Warn("lack of registered configCenter, try single config file")
-		return
-	}
+	var configCenter conf_center.ConfigCenter
+	if gc.RootConfig.EnvConfig.ConfigCenter.Type != "" {
 
-	applyFlagConfig(gc.Viper, configCenter.Config())
-	gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
+		if gc.RootConfig.EnvConfig.ConfigCenter.Format == "" {
+			log.Warnf("lack of config center format, support format:%v", viper.SupportedExts)
+			return
+		}
+		gc.Viper.SetConfigType(gc.RootConfig.EnvConfig.ConfigCenter.Format)
 
-	configCenterConfig, ok := gc.Viper.Get(gc.RootConfig.Env + ".configCenter." + gc.RootConfig.EnvConfig.ConfigCenter.Type).(map[string]any)
-	if !ok {
-		log.Warn("lack of configCenter config, try single config file")
-		return
-	}
-	err = mtos.Unmarshal(configCenter.Config(), configCenterConfig)
-	if err != nil {
-		log.Fatal(err)
+		configCenter, ok = conf_center.GetRegisteredConfigCenter()[strings.ToLower(gc.RootConfig.EnvConfig.ConfigCenter.Type)]
+		if !ok {
+			log.Warnf("lack of registered config center type : %s", gc.RootConfig.EnvConfig.ConfigCenter.Type)
+			return
+		}
+		applyFlagConfig(gc.Viper, configCenter.Config())
+		gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
+		configCenterConfig, ok := gc.Viper.Get(gc.RootConfig.Env + ".configCenter." + gc.RootConfig.EnvConfig.ConfigCenter.Type).(map[string]any)
+		if !ok {
+			log.Warn("lack of config center config")
+			return
+		}
+		err = mtos.Unmarshal(configCenter.Config(), configCenterConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

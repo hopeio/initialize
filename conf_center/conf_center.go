@@ -24,9 +24,9 @@ type ConfigCenter interface {
 
 type Config struct {
 	// 配置格式
-	Format string `flag:"name:format;default:toml;usage:配置格式"`
+	Format string `flag:"name:format;usage:配置格式"`
 	// 配置类型
-	Type string `flag:"name:conf_type;default:local;usage:配置类型"`
+	Type string `flag:"name:conf_type;usage:配置类型"`
 	// config字段顺序不能变,ConfigCenter 保持在最后
 	ConfigCenter ConfigCenter
 }
