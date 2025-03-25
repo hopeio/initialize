@@ -19,7 +19,11 @@ func (c *Config) AfterInjectWithRoot(rootconfig *rootconf.RootConfig) {
 	if rootconfig.Name != "" {
 		c.Name = rootconfig.Name
 	}
-	if !reflect.ValueOf(c).Elem().IsZero() {
+	dev, level := c.Development, c.Level
+	c.Development = false
+	c.Level = 0
+	if !reflect.ValueOf(c).Elem().IsZero() || dev || level != -1 {
+		c.Development, c.Level = dev, level
 		log.SetDefaultLogger((*log.Config)(c))
 	}
 }
