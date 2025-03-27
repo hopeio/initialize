@@ -466,8 +466,8 @@ github.com/hashicorp/memberlist v0.5.0/go.mod h1:yvyXLpo0QaGE59Y7hDTsTzDD25JYBZ4
 github.com/hashicorp/serf v0.8.2/go.mod h1:6hOLApaqBFA1NXqRQAsxw9QxuDEvNxSQRwA/JwenrHc=
 github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY=
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
-github.com/hopeio/utils v0.13.3 h1:lqqxSzaF+V1bagLxbAB/FRrxdNVx0+oI7gDfD6LN5ss=
-github.com/hopeio/utils v0.13.3/go.mod h1:CBLmjplb0zCqdCMXreiyQrhW0Kx3rTx+zPQkMthYOQY=
+github.com/hopeio/utils v0.13.6 h1:y+2x83us2GuFtOXp741rTw9OigCuEg+CK+qZeTVux+I=
+github.com/hopeio/utils v0.13.6/go.mod h1:CBLmjplb0zCqdCMXreiyQrhW0Kx3rTx+zPQkMthYOQY=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
