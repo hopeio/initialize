@@ -37,7 +37,6 @@ type EnvConfig struct {
 	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:是否生成配置模板;env:CONFIG_TEMPLATE_DIR"`
 	// 代理, socks5://localhost:1080
 	Proxy       string `flag:"name:proxy;usage:代理;env:HTTP_PROXY" `
-	EnableTrace bool   `flag:"name:trace;usage:系统trace;env:ENABLE_TRACE"`
 	NoInject    []string
 	LocalConfig LocalConfig
 	// config字段顺序不能变,ConfigCenter 保持在最后
