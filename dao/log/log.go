@@ -16,7 +16,7 @@ import (
 type Config log.Config
 
 func (c *Config) AfterInjectWithRoot(rootconfig *rootconf.RootConfig) {
-	if rootconfig.Name != "" {
+	if rootconfig.Name != "" && c.Name == "" {
 		c.Name = rootconfig.Name
 	}
 	dev, level := c.Development, c.Level
