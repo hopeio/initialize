@@ -15,8 +15,9 @@ import (
 
 type Config struct {
 	*mqtt.ClientOptions
-	Brokers []string
-	CAFile  string `json:"ca_file,omitempty"`
+	Brokers    []string
+	CAFile     string `json:"ca_file,omitempty"`
+	ServerName string
 }
 
 func (c *Config) BeforeInject() {
@@ -28,7 +29,7 @@ func (c *Config) AfterInject() {
 }
 
 func (c *Config) Init() *Config {
-	tlsConfig, err := tls.NewClientTLSConfig(c.CAFile, "")
+	tlsConfig, err := tls.NewClientTLSConfig(c.CAFile, c.ServerName)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,10 +1,9 @@
 Env = 'dev'
-Module = 'user'
+Name = 'user'
 
 [dev]
 ConfigTemplateDir = './_example'
 Debug = true
-EnableTrace = false
 NoInject = []
 Proxy = ''
 

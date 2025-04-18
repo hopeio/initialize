@@ -6,51 +6,9 @@ Int = 6
 String = '666'
 Time = '2022-01-01T00:00:00Z'
 
-[Log]
-DisableCaller = false
-DisableStacktrace = false
-EncodeLevelType = ""
-ErrorOutputPaths = []
-Level = "debug"
 
-[Log.EncoderConfig]
-CallerKey = ""
-ConsoleSeparator = ""
-FunctionKey = ""
-LevelKey = ""
-LineEnding = ""
-MessageKey = ""
-NameKey = ""
-SkipLineEnding = false
-StacktraceKey = ""
-TimeKey = ""
 
-[Log.OutputPaths]
-Console = ["stdout"]
-Json = []
-
-[GORMDB]
-Charset = ''
-ConnMaxIdleTime = 0
-ConnMaxLifetime = 0
-Database = ''
-EnablePrometheus = false
-EnableStdLogger = true
-Host = ''
-MaxIdleConns = 0
-MaxOpenConns = 0
-Password = ''
-Port = 0
-PrometheusConfigs = []
-TimeZone = ''
-Type = 'sqlite'
-
-[GORMDB.Logger]
-Colorful = true
-IgnoreRecordNotFoundError = false
-LogLevel = 4
-ParameterizedQueries = false
-SlowThreshold = "200ms"
-
-[GORMDB.NamingStrategy]
-SingularTable = true
+[Mqtt]
+ClientID = 'test_111111'
+Brokers = ["ssl://broker.emqx.io:8883"]
+CAFile = './_example/broker.emqx.io-ca.crt'

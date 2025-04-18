@@ -1,0 +1,8 @@
+[Log]
+Development = true
+ErrorOutputPaths = []
+Level = "debug"
+
+[Log.OutputPaths]
+Console = ["stdout"]
+Json = []

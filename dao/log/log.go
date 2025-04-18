@@ -9,6 +9,7 @@ package log
 import (
 	"github.com/hopeio/initialize/rootconf"
 	"github.com/hopeio/utils/log"
+	"go.uber.org/zap/zapcore"
 	"reflect"
 )
 
@@ -16,14 +17,16 @@ import (
 type Config log.Config
 
 func (c *Config) AfterInjectWithRoot(rootconfig *rootconf.RootConfig) {
+	isZero := reflect.ValueOf(c).Elem().IsZero()
 	if rootconfig.Name != "" && c.Name == "" {
 		c.Name = rootconfig.Name
+		if isZero {
+			c.Development = true
+			c.Level = zapcore.DebugLevel
+			isZero = false
+		}
 	}
-	dev, level := c.Development, c.Level
-	c.Development = false
-	c.Level = 0
-	if !reflect.ValueOf(c).Elem().IsZero() || dev || level != -1 {
-		c.Development, c.Level = dev, level
+	if !isZero {
 		log.SetDefaultLogger((*log.Config)(c))
 	}
 }

@@ -7,11 +7,10 @@
 package global
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/hopeio/initialize"
 	"github.com/hopeio/initialize/conf_center/nacos"
-	"github.com/hopeio/initialize/dao/gormdb/sqlite"
+	"github.com/hopeio/initialize/dao/mqtt"
 	timei "github.com/hopeio/utils/time"
 	"runtime"
 	"time"
@@ -51,12 +50,11 @@ func (c *config) AfterInject() {
 type dao struct {
 	initialize.EmbeddedPresets
 	// GORMDB 数据库连接
-	GORMDB sqlite.DB
-	StdDB  *sql.DB
+	Mqtt mqtt.Client
 }
 
 func (d *dao) BeforeInject() {
-	d.GORMDB.Conf.Gorm.NowFunc = time.Now
+
 }
 
 func (d *dao) AfterInjectConfig() {
@@ -64,11 +62,7 @@ func (d *dao) AfterInjectConfig() {
 }
 
 func (d *dao) AfterInject() {
-	db := d.GORMDB
-	db.Callback().Create().Remove("gorm:save_before_associations")
-	db.Callback().Create().Remove("gorm:save_after_associations")
-	db.Callback().Update().Remove("gorm:save_before_associations")
-	db.Callback().Update().Remove("gorm:save_after_associations")
-
-	d.StdDB, _ = db.DB.DB()
+	if token := d.Mqtt.Publish("test", 0, false, "test"); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
 }
