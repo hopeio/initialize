@@ -7,7 +7,7 @@
 package ristretto
 
 import (
-	"github.com/dgraph-io/ristretto"
+	"github.com/dgraph-io/ristretto/v2"
 )
 
 type Config[K ristretto.Key, V any] ristretto.Config[K, V]
