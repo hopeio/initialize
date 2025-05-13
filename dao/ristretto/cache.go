@@ -53,9 +53,9 @@ func (c *Cache[K, V]) Init() error {
 	return err
 }
 
-func (e *Cache[K, V]) Close() error {
-	if e.Cache != nil {
-		e.Cache.Close()
+func (c *Cache[K, V]) Close() error {
+	if c.Cache != nil {
+		c.Cache.Close()
 	}
 	return nil
 }

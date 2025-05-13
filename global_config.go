@@ -40,10 +40,6 @@ type globalConfig[C Config, D Dao] struct {
 	defers      []func()
 	initialized bool
 	mu          sync.RWMutex
-
-	// 为后续仍有需要注入的config和dao保留的后门,与Inject(Config,Dao) 配合
-	injectConfs []Config
-	injectDaos  []Dao
 }
 
 func newGlobal[C Config, D Dao]() *globalConfig[C, D] {

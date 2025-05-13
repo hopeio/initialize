@@ -267,10 +267,8 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 // 当初始化完成后,仍然有需要注入的config和dao
 func (gc *globalConfig[C, D]) Inject(conf Config, dao Dao) error {
 	if !gc.initialized {
-		return errors.New("not initialize, please call initialize.initHandler or initialize.Start")
+		return errors.New("not initialize, please call initialize.NewGlobal or initialize.Start")
 	}
-	gc.injectConfs = append(gc.injectConfs, conf)
-	gc.injectDaos = append(gc.injectDaos, dao)
 
 	if dao != nil {
 		gc.defers = append(gc.defers, func() {
