@@ -159,6 +159,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 				for _, ext := range viper.SupportedExts {
 					filePath := filepath.Join(configDir, defaultConfigName+"."+ext)
 					if fs.Exist(filePath) {
+						log.Debugf("found file: '%s'", filePath)
 						gc.RootConfig.ConfPath = filePath
 						format = ext
 						break
@@ -268,6 +269,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 			return nil
 		})
 		if err != nil {
+			log.Fatal(err)
 			return
 		}
 		gc.defers = append(gc.defers, func() {

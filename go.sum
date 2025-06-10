@@ -453,6 +453,8 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hopeio/utils v0.17.3-0.20250521102136-fe7549a800ef h1:YfFrdShAqq4PlTTKXFXrU1pytGcK4aSCPdd7cNpMlfE=
 github.com/hopeio/utils v0.17.3-0.20250521102136-fe7549a800ef/go.mod h1:RSPijjOsa56ErbqZDGA2kV1SYSMGFPHlgstLx2C8Gvc=
+github.com/hopeio/utils v0.18.2 h1:WUDPSRGfgVlJH8UTRzLzxUOP4fQTslJnayCBznxTr3c=
+github.com/hopeio/utils v0.18.2/go.mod h1:RSPijjOsa56ErbqZDGA2kV1SYSMGFPHlgstLx2C8Gvc=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/influxdata/influxdb-client-go/v2 v2.13.0 h1:ioBbLmR5NMbAjP4UVA5r9b5xGjpABD7j65pI8kFphDM=
