@@ -13,7 +13,7 @@ import (
 	"github.com/hopeio/initialize/dao/gormdb/postgres"
 	"github.com/hopeio/initialize/dao/gormdb/sqlite"
 	"github.com/hopeio/initialize/rootconf"
-	dbi "github.com/hopeio/utils/dao/database"
+	dbi "github.com/hopeio/utils/datax/database"
 	"gorm.io/gorm"
 )
 
