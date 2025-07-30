@@ -7,8 +7,8 @@
 package http
 
 import (
-	http_fs "github.com/hopeio/utils/net/http/fs"
-	http_fs_watch "github.com/hopeio/utils/net/http/fs/watch"
+	http_fs "github.com/hopeio/gox/net/http/fs"
+	http_fs_watch "github.com/hopeio/gox/net/http/fs/watch"
 	"io"
 	"net/http"
 	"time"

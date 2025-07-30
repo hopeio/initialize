@@ -8,9 +8,9 @@ package initialize
 
 import (
 	"fmt"
-	"github.com/hopeio/utils/log"
-	"github.com/hopeio/utils/reflect/structtag"
-	stringsi "github.com/hopeio/utils/strings"
+	"github.com/hopeio/gox/log"
+	"github.com/hopeio/gox/reflect/structtag"
+	stringsi "github.com/hopeio/gox/strings"
 	"reflect"
 	"strings"
 )

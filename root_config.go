@@ -7,8 +7,8 @@
 package initialize
 
 import (
-	"github.com/hopeio/utils/log"
-	stringsi "github.com/hopeio/utils/strings"
+	"github.com/hopeio/gox/log"
+	stringsi "github.com/hopeio/gox/strings"
 	"os"
 	"path/filepath"
 )

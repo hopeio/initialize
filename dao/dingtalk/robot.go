@@ -1,7 +1,7 @@
 package dingtalk
 
 import (
-	"github.com/hopeio/utils/sdk/dingtalk"
+	"github.com/hopeio/gox/sdk/dingtalk"
 )
 
 type Config dingtalk.Robot

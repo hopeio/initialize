@@ -9,9 +9,9 @@ package initialize
 import (
 	"errors"
 	daopkg "github.com/hopeio/initialize/dao"
-	"github.com/hopeio/utils/log"
-	reflecti "github.com/hopeio/utils/reflect"
-	stringsi "github.com/hopeio/utils/strings"
+	"github.com/hopeio/gox/log"
+	reflecti "github.com/hopeio/gox/reflect"
+	stringsi "github.com/hopeio/gox/strings"
 	"reflect"
 	"slices"
 	"strings"

@@ -7,7 +7,7 @@
 package grpc
 
 import (
-	grpci "github.com/hopeio/utils/net/http/grpc"
+	grpci "github.com/hopeio/gox/net/http/grpc"
 	"google.golang.org/grpc"
 )
 

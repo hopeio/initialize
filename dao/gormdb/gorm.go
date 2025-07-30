@@ -8,10 +8,10 @@ package gormdb
 
 import (
 	"github.com/hopeio/initialize/rootconf"
-	dbi "github.com/hopeio/utils/datax/database"
-	gormi "github.com/hopeio/utils/datax/database/gorm"
-	loggeri "github.com/hopeio/utils/datax/database/gorm/logger"
-	"github.com/hopeio/utils/log"
+	dbi "github.com/hopeio/gox/datax/database"
+	gormi "github.com/hopeio/gox/datax/database/gorm"
+	loggeri "github.com/hopeio/gox/datax/database/gorm/logger"
+	"github.com/hopeio/gox/log"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"

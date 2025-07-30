@@ -8,8 +8,8 @@ package initialize
 
 import (
 	"github.com/hopeio/initialize/conf_center"
-	"github.com/hopeio/utils/log"
-	"github.com/hopeio/utils/reflect/mtos"
+	"github.com/hopeio/gox/log"
+	"github.com/hopeio/gox/reflect/mtos"
 	"github.com/spf13/viper"
 	"os"
 	"strings"

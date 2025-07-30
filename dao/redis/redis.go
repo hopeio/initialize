@@ -8,8 +8,8 @@ package redis
 
 import (
 	"context"
-	"github.com/hopeio/utils/crypto/tls"
-	"github.com/hopeio/utils/log"
+	"github.com/hopeio/gox/crypto/tls"
+	"github.com/hopeio/gox/log"
 	"time"
 
 	"github.com/go-redis/redis/v8"

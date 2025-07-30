@@ -8,7 +8,7 @@ package elasticsearch
 
 import (
 	"github.com/elastic/go-elasticsearch/v8"
-	http2 "github.com/hopeio/utils/net/http"
+	http2 "github.com/hopeio/gox/net/http"
 	"net/http"
 )
 

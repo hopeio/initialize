@@ -8,7 +8,7 @@ package log
 
 import (
 	"github.com/hopeio/initialize/rootconf"
-	"github.com/hopeio/utils/log"
+	"github.com/hopeio/gox/log"
 	"go.uber.org/zap/zapcore"
 	"reflect"
 )

@@ -11,7 +11,7 @@ import (
 	"github.com/hopeio/initialize"
 	"github.com/hopeio/initialize/conf_center/nacos"
 	"github.com/hopeio/initialize/dao/mqtt"
-	timei "github.com/hopeio/utils/time"
+	timei "github.com/hopeio/gox/time"
 	"runtime"
 	"time"
 )

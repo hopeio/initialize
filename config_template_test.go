@@ -7,7 +7,7 @@
 package initialize
 
 import (
-	"github.com/hopeio/utils/encoding"
+	"github.com/hopeio/gox/encoding"
 	"os"
 	"testing"
 )

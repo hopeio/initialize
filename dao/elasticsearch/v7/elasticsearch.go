@@ -8,7 +8,7 @@ package elasticsearch
 
 import (
 	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/hopeio/utils/net/http"
+	"github.com/hopeio/gox/net/http"
 )
 
 type Config elasticsearch.Config

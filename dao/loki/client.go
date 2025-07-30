@@ -10,7 +10,7 @@ import (
 	"flag"
 	"github.com/grafana/loki-client-go/loki"
 	"github.com/grafana/loki-client-go/pkg/urlutil"
-	"github.com/hopeio/utils/log"
+	"github.com/hopeio/gox/log"
 	"os"
 )
 

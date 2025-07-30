@@ -8,7 +8,7 @@ package rootconf
 
 import (
 	"github.com/hopeio/initialize/conf_center"
-	"github.com/hopeio/utils/log"
+	"github.com/hopeio/gox/log"
 	"net/http"
 	"net/url"
 	"path/filepath"

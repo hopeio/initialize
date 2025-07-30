@@ -8,8 +8,8 @@ package mqtt
 
 import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
-	"github.com/hopeio/utils/crypto/tls"
-	"github.com/hopeio/utils/log"
+	"github.com/hopeio/gox/crypto/tls"
+	"github.com/hopeio/gox/log"
 	"time"
 )
 

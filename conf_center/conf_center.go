@@ -7,8 +7,8 @@
 package conf_center
 
 import (
-	"github.com/hopeio/utils/log"
-	stringsi "github.com/hopeio/utils/strings/ascii"
+	"github.com/hopeio/gox/log"
+	stringsi "github.com/hopeio/gox/strings/ascii"
 	"io"
 	"strings"
 )

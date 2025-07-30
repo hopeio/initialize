@@ -8,8 +8,8 @@ package initialize
 
 import (
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/hopeio/utils/encoding"
-	stringsi "github.com/hopeio/utils/strings"
+	"github.com/hopeio/gox/encoding"
+	stringsi "github.com/hopeio/gox/strings"
 	"github.com/spf13/viper"
 	"reflect"
 	"slices"

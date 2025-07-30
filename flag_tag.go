@@ -8,13 +8,13 @@ package initialize
 
 import (
 	"flag"
-	"github.com/hopeio/utils/reflect/mtos"
+	"github.com/hopeio/gox/reflect/mtos"
 	"github.com/spf13/viper"
 	"strings"
 
-	"github.com/hopeio/utils/log"
-	reflecti "github.com/hopeio/utils/reflect"
-	"github.com/hopeio/utils/reflect/converter"
+	"github.com/hopeio/gox/log"
+	reflecti "github.com/hopeio/gox/reflect"
+	"github.com/hopeio/gox/reflect/converter"
 	"github.com/spf13/pflag"
 	"os"
 	"reflect"
