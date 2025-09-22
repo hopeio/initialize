@@ -7,14 +7,6 @@
 package initialize
 
 import (
-	"github.com/hopeio/initialize/conf_center"
-	daopkg "github.com/hopeio/initialize/dao"
-	"github.com/hopeio/initialize/rootconf"
-	"github.com/hopeio/gox/errors/multierr"
-	"github.com/hopeio/gox/log"
-	"github.com/hopeio/gox/os/fs"
-	pathi "github.com/hopeio/gox/os/fs/path"
-	"github.com/spf13/viper"
 	"io"
 	"os"
 	"path/filepath"
@@ -22,6 +14,15 @@ import (
 	"slices"
 	"strings"
 	"sync"
+
+	"github.com/hopeio/gox/log"
+	"github.com/hopeio/gox/os/fs"
+	pathx "github.com/hopeio/gox/os/fs/path"
+	"github.com/hopeio/initialize/conf_center"
+	daopkg "github.com/hopeio/initialize/dao"
+	"github.com/hopeio/initialize/rootconf"
+	"github.com/spf13/viper"
+	"go.uber.org/multierr"
 )
 
 // globalConfig
@@ -226,7 +227,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	if gc.RootConfig.Env != "" {
 		var defaultEnvConfigPath string
 		if gc.RootConfig.ConfPath != "" {
-			defaultEnvConfigPath = pathi.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+			defaultEnvConfigPath = pathx.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
 		} else if gc.RootConfig.ConfigCenter.Format != "" {
 			gc.Viper.SetConfigType(format)
 			defaultEnvConfigPath = defaultConfigName + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
@@ -325,7 +326,7 @@ func (gc *globalConfig[C, D]) Defer(deferf ...func()) {
 }
 
 func closeDao(dao Dao) error {
-	var errs multierr.MultiError
+	var errs error
 	daoValue := reflect.ValueOf(dao)
 	if daoValue.Kind() != reflect.Pointer {
 		daoValue = daoValue.Elem()
@@ -341,10 +342,10 @@ func closeDao(dao Dao) error {
 		inter := fieldV.Interface()
 		if daofield, ok := inter.(daopkg.DaoField); ok {
 			if err := daofield.Close(); err != nil {
-				errs.Append(err)
+				errs = multierr.Append(errs, err)
 			}
 
 		}
 	}
-	return errs.Error()
+	return errs
 }

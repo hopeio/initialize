@@ -8,7 +8,7 @@ package conf_center
 
 import (
 	"github.com/hopeio/gox/log"
-	stringsi "github.com/hopeio/gox/strings/ascii"
+	stringsx "github.com/hopeio/gox/strings/ascii"
 	"io"
 	"strings"
 )
@@ -36,7 +36,7 @@ var configCenter = map[string]ConfigCenter{}
 func RegisterConfigCenter(c ConfigCenter) {
 	if c != nil {
 		typ := strings.ToLower(c.Type())
-		if !stringsi.IsLetters(typ) {
+		if !stringsx.IsLetters(typ) {
 			log.Fatal("config type must be letters")
 		}
 		if _, ok := configCenter[typ]; !ok {

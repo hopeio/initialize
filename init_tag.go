@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"github.com/hopeio/gox/log"
 	"github.com/hopeio/gox/reflect/structtag"
-	stringsi "github.com/hopeio/gox/strings"
+	stringsx "github.com/hopeio/gox/strings"
 	"reflect"
 	"strings"
 )
@@ -71,7 +71,7 @@ func getFieldConfigName(v reflect.StructField) (string, tagOptions, bool) {
 	if name == "" {
 		return v.Name, opts, true
 	}
-	return stringsi.UpperCaseFirst(name), opts, true
+	return stringsx.UpperCaseFirst(name), opts, true
 }
 
 // tagOptions is the string following a comma in a struct field's "json"

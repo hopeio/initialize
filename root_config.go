@@ -8,7 +8,7 @@ package initialize
 
 import (
 	"github.com/hopeio/gox/log"
-	stringsi "github.com/hopeio/gox/strings"
+	stringsx "github.com/hopeio/gox/strings"
 	"os"
 	"path/filepath"
 )
@@ -26,7 +26,7 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 		gc.RootConfig.ConfigCenter.Format = format
 	}
 	if gc.RootConfig.Name == "" {
-		gc.RootConfig.Name = stringsi.CutPart(filepath.Base(os.Args[0]), ".")
+		gc.RootConfig.Name = stringsx.CutPart(filepath.Base(os.Args[0]), ".")
 	}
 	if gc.RootConfig.ConfPath != confPath {
 		gc.RootConfig.ConfPath = confPath

@@ -8,9 +8,10 @@ package mysql
 
 import (
 	"fmt"
+
+	dbi "github.com/hopeio/gox/database/sql"
 	pkdb "github.com/hopeio/initialize/dao/gormdb"
 	"github.com/hopeio/initialize/rootconf"
-	dbi "github.com/hopeio/gox/datax/database"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )

@@ -8,12 +8,13 @@ package common
 
 import (
 	"errors"
+
+	dbi "github.com/hopeio/gox/database/sql"
 	pkdb "github.com/hopeio/initialize/dao/gormdb"
 	"github.com/hopeio/initialize/dao/gormdb/mysql"
 	"github.com/hopeio/initialize/dao/gormdb/postgres"
 	"github.com/hopeio/initialize/dao/gormdb/sqlite"
 	"github.com/hopeio/initialize/rootconf"
-	dbi "github.com/hopeio/gox/datax/database"
 	"gorm.io/gorm"
 )
 

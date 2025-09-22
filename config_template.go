@@ -7,9 +7,9 @@
 package initialize
 
 import (
-	"github.com/hopeio/initialize/dao"
 	"github.com/hopeio/gox/log"
-	stringsi "github.com/hopeio/gox/strings"
+	stringsx "github.com/hopeio/gox/strings"
+	"github.com/hopeio/initialize/dao"
 	"os"
 	"reflect"
 )
@@ -62,7 +62,7 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 			name := fieldType.Name
 			tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
 			if tagSettings.ConfigName != "" {
-				name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
+				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 			}
 
 			confMap[name] = newconfMap

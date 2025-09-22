@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/hopeio/gox/log"
-	reflecti "github.com/hopeio/gox/reflect"
+	reflectx "github.com/hopeio/gox/reflect"
 	"github.com/hopeio/gox/reflect/converter"
 	"github.com/spf13/pflag"
 	"os"
@@ -58,7 +58,7 @@ func (a anyValue) Set(v string) error {
 }
 
 func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue reflect.Value) {
-	fcValue = reflecti.DerefValue(fcValue)
+	fcValue = reflectx.DerefValue(fcValue)
 	if !fcValue.IsValid() {
 		return
 	}
@@ -73,7 +73,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 		fieldValue := fcValue.Field(i)
 		kind := fieldValue.Kind()
 		if kind == reflect.Pointer || kind == reflect.Interface {
-			fieldValue = reflecti.DerefValue(fieldValue)
+			fieldValue = reflectx.DerefValue(fieldValue)
 			kind = fieldValue.Kind()
 			if !fieldValue.IsValid() {
 				continue

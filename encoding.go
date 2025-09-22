@@ -9,7 +9,7 @@ package initialize
 import (
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/hopeio/gox/encoding"
-	stringsi "github.com/hopeio/gox/strings"
+	stringsx "github.com/hopeio/gox/strings"
 	"github.com/spf13/viper"
 	"reflect"
 	"slices"
@@ -89,7 +89,7 @@ func structValue2Map(value reflect.Value, confMap map[string]any) {
 				} else {
 					tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
 					if tagSettings.ConfigName != "" {
-						name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
+						name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 					}
 					newconfMap := make(map[string]any)
 					confMap[name] = newconfMap
@@ -110,7 +110,7 @@ func structValue2Map(value reflect.Value, confMap map[string]any) {
 
 			tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
 			if tagSettings.ConfigName != "" {
-				name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
+				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 			}
 			confMap[name] = field.Interface()
 		}

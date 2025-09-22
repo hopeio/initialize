@@ -8,10 +8,10 @@ package initialize
 
 import (
 	"errors"
-	daopkg "github.com/hopeio/initialize/dao"
 	"github.com/hopeio/gox/log"
-	reflecti "github.com/hopeio/gox/reflect"
-	stringsi "github.com/hopeio/gox/strings"
+	reflectx "github.com/hopeio/gox/reflect"
+	stringsx "github.com/hopeio/gox/strings"
+	daopkg "github.com/hopeio/initialize/dao"
 	"reflect"
 	"slices"
 	"strings"
@@ -33,7 +33,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 			name := structField.Name
 			tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 			if tagSettings.ConfigName != "" {
-				name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
+				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 			}
 
 			if field.CanInterface() {
@@ -72,7 +72,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 		name := structField.Name
 		tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 		if tagSettings.ConfigName != "" {
-			name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
+			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
 
 		if v, ok := nameValueMap[name]; ok {
@@ -128,7 +128,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 					daoConfigType := reflect.TypeOf(daoConfig)
 					tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 					if tagSettings.ConfigName != "" {
-						name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
+						name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 					}
 
 					if c, ok := daoConfig.(beforeInject); ok {
@@ -165,7 +165,7 @@ func (gc *globalConfig[C, D]) setNewStruct(value reflect.Value, typValueMap map[
 		name := structField.Name
 		tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
 		if tagSettings.ConfigName != "" {
-			name = stringsi.UpperCaseFirst(tagSettings.ConfigName)
+			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
 
 		field := value.Field(i)
@@ -202,7 +202,7 @@ func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 }
 
 func (gc *globalConfig[C, D]) afterInjectConfigCall(tmpConfig any) {
-	v := reflecti.DerefValue(reflect.ValueOf(tmpConfig))
+	v := reflectx.DerefValue(reflect.ValueOf(tmpConfig))
 	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return
 	}
