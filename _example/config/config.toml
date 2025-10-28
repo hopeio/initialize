@@ -4,15 +4,19 @@ Env = "dev"
 
 [dev]
 debug = true
-ConfigTemplateDir = "./_example"
+ConfigTemplateDir = "_example/config"
 NoInject = []
 [dev.LocalConfig]
-Paths = ["./_example/local.toml"]
+Paths = ["_example/config/local.toml"]
 ReloadInterval = "10s"
 
 [test]
 Debug = false
 NoInject = ["Apollo","Etcd", "Es"]
+
+[test.LocalConfig]
+Paths = ["_example/config/local.test.toml"]
+ReloadInterval = "10s"
 
 [test.ConfigCenter]
 Format = "json"

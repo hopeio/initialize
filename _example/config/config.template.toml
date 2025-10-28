@@ -2,7 +2,7 @@ Env = 'dev'
 Name = 'user'
 
 [dev]
-ConfigTemplateDir = './_example'
+ConfigTemplateDir = '_example/config'
 Debug = true
 NoInject = []
 Proxy = ''
@@ -81,5 +81,5 @@ KeyFile = ''
 ServerNameOverride = ''
 
 [dev.LocalConfig]
-Paths = ['D:\code\hopeio\hoper\thirdparty\initialize\_example\local.toml']
+Paths = ['/Users/jyb/code/hopeio/hoper/thirdparty/initialize/_example/config/local.toml']
 ReloadInterval = 10000000000

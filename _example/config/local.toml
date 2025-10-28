@@ -11,4 +11,4 @@ Time = '2022-01-01T00:00:00Z'
 [Mqtt]
 ClientID = 'test_111111'
 Brokers = ["ssl://broker.emqx.io:8883"]
-CAFile = './_example/broker.emqx.io-ca.crt'
+CAFile = '_example/config/broker.emqx.io-ca.crt'

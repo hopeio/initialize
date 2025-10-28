@@ -3,7 +3,7 @@
 ![initialize](_assets/initialize.webp)
 
 ## example
-`go run _example/main.go -c _example/config.toml`
+`go run _example/main.go -c _example/config/config.toml`
 ## feature
 - 默认支持local config,支持本地多配置文件
 - 支持环境区分(dev，test，prod,可自定义)
