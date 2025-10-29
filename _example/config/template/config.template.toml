@@ -2,9 +2,8 @@ Env = 'dev'
 Name = 'user'
 
 [dev]
-ConfigTemplateDir = '_example/config'
+ConfigTemplateDir = '_example/config/template'
 Debug = true
-NoInject = []
 Proxy = ''
 
 [dev.ConfigCenter]
@@ -20,7 +19,6 @@ DataId = ''
 EncryptedDataKey = ''
 Group = ''
 KmsKeyId = ''
-ServerConfigs = []
 SrcUser = ''
 Tag = ''
 Type = ''
@@ -80,6 +78,15 @@ Enable = false
 KeyFile = ''
 ServerNameOverride = ''
 
+[[dev.ConfigCenter.nacos.ServerConfigs]]
+ContextPath = ''
+GrpcPort = 0
+IpAddr = ''
+Port = 0
+Scheme = ''
+
 [dev.LocalConfig]
-Paths = ['/Users/jyb/code/hopeio/hoper/thirdparty/initialize/_example/config/local.toml']
+Paths = []
 ReloadInterval = 10000000000
+
+[[dev.NoInject]]

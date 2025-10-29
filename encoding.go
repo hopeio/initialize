@@ -7,12 +7,13 @@
 package initialize
 
 import (
+	"reflect"
+	"slices"
+
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/hopeio/gox/encoding"
 	stringsx "github.com/hopeio/gox/strings"
 	"github.com/spf13/viper"
-	"reflect"
-	"slices"
 )
 
 var (
@@ -43,76 +44,93 @@ func formatDecoderConfigOption(format encoding.Format) []viper.DecoderConfigOpti
 }
 
 func struct2Map(v any, confMap map[string]any) {
-	structValue2Map(reflect.ValueOf(v).Elem(), confMap)
+	structValue2Map(reflect.ValueOf(v).Elem(), nil, confMap)
 }
 
 // 递归的根据反射将对象中的指针变量赋值
-func structValue2Map(value reflect.Value, confMap map[string]any) {
-	typ := value.Type()
-	for i := range value.NumField() {
-		field := value.Field(i)
-		fileKind := field.Kind()
-		fieldType := typ.Field(i)
+func structValue2Map(value reflect.Value, field *reflect.StructField, confMap map[string]any) {
+	var name string
+	var opt tagOptions
+	if field != nil {
 		// 判断field是否大写
-		if !fieldType.IsExported() {
-			continue
+		if !field.IsExported() {
+			return
 		}
-		switch fileKind {
-		case reflect.Func, reflect.Chan, reflect.Interface:
-			continue
-		case reflect.Slice, reflect.Map, reflect.Array:
-			if slices.Contains([]reflect.Kind{reflect.Func, reflect.Chan, reflect.Interface}, fieldType.Type.Elem().Kind()) {
-				continue
-			}
-		case reflect.Ptr, reflect.Struct:
-			if field.CanSet() {
-				// 如果是tls.Config 类型，则不处理,这里可能会干扰其他相同的定义
-				typName := fieldType.Type.String()
-				if fileKind == reflect.Ptr {
-					typName = field.Type().Elem().String()
-				}
-				if typName == skipTypeTlsConfig {
-					continue
-				}
-				newValue := field
-				if fileKind == reflect.Ptr {
-					newValue = reflect.New(field.Type().Elem()).Elem()
-				}
+		// 判断是匿名字段
+		var ok bool
+		name, opt, ok = getFieldConfigName(field)
+		if !ok {
+			return
+		}
+		tagSettings := parseInitTagSettings(field.Tag.Get(initTagName))
+		if tagSettings.ConfigName != "" {
+			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
+		}
+	}
 
-				// 判断是匿名字段
-				name, opt, ok := getFieldConfigName(fieldType)
-				if !ok {
-					continue
+	typ := value.Type()
+	kind := value.Kind()
+	switch kind {
+	case reflect.Func, reflect.Chan, reflect.Interface:
+		return
+	case reflect.Slice, reflect.Array:
+		if slices.Contains([]reflect.Kind{reflect.Func, reflect.Chan, reflect.Interface}, typ.Elem().Kind()) {
+			return
+		}
+
+		if field != nil {
+			var values []any
+			confMap[name] = values
+			if value.Len() > 0 {
+				for i := 0; i < value.Len(); i++ {
+					values = append(values, value.Index(i).Interface())
 				}
-				if opt == "squash" || fieldType.Anonymous {
-					structValue2Map(newValue, confMap)
+			} else {
+				newconfMap := make(map[string]any)
+				values = append(values, newconfMap)
+				confMap[name] = values
+				structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap)
+			}
+		}
+	case reflect.Map:
+	case reflect.Ptr:
+		typName := typ.Elem().String()
+		if slices.Contains(skipInjectTypes, typName) {
+			return
+		}
+		if value.IsNil() {
+			value = reflect.New(typ.Elem()).Elem()
+		}
+		structValue2Map(value, field, confMap)
+	case reflect.Struct:
+		// 如果是tls.Config 类型，则不处理,这里可能会干扰其他相同的定义
+		typName := typ.String()
+		if slices.Contains(skipInjectTypes, typName) {
+			return
+		}
+
+		if field != nil {
+			if value.CanSet() {
+				if opt == "squash" || field.Anonymous {
+					structValue2Map(value, nil, confMap)
 				} else {
-					tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
-					if tagSettings.ConfigName != "" {
-						name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
-					}
 					newconfMap := make(map[string]any)
 					confMap[name] = newconfMap
-					structValue2Map(newValue, newconfMap)
+					structValue2Map(value, nil, newconfMap)
 					if len(newconfMap) == 0 {
 						delete(confMap, name)
 					}
 				}
 			}
-			continue
+		} else {
+			for i := range value.NumField() {
+				structField := typ.Field(i)
+				structValue2Map(value.Field(i), &structField, confMap)
+			}
 		}
-
-		if field.CanInterface() {
-			name, _, ok := getFieldConfigName(fieldType)
-			if !ok {
-				continue
-			}
-
-			tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
-			if tagSettings.ConfigName != "" {
-				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
-			}
-			confMap[name] = field.Interface()
+	default:
+		if field != nil && value.CanInterface() {
+			confMap[name] = value.Interface()
 		}
 	}
 }

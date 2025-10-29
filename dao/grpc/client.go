@@ -7,7 +7,7 @@
 package grpc
 
 import (
-	grpci "github.com/hopeio/gox/net/http/grpc"
+	grpcx "github.com/hopeio/gox/net/http/grpc"
 	"google.golang.org/grpc"
 )
 
@@ -26,9 +26,9 @@ func (c *Config) AfterInject() {
 
 func (c *Config) Build() (*grpc.ClientConn, error) {
 	if c.TLS {
-		return grpci.NewTLSClient(c.Addr, c.Options...)
+		return grpcx.NewTLSClient(c.Addr, c.Options...)
 	}
-	return grpci.NewClient(c.Addr, c.Options...)
+	return grpcx.NewClient(c.Addr, c.Options...)
 
 }
 

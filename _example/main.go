@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/hopeio/initialize/_example/global"
 )
 

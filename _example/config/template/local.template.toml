@@ -5,6 +5,8 @@ Float = 0.0
 Int = 0
 String = ''
 
+[Kafka]
+
 [Log]
 CallerKey = ''
 ConsoleSeparator = ''
@@ -12,7 +14,6 @@ Development = false
 DisableCaller = false
 DisableStacktrace = false
 EncodeLevelType = ''
-ErrorOutputPaths = []
 FunctionKey = ''
 Level = 'info'
 LevelKey = ''
@@ -25,9 +26,12 @@ StacktraceKey = ''
 TimeKey = ''
 TimeLayout = ''
 
+[[Log.ErrorOutputPaths]]
+
 [Log.OutputPaths]
-Console = []
-Json = []
+[[Log.OutputPaths.Console]]
+
+[[Log.OutputPaths.Json]]
 
 [Log.Sampling]
 Initial = 0
@@ -36,7 +40,6 @@ Thereafter = 0
 [Mqtt]
 AutoAckDisabled = false
 AutoReconnect = false
-Brokers = []
 CAFile = ''
 CleanSession = false
 ClientID = ''
@@ -53,14 +56,14 @@ PingTimeout = 0
 ProtocolVersion = 0
 ResumeSubs = false
 ServerName = ''
-Servers = []
 Username = ''
 WillEnabled = false
-WillPayload = []
 WillQos = 0
 WillRetained = false
 WillTopic = ''
 WriteTimeout = 0
+
+[[Mqtt.Brokers]]
 
 [Mqtt.Dialer]
 DualStack = false
@@ -78,8 +81,20 @@ Interval = 0
 PreferGo = false
 StrictErrors = false
 
-[Mqtt.HTTPHeaders]
+[[Mqtt.Servers]]
+ForceQuery = false
+Fragment = ''
+Host = ''
+OmitHost = false
+Opaque = ''
+Path = ''
+RawFragment = ''
+RawPath = ''
+RawQuery = ''
+Scheme = ''
 
 [Mqtt.WebsocketOptions]
 ReadBufferSize = 0
 WriteBufferSize = 0
+
+[[Mqtt.WillPayload]]

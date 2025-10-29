@@ -4,7 +4,7 @@
  * @Created by jyb
  */
 
-package kafka
+package sarama
 
 import (
 	"github.com/IBM/sarama"
@@ -15,8 +15,7 @@ type Config struct {
 	*sarama.Config
 }
 
-func (c *Config) Default() {
+func (c *Config) BeforeInject() {
 }
 func (c *Config) AfterInject() {
-	c.Config.Version = sarama.V3_1_0_0
 }

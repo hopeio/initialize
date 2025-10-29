@@ -7,12 +7,13 @@
 package initialize
 
 import (
-	"github.com/hopeio/initialize/conf_center"
-	"github.com/hopeio/gox/log"
-	"github.com/hopeio/gox/reflect/mtos"
-	"github.com/spf13/viper"
 	"os"
 	"strings"
+
+	"github.com/hopeio/gox/log"
+	"github.com/hopeio/gox/reflect/mtos"
+	"github.com/hopeio/initialize/conf_center"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -23,7 +24,10 @@ const (
 	fixedFieldNameEncoderRegistry = "encoderRegistry"
 	prefixConfigTemplate          = "config.template."
 	prefixLocalTemplate           = "local.template."
-	skipTypeTlsConfig             = "tls.Config"
+)
+
+var (
+	skipInjectTypes = []string{"tls.Config"}
 )
 
 func (gc *globalConfig[C, D]) setEnvConfig() {
@@ -63,6 +67,10 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 			}
 
 			dir := gc.RootConfig.EnvConfig.ConfigTemplateDir
+			err = os.MkdirAll(dir, os.ModePerm)
+			if err != nil {
+				log.Fatal(err)
+			}
 			if dir[len(dir)-1] != '/' {
 				dir += "/"
 			}

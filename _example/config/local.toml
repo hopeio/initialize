@@ -12,3 +12,8 @@ Time = '2022-01-01T00:00:00Z'
 ClientID = 'test_111111'
 Brokers = ["ssl://broker.emqx.io:8883"]
 CAFile = '_example/config/broker.emqx.io-ca.crt'
+
+[kafka]
+"bootstrap_servers" = "localhost"
+"group_id" = "myGroup"
+"auto_offset_reset" = "earliest"

@@ -4,7 +4,7 @@
  * @Created by jyb
  */
 
-package kafka
+package sarama
 
 import (
 	"github.com/IBM/sarama"

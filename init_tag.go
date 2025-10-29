@@ -8,11 +8,12 @@ package initialize
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/hopeio/gox/log"
 	"github.com/hopeio/gox/reflect/structtag"
 	stringsx "github.com/hopeio/gox/strings"
-	"reflect"
-	"strings"
 )
 
 // example:
@@ -59,7 +60,7 @@ func genEncodingTag(name string) string {
 }
 
 // get field name, return filed config name and skip flag
-func getFieldConfigName(v reflect.StructField) (string, tagOptions, bool) {
+func getFieldConfigName(v *reflect.StructField) (string, tagOptions, bool) {
 	tag := v.Tag.Get("mapstructure")
 	if tag == "" {
 		return v.Name, "", true

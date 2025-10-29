@@ -4,7 +4,7 @@ Env = "dev"
 
 [dev]
 debug = true
-ConfigTemplateDir = "_example/config"
+ConfigTemplateDir = "_example/config/template"
 NoInject = []
 [dev.LocalConfig]
 Paths = ["_example/config/local.toml"]

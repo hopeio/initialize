@@ -8,12 +8,14 @@ package global
 
 import (
 	"fmt"
-	"github.com/hopeio/initialize"
-	"github.com/hopeio/initialize/conf_center/nacos"
-	"github.com/hopeio/initialize/dao/mqtt"
-	timei "github.com/hopeio/gox/time"
 	"runtime"
 	"time"
+
+	timex "github.com/hopeio/gox/time"
+	"github.com/hopeio/initialize"
+	"github.com/hopeio/initialize/conf_center/nacos"
+	"github.com/hopeio/initialize/dao/confluent"
+	"github.com/hopeio/initialize/dao/mqtt"
 )
 
 var (
@@ -36,21 +38,22 @@ type serverConfig struct {
 }
 
 func (c *config) BeforeInject() {
-	c.Customize.Duration = timei.Day
+	c.Customize.Duration = timex.Day
 }
 
 func (c *config) AfterInject() {
 	if runtime.GOOS == "windows" {
 	}
 
-	c.Customize.Duration = timei.StdDuration(c.Customize.Duration, time.Hour)
+	c.Customize.Duration = timex.StdDuration(c.Customize.Duration, time.Hour)
 }
 
 // dao dao.
 type dao struct {
 	initialize.EmbeddedPresets
 	// GORMDB 数据库连接
-	Mqtt mqtt.Client
+	Mqtt  mqtt.Client
+	Kafka confluent.Consumer
 }
 
 func (d *dao) BeforeInject() {

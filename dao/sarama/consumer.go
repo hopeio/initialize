@@ -4,7 +4,7 @@
  * @Created by jyb
  */
 
-package kafka
+package sarama
 
 import (
 	"github.com/IBM/sarama"
@@ -21,7 +21,6 @@ func (c *ConsumerConfig) AfterInject() {
 
 func (c *ConsumerConfig) Build() (sarama.Consumer, error) {
 	return sarama.NewConsumer(c.Addrs, c.Config)
-
 }
 
 type Consumer struct {
