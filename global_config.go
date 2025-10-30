@@ -82,7 +82,7 @@ func Start[C Config, D Dao](conf C, dao D, configCenter ...conf_center.ConfigCen
 	return gc.Cleanup
 }
 
-func NewGlobal2[C Config](configCenter ...conf_center.ConfigCenter) *globalConfig[C, *EmbeddedPresets] {
+func NewGlobalConfig[C Config](configCenter ...conf_center.ConfigCenter) *globalConfig[C, *EmbeddedPresets] {
 	return NewGlobal[C, *EmbeddedPresets](configCenter...)
 }
 

@@ -28,12 +28,12 @@ func TestGenConfigTemplate(t *testing.T) {
 
 func TestNoConfigFile(t *testing.T) {
 	os.Args = []string{"test", "-n", "aaa", "-a", "12"}
-	gc := NewGlobal2[*UserConfig]()
+	gc := NewGlobalConfig[*UserConfig]()
 	t.Log(gc.Config)
 }
 
 func TestNoConfigFileWithEnv(t *testing.T) {
 	os.Args = []string{"test", "-e", "dev", "-n", "aaa", "-a", "12"}
-	gc := NewGlobal2[*UserConfig]()
+	gc := NewGlobalConfig[*UserConfig]()
 	t.Log(gc.Config)
 }
