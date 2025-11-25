@@ -8,7 +8,8 @@ package pebble
 
 import (
 	"errors"
-	"github.com/cockroachdb/pebble"
+
+	"github.com/cockroachdb/pebble/v2"
 )
 
 type Config struct {
