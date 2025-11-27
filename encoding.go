@@ -74,7 +74,9 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 	case reflect.Func, reflect.Chan, reflect.Interface:
 		return
 	case reflect.Slice, reflect.Array:
-		if slices.Contains([]reflect.Kind{reflect.Func, reflect.Chan, reflect.Interface}, typ.Elem().Kind()) {
+		elem := typ.Elem()
+		ekind := elem.Kind()
+		if slices.Contains([]reflect.Kind{reflect.Func, reflect.Chan, reflect.Interface}, ekind) {
 			return
 		}
 
@@ -86,10 +88,12 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 					values = append(values, value.Index(i).Interface())
 				}
 			} else {
-				newconfMap := make(map[string]any)
-				values = append(values, newconfMap)
-				confMap[name] = values
-				structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap)
+				if slices.Contains([]reflect.Kind{reflect.Ptr, reflect.Map, reflect.Struct}, ekind) {
+					newconfMap := make(map[string]any)
+					values = append(values, newconfMap)
+					confMap[name] = values
+					structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap)
+				}
 			}
 		}
 	case reflect.Map:
