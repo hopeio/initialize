@@ -14,7 +14,6 @@ import (
 	timex "github.com/hopeio/gox/time"
 	"github.com/hopeio/initialize"
 	"github.com/hopeio/initialize/conf_center/nacos"
-	"github.com/hopeio/initialize/dao/confluent"
 	"github.com/hopeio/initialize/dao/mqtt"
 )
 
@@ -52,8 +51,7 @@ func (c *config) AfterInject() {
 type dao struct {
 	initialize.EmbeddedPresets
 	// GORMDB 数据库连接
-	Mqtt  mqtt.Client
-	Kafka confluent.Consumer
+	Mqtt mqtt.Client
 }
 
 func (d *dao) BeforeInject() {

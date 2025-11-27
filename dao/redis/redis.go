@@ -30,7 +30,7 @@ func (c *Config) AfterInject() {
 		log.Fatal(err)
 	}
 	c.TLSConfig = tlsConfig
-	log.DurationNotify("IdleTimeout", c.IdleTimeout, time.Second)
+	log.ValueLevelNotify("IdleTimeout", c.IdleTimeout, time.Second)
 }
 
 func (c *Config) Build() (*redis.Client, error) {

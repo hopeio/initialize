@@ -7,10 +7,11 @@
 package mqtt
 
 import (
+	"time"
+
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/hopeio/gox/crypto/tls"
 	"github.com/hopeio/gox/log"
-	"time"
 )
 
 type Config struct {
@@ -29,20 +30,23 @@ func (c *Config) AfterInject() {
 }
 
 func (c *Config) Init() *Config {
-	tlsConfig, err := tls.NewClientTLSConfig(c.CAFile, c.ServerName)
-	if err != nil {
-		log.Fatal(err)
+	if c.CAFile != "" && c.ServerName != "" {
+		tlsConfig, err := tls.NewClientTLSConfig(c.CAFile, c.ServerName)
+		if err != nil {
+			log.Fatal(err)
+		}
+		c.TLSConfig = tlsConfig
 	}
-	c.TLSConfig = tlsConfig
+
 	for _, broker := range c.Brokers {
 		c.ClientOptions.AddBroker(broker)
 	}
 
-	log.DurationNotify("PingTimeout", c.PingTimeout, time.Second)
-	log.DurationNotify("ConnectTimeout", c.ConnectTimeout, time.Second)
-	log.DurationNotify("MaxReconnectInterval", c.MaxReconnectInterval, time.Second)
-	log.DurationNotify("ConnectRetryInterval", c.ConnectRetryInterval, time.Second)
-	log.DurationNotify("WriteTimeout", c.WriteTimeout, time.Second)
+	log.ValueLevelNotify("PingTimeout", c.PingTimeout, time.Second)
+	log.ValueLevelNotify("ConnectTimeout", c.ConnectTimeout, time.Second)
+	log.ValueLevelNotify("MaxReconnectInterval", c.MaxReconnectInterval, time.Second)
+	log.ValueLevelNotify("ConnectRetryInterval", c.ConnectRetryInterval, time.Second)
+	log.ValueLevelNotify("WriteTimeout", c.WriteTimeout, time.Second)
 	return c
 }
 

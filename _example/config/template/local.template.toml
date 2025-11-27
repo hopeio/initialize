@@ -5,8 +5,6 @@ Float = 0.0
 Int = 0
 String = ''
 
-[Kafka]
-
 [Log]
 CallerKey = ''
 ConsoleSeparator = ''
