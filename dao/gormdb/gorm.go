@@ -35,8 +35,8 @@ type Config struct {
 
 	Gorm gorm.Config
 
-	EnableStdLogger bool
-	Logger          logger.Config
+	UseGormLogger bool
+	Logger        logger.Config
 
 	NamingStrategy schema.NamingStrategy
 
@@ -111,7 +111,7 @@ func (c *Config) Init() {
 }
 
 func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
-	c.EnableStdLogger = conf.Debug
+	c.UseGormLogger = conf.Debug
 	if c.Charset == "" {
 		c.Charset = "utf8mb4"
 	}
@@ -127,7 +127,7 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 	dbConfig.NamingStrategy = c.NamingStrategy
 
 	// 日志
-	if c.EnableStdLogger {
+	if c.UseGormLogger {
 		// 默认日志
 		logger.Default = logger.New(stdlog.New(os.Stdout, "\r", stdlog.LstdFlags), c.Logger)
 	} else {

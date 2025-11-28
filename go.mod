@@ -45,7 +45,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/grafana/loki-client-go v0.0.0-20251015150631-c42bbddc310a
-	github.com/hopeio/gox v1.3.16
+	github.com/hopeio/gox v1.3.18
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/linxGnu/grocksdb v1.9.1
 	github.com/marcboeker/go-duckdb v1.7.0

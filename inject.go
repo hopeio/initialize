@@ -8,13 +8,14 @@ package initialize
 
 import (
 	"errors"
+	"reflect"
+	"slices"
+	"strings"
+
 	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
 	stringsx "github.com/hopeio/gox/strings"
 	daopkg "github.com/hopeio/initialize/dao"
-	"reflect"
-	"slices"
-	"strings"
 )
 
 func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
@@ -38,6 +39,9 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 
 			if field.CanInterface() {
 				inter := field.Interface()
+				if c, ok := inter.(Init); ok {
+					c.Init()
+				}
 				if c, ok := inter.(beforeInject); ok {
 					c.BeforeInject()
 				}
@@ -112,8 +116,8 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 				field = field.Addr()
 			}
 			if field.CanInterface() {
-				inter := field.Interface()
-				if daoField, ok := inter.(daopkg.DaoField); ok {
+				fieldAny := field.Interface()
+				if daoField, ok := fieldAny.(daopkg.DaoField); ok {
 
 					structField := daoType.Field(i)
 
@@ -131,10 +135,13 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 						name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 					}
 
+					if c, ok := daoConfig.(Init); ok {
+						c.Init()
+					}
 					if c, ok := daoConfig.(beforeInject); ok {
 						c.BeforeInject()
 					}
-					if c, ok := inter.(beforeInjectWithRoot); ok {
+					if c, ok := daoConfig.(beforeInjectWithRoot); ok {
 						c.BeforeInjectWithRoot(&gc.RootConfig)
 					}
 

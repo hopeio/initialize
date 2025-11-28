@@ -8,16 +8,18 @@ package initialize
 
 import (
 	"flag"
+	"strings"
+
 	"github.com/hopeio/gox/reflect/mtos"
 	"github.com/spf13/viper"
-	"strings"
+
+	"os"
+	"reflect"
 
 	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
 	"github.com/hopeio/gox/reflect/converter"
 	"github.com/spf13/pflag"
-	"os"
-	"reflect"
 )
 
 const flagTagName = "flag"
@@ -132,7 +134,7 @@ func applyFlagConfig(viper *viper.Viper, confs ...any) {
 
 func newCommandLine() *pflag.FlagSet {
 	commandLine := pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
-	commandLine.ParseErrorsWhitelist.UnknownFlags = true
+	commandLine.ParseErrorsAllowlist.UnknownFlags = true
 	return commandLine
 }
 
@@ -145,7 +147,7 @@ func parseFlag(commandLine *pflag.FlagSet) {
 
 func InjectByFlag(args []string, conf any) error {
 	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
-	commandLine.ParseErrorsWhitelist.UnknownFlags = true
+	commandLine.ParseErrorsAllowlist.UnknownFlags = true
 	injectFlagConfig(commandLine, nil, reflect.ValueOf(conf))
 	return commandLine.Parse(args[1:])
 }

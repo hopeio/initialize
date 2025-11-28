@@ -7,9 +7,14 @@
 package initialize
 
 import (
-	"github.com/hopeio/initialize/rootconf"
 	"reflect"
+
+	"github.com/hopeio/initialize/rootconf"
 )
+
+type Init interface {
+	Init()
+}
 
 type beforeInject interface {
 	BeforeInject()

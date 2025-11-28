@@ -64,8 +64,3 @@ func (db *DB) TableName(name string) string {
 	}
 	return name
 }
-
-// TODO:
-func (db *DB) Inject(configName string) {
-
-}
