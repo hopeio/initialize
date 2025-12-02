@@ -26,7 +26,7 @@ func (c *Config) AfterInject() {
 
 func (c *Config) Build() (*grpc.ClientConn, error) {
 	if c.TLS {
-		return grpcx.NewTLSClient(c.Addr, c.Options...)
+		return grpcx.NewClientTLS(c.Addr, c.Options...)
 	}
 	return grpcx.NewClient(c.Addr, c.Options...)
 

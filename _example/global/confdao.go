@@ -44,7 +44,7 @@ func (c *config) AfterInject() {
 	if runtime.GOOS == "windows" {
 	}
 
-	c.Customize.Duration = timex.StdDuration(c.Customize.Duration, time.Hour)
+	c.Customize.Duration = timex.NormalizeDuration(c.Customize.Duration, time.Hour)
 }
 
 // dao dao.
