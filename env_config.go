@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/hopeio/gox/log"
-	"github.com/hopeio/gox/reflect/mtos"
+	"github.com/hopeio/gox/mtos"
 	"github.com/hopeio/initialize/conf_center"
 	"github.com/spf13/viper"
 )

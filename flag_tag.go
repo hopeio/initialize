@@ -10,7 +10,7 @@ import (
 	"flag"
 	"strings"
 
-	"github.com/hopeio/gox/reflect/mtos"
+	encodingx "github.com/hopeio/gox/encoding"
 	"github.com/spf13/viper"
 
 	"os"
@@ -18,7 +18,6 @@ import (
 
 	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
-	"github.com/hopeio/gox/reflect/converter"
 	"github.com/spf13/pflag"
 )
 
@@ -48,7 +47,7 @@ func init() {
 type anyValue reflect.Value
 
 func (a anyValue) String() string {
-	return converter.String(reflect.Value(a))
+	return encodingx.String(reflect.Value(a))
 }
 
 func (a anyValue) Type() string {
@@ -56,7 +55,7 @@ func (a anyValue) Type() string {
 }
 
 func (a anyValue) Set(v string) error {
-	return mtos.SetValueByString(reflect.Value(a), v)
+	return encodingx.SetValueByString(reflect.Value(a), v, nil)
 }
 
 func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue reflect.Value) {
@@ -85,7 +84,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 			var flagTagSettings flagTagSettings
 			parseTagSetting(flagTag, ';', &flagTagSettings)
 			if flagTagSettings.Default != "" {
-				err := mtos.SetValueByString(fcValue.Field(i), flagTagSettings.Default)
+				err := encodingx.SetValueByString(fcValue.Field(i), flagTagSettings.Default, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -99,7 +98,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 					}
 				}
 				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
-					err := mtos.SetValueByString(fcValue.Field(i), value)
+					err := encodingx.SetValueByString(fcValue.Field(i), value, &fieldType)
 					if err != nil {
 						log.Fatal(err)
 					}
