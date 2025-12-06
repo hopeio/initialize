@@ -10,8 +10,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hopeio/gox/kvstruct"
 	"github.com/hopeio/gox/log"
-	"github.com/hopeio/gox/mtos"
 	"github.com/hopeio/initialize/conf_center"
 	"github.com/spf13/viper"
 )
@@ -86,7 +86,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		log.Warnf("lack of env configuration: %s", gc.RootConfig.Env)
 		return
 	}
-	err := mtos.Unmarshal(&gc.RootConfig.EnvConfig, envConfig)
+	err := kvstruct.Unmarshal(&gc.RootConfig.EnvConfig, envConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -114,7 +114,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 			log.Warn("lack of config center config")
 			return
 		}
-		err = mtos.Unmarshal(configCenter.Config(), configCenterConfig)
+		err = kvstruct.Unmarshal(configCenter.Config(), configCenterConfig)
 		if err != nil {
 			log.Fatal(err)
 		}
