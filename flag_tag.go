@@ -10,7 +10,7 @@ import (
 	"flag"
 	"strings"
 
-	encodingx "github.com/hopeio/gox/strconv"
+	encodingx "github.com/hopeio/gox/encoding/text"
 	"github.com/spf13/viper"
 
 	"os"
