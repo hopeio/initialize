@@ -223,7 +223,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	// hook function
 	gc.beforeInjectCall(gc.Config, gc.Dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
-	localConfig := newLocal(gc.RootConfig.LocalConfig.ReloadInterval, gc.RootConfig.LocalConfig.Paths...)
+	localConfig := &gc.RootConfig.LocalConfig
 	if gc.RootConfig.Env != "" {
 		var defaultEnvConfigPath string
 		if gc.RootConfig.ConfPath != "" {
@@ -250,7 +250,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	}
 	if len(localConfig.Paths) > 0 {
 		err = localConfig.Handle(func(data io.Reader) error {
-			gc.mu.TryLock()
+			gc.mu.Lock()
 			defer gc.mu.Unlock()
 			err := gc.Viper.MergeConfig(data)
 			if err != nil {
@@ -263,7 +263,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 			}
 			return nil
 		}, func() error {
-			gc.mu.TryLock()
+			gc.mu.Lock()
 			defer gc.mu.Unlock()
 			gc.inject(gc.Config, gc.Dao)
 			gc.editTimes++

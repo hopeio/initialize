@@ -7,12 +7,12 @@
 package rootconf
 
 import (
-	"github.com/hopeio/initialize/conf_center"
-	"github.com/hopeio/gox/log"
 	"net/http"
 	"net/url"
 	"path/filepath"
-	"time"
+
+	"github.com/hopeio/gox/log"
+	"github.com/hopeio/initialize/conf_center"
 )
 
 type RootConfig struct {
@@ -38,15 +38,9 @@ type EnvConfig struct {
 	// 代理, socks5://localhost:1080
 	Proxy       string `flag:"name:proxy;usage:代理;env:HTTP_PROXY" `
 	NoInject    []string
-	LocalConfig LocalConfig
+	LocalConfig conf_center.Local
 	// config字段顺序不能变,ConfigCenter 保持在最后
 	ConfigCenter conf_center.Config
-}
-
-type LocalConfig struct {
-	// 间隔大于1秒采用timer定时加载，小于1秒用fsnotify
-	ReloadInterval time.Duration
-	Paths          []string
 }
 
 func (c *EnvConfig) AfterInject() {

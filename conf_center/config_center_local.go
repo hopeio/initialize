@@ -4,20 +4,23 @@
  * @Created by jyb
  */
 
-package initialize
+package conf_center
 
 import (
 	"errors"
-	"github.com/fsnotify/fsnotify"
-	"github.com/hopeio/gox/log"
 	"io"
 	"os"
 	"slices"
 	"time"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/hopeio/gox/log"
 )
 
 type Local struct {
 	// 间隔大于1秒采用timer定时加载，小于1秒用fsnotify
+	Watch          bool
+	WatchReload    bool
 	ReloadInterval time.Duration
 	Paths          []string
 	watcher        *fsnotify.Watcher
@@ -25,19 +28,12 @@ type Local struct {
 	modTime        []time.Time
 }
 
-func newLocal(ReloadInterval time.Duration, paths ...string) *Local {
-	return &Local{
-		ReloadInterval: ReloadInterval,
-		Paths:          paths,
-	}
-}
-
-func (cc *Local) Type() string {
+func (ld *Local) Type() string {
 	return "local"
 }
 
-func (cc *Local) Config() any {
-	return cc
+func (ld *Local) Config() any {
+	return ld
 }
 
 func (ld *Local) Close() error {
@@ -55,38 +51,38 @@ func (ld *Local) Handle(handle func(io.Reader) error, done func() error) (err er
 	if len(ld.Paths) == 0 {
 		return errors.New("empty local config path")
 	}
-	for _, path := range ld.Paths {
+	now := time.Now()
+	ld.modTime = make([]time.Time, len(ld.Paths))
+	for i, path := range ld.Paths {
 		err = load(handle, path)
 		if err != nil {
 			return err
 		}
+		ld.modTime[i] = now
 	}
 
-	if ld.ReloadInterval > 0 {
-		ld.modTime = make([]time.Time, len(ld.Paths))
-		now := time.Now()
-		for i := range ld.modTime {
-			ld.modTime[i] = now
-		}
-		if ld.ReloadInterval >= time.Second {
+	if ld.ReloadInterval == 0 {
+		ld.ReloadInterval = time.Second
+	}
+
+	if ld.WatchReload {
+		ld.timer = time.NewTicker(ld.ReloadInterval)
+		go ld.watchTimer(handle, done)
+	} else {
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
 			ld.timer = time.NewTicker(ld.ReloadInterval)
 			go ld.watchTimer(handle, done)
+			return nil
 		} else {
-			watcher, err := fsnotify.NewWatcher()
-			if err != nil {
-				ld.timer = time.NewTicker(time.Second)
-				go ld.watchTimer(handle, done)
-				return nil
-			} else {
-				for _, path := range ld.Paths {
-					err = watcher.Add(path)
-					if err != nil {
-						return err
-					}
+			for _, path := range ld.Paths {
+				err = watcher.Add(path)
+				if err != nil {
+					return err
 				}
-				ld.watcher = watcher
-				go ld.watchNotify(handle, done)
 			}
+			ld.watcher = watcher
+			go ld.watchNotify(handle, done)
 		}
 	}
 
