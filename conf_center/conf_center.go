@@ -7,10 +7,11 @@
 package conf_center
 
 import (
-	"github.com/hopeio/gox/log"
-	stringsx "github.com/hopeio/gox/strings/ascii"
 	"io"
 	"strings"
+
+	"github.com/hopeio/gox/log"
+	stringsx "github.com/hopeio/gox/strings/ascii"
 )
 
 type ConfigType string
