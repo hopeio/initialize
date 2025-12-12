@@ -11,8 +11,8 @@ import (
 	"os"
 	"time"
 
-	dbi "github.com/hopeio/gox/database/sql"
-	loggeri "github.com/hopeio/gox/database/sql/gorm/logger"
+	sqlx "github.com/hopeio/gox/database/sql"
+	loggerx "github.com/hopeio/gox/database/sql/gorm/logger"
 	"github.com/hopeio/gox/log"
 	"github.com/hopeio/initialize/rootconf"
 	"gorm.io/gorm"
@@ -71,7 +71,7 @@ type MetricsCollectorConfig struct {
 
 func (c *Config) Init() {
 	if c.Type == "" {
-		c.Type = dbi.Postgres
+		c.Type = sqlx.Postgres
 	}
 	log.ValueLevelNotify("SlowThreshold", c.Logger.SlowThreshold, 10*time.Millisecond)
 	if c.TimeZone == "" {
@@ -87,20 +87,20 @@ func (c *Config) Init() {
 		c.Mysql.ParseTime = "True"
 	}
 	if c.Charset == "" {
-		if c.Type == dbi.Mysql {
+		if c.Type == sqlx.Mysql {
 			c.Charset = "utf8mb4"
 		}
-		if c.Type == dbi.Postgres {
+		if c.Type == sqlx.Postgres {
 			c.Charset = "utf8"
 		}
 
 	}
 
 	if c.Port == 0 {
-		if c.Type == dbi.Mysql {
+		if c.Type == sqlx.Mysql {
 			c.Port = 3306
 		}
-		if c.Type == dbi.Postgres {
+		if c.Type == sqlx.Postgres {
 			c.Port = 5432
 		}
 	}
@@ -131,7 +131,7 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 		// 默认日志
 		logger.Default = logger.New(stdlog.New(os.Stdout, "\r", stdlog.LstdFlags), c.Logger)
 	} else {
-		logger.Default = &loggeri.Logger{Logger: log.NoCallerLogger().Logger, Config: &c.Logger}
+		logger.Default = &loggerx.Logger{Logger: log.NoCallerLogger().Logger, Config: &c.Logger}
 	}
 
 	db, err := gorm.Open(dialector, dbConfig)
@@ -140,7 +140,7 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 	}
 
 	if c.Prometheus.Enabled {
-		if c.Type == dbi.Mysql {
+		if c.Type == sqlx.Mysql {
 			for _, pc := range c.Prometheus.MetricsCollectors {
 				c.Prometheus.MetricsCollector = append(c.Prometheus.MetricsCollector, &prometheus.MySQL{
 					Prefix:        pc.Prefix,
@@ -150,7 +150,7 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 			}
 
 		}
-		if c.Type == dbi.Postgres {
+		if c.Type == sqlx.Postgres {
 			for _, pc := range c.Prometheus.MetricsCollectors {
 				c.Prometheus.MetricsCollector = append(c.Prometheus.MetricsCollector, &prometheus.Postgres{
 					Prefix:        pc.Prefix,

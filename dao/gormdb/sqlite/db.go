@@ -7,7 +7,7 @@
 package sqlite
 
 import (
-	dbi "github.com/hopeio/gox/database/sql"
+	sqlx "github.com/hopeio/gox/database/sql"
 	pkdb "github.com/hopeio/initialize/dao/gormdb"
 	"github.com/hopeio/initialize/rootconf"
 	"gorm.io/driver/sqlite"
@@ -35,7 +35,7 @@ func (db *DB) Config() any {
 
 func (db *DB) Init() error {
 	var err error
-	db.Conf.Type = dbi.Sqlite
+	db.Conf.Type = sqlx.Sqlite
 	db.DB, err = (*Config)(&db.Conf).Build()
 	return err
 }

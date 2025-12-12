@@ -9,7 +9,7 @@ package mysql
 import (
 	"fmt"
 
-	dbi "github.com/hopeio/gox/database/sql"
+	sqlx "github.com/hopeio/gox/database/sql"
 	pkdb "github.com/hopeio/initialize/dao/gormdb"
 	"github.com/hopeio/initialize/rootconf"
 	"gorm.io/driver/mysql"
@@ -40,7 +40,7 @@ func (db *DB) Config() any {
 
 func (db *DB) Init() error {
 	var err error
-	db.Conf.Type = dbi.Postgres
+	db.Conf.Type = sqlx.Postgres
 	db.DB, err = (*Config)(&db.Conf).Build()
 	return err
 }
