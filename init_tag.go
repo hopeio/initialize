@@ -43,13 +43,13 @@ func parseInitTagSettings(str string) *initTagSettings {
 		return &initTagSettings{}
 	}
 	var settings initTagSettings
-	parseTagSetting(str, ';', &settings)
+	parseTagSetting(str, &settings)
 	return &settings
 }
 
-// parseTagSetting default sep ;
-func parseTagSetting(str string, sep byte, settings any) {
-	err := structtag.ParseSettingTagIntoStruct(str, sep, settings)
+// parseTagSetting default sep ; delimiter :
+func parseTagSetting(str string, settings any) {
+	err := structtag.ParseSettingTagIntoStruct(str, ";", ":", settings)
 	if err != nil {
 		log.Fatal(err)
 	}

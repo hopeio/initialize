@@ -47,7 +47,7 @@ func init() {
 type anyValue reflect.Value
 
 func (a anyValue) String() string {
-	return encodingx.ReflectFormat(reflect.Value(a))
+	return encodingx.FormatReflectValue(reflect.Value(a))
 }
 
 func (a anyValue) Type() string {
@@ -55,7 +55,7 @@ func (a anyValue) Type() string {
 }
 
 func (a anyValue) Set(v string) error {
-	return encodingx.ParseReflectSet(reflect.Value(a), v, nil)
+	return encodingx.ParseSetReflectValue(reflect.Value(a), v, nil)
 }
 
 func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue reflect.Value) {
@@ -82,9 +82,9 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 		}
 		if flagTag != "" {
 			var flagTagSettings flagTagSettings
-			parseTagSetting(flagTag, ';', &flagTagSettings)
+			parseTagSetting(flagTag, &flagTagSettings)
 			if flagTagSettings.Default != "" {
-				err := encodingx.ParseReflectSet(fcValue.Field(i), flagTagSettings.Default, &fieldType)
+				err := encodingx.ParseSetReflectValue(fcValue.Field(i), flagTagSettings.Default, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -98,7 +98,7 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 					}
 				}
 				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
-					err := encodingx.ParseReflectSet(fcValue.Field(i), value, &fieldType)
+					err := encodingx.ParseSetReflectValue(fcValue.Field(i), value, &fieldType)
 					if err != nil {
 						log.Fatal(err)
 					}
