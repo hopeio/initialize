@@ -37,7 +37,7 @@ var configCenter = map[string]ConfigCenter{}
 func RegisterConfigCenter(c ConfigCenter) {
 	if c != nil {
 		typ := strings.ToLower(c.Type())
-		if !stringsx.IsLetters(typ) {
+		if !stringsx.IsAllLetter(typ) {
 			log.Fatal("config type must be letters")
 		}
 		if _, ok := configCenter[typ]; !ok {

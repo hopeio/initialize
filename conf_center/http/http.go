@@ -7,11 +7,11 @@
 package http
 
 import (
-	http_fs "github.com/hopeio/gox/net/http/fs"
-	http_fs_watch "github.com/hopeio/gox/net/http/fs/watch"
 	"io"
 	"net/http"
 	"time"
+
+	http_fs "github.com/hopeio/gox/net/http/fs"
 )
 
 var ConfigCenter = &Http{}
@@ -46,7 +46,7 @@ func (cc *Http) Handle(handle func(io.Reader) error) error {
 		return file.Body.Close()
 	}
 
-	watch := http_fs_watch.New(time.Second * cc.ReloadInterval)
+	watch := http_fs.New(time.Second * cc.ReloadInterval)
 
 	callback := func(hfile *http_fs.FileInfo) {
 		handle(hfile.Body)
