@@ -46,7 +46,7 @@ func (cc *Http) Handle(handle func(io.Reader) error) error {
 		return file.Body.Close()
 	}
 
-	watch := http_fs.New(time.Second * cc.ReloadInterval)
+	watch := http_fs.NewWatch(time.Second * cc.ReloadInterval)
 
 	callback := func(hfile *http_fs.FileInfo) {
 		handle(hfile.Body)
