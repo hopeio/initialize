@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	http_fs "github.com/hopeio/gox/net/http/fs"
+	httpx "github.com/hopeio/gox/net/http"
 )
 
 var ConfigCenter = &Http{}
@@ -31,7 +31,7 @@ func (cc *Http) Type() string {
 func (cc *Http) Handle(handle func(io.Reader) error) error {
 
 	if cc.ReloadInterval == 0 {
-		file, err := http_fs.FetchFile(cc.Url, func(r *http.Request) {
+		file, err := httpx.FetchFile(cc.Url, func(r *http.Request) {
 			if cc.AuthBasic != "" {
 				r.Header.Add("Authorization", cc.AuthBasic)
 			}
@@ -46,9 +46,9 @@ func (cc *Http) Handle(handle func(io.Reader) error) error {
 		return file.Body.Close()
 	}
 
-	watch := http_fs.NewWatch(time.Second * cc.ReloadInterval)
+	watch := httpx.NewFileWatcher(time.Second * cc.ReloadInterval)
 
-	callback := func(hfile *http_fs.FileInfo) {
+	callback := func(hfile *httpx.FileInfo) {
 		handle(hfile.Body)
 		hfile.Body.Close()
 	}
