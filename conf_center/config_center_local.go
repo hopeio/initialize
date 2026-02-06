@@ -105,9 +105,12 @@ func (ld *Local) watchNotify(handle func(reader io.Reader) error, done func() er
 				}
 				ld.modTime[idx] = now
 				if err := load(handle, ld.Paths[idx]); err != nil {
-					log.Errorf("failed to reload data from %v, got error %v\n", ld.Paths, err)
+					log.Errorf("failed to reload data from %v, got error %v", ld.Paths, err)
 				} else {
-					done()
+					err = done()
+					if err != nil {
+						log.Errorf("failed done %v", err)
+					}
 				}
 			}
 		case err, ok := <-ld.watcher.Errors:
@@ -128,7 +131,7 @@ func (ld *Local) watchTimer(handle func(reader io.Reader) error, done func() err
 				if fileInfo.ModTime().After(ld.modTime[i]) {
 					ld.modTime[i] = fileInfo.ModTime()
 					if err := load(handle, ld.Paths[i]); err != nil {
-						log.Error("failed to reload data from %v, got error %v\n", ld.Paths, err)
+						log.Error("failed to reload data from %v, got error %v", ld.Paths, err)
 					} else {
 						done()
 					}
