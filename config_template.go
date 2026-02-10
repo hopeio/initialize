@@ -7,11 +7,12 @@
 package initialize
 
 import (
+	"os"
+	"reflect"
+
 	"github.com/hopeio/gox/log"
 	stringsx "github.com/hopeio/gox/strings"
 	"github.com/hopeio/initialize/dao"
-	"os"
-	"reflect"
 )
 
 func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
@@ -24,7 +25,7 @@ func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
 	}
 
 	format := gc.RootConfig.ConfigCenter.Format
-	filename := prefixLocalTemplate + string(format)
+	filename := prefixLocalTemplate + format
 
 	confMap := make(map[string]any)
 	if singleTemplateFileConfig {
