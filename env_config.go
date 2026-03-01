@@ -26,10 +26,6 @@ const (
 	prefixLocalTemplate           = "local.template."
 )
 
-var (
-	skipInjectTypes = []string{"tls.Config"}
-)
-
 func (gc *globalConfig[C, D]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
 		if gc.RootConfig.ConfPath == "" {

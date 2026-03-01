@@ -8,17 +8,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/hopeio/gox/os/fs"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"os"
+
+	"github.com/hopeio/gox/os/fs"
 )
 
 func main() {
 
 	packageName := "D:/code/hopeio/initialize"
-	fs.RangeDir(packageName, func(dir string, entries []os.DirEntry) ([]os.DirEntry, error) {
+	fs.WalkDir(packageName, func(dir string, entries []os.DirEntry) ([]os.DirEntry, error) {
 		var recursion []os.DirEntry
 		for _, entry := range entries {
 			if entry.IsDir() {

@@ -18,6 +18,15 @@ import (
 	daopkg "github.com/hopeio/initialize/dao"
 )
 
+var (
+	skipInjectTypes = []string{"tls.Config"}
+)
+
+
+func RegisterSkipInjectType(types ...string){
+	skipInjectTypes = append(skipInjectTypes, types...)
+}
+
 func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 	nameValueMap := make(map[string]reflect.Value)
 	var structFields []reflect.StructField

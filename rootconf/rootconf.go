@@ -30,6 +30,8 @@ type BasicConfig struct {
 	Name string `flag:"name:name;usage:模块名;env:APP_NAME"`
 	// environment
 	Env string `flag:"name:env;short:e;default:dev;usage:环境;env:ENV"`
+	// 跳过注入的类型
+	SkipInjectTypes []string `flag:"name:skip-inject-types;usage:跳过注入的类型;env:SKIP_INJECT_TYPES"`
 }
 
 type EnvConfig struct {

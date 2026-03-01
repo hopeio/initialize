@@ -31,4 +31,5 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 	if gc.RootConfig.ConfPath != confPath {
 		gc.RootConfig.ConfPath = confPath
 	}
+	skipInjectTypes = append(skipInjectTypes, gc.RootConfig.SkipInjectTypes...)
 }
