@@ -91,7 +91,6 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 
 	var configCenter conf_center.ConfigCenter
 	if gc.RootConfig.EnvConfig.ConfigCenter.Type != "" {
-
 		if gc.RootConfig.EnvConfig.ConfigCenter.Format == "" {
 			log.Warnf("lack of config center format, support format:%v", viper.SupportedExts)
 			return

@@ -16,8 +16,8 @@ import (
 )
 
 type RootConfig struct {
-	Executable string
-	ExecDir    string
+	Executable string // autowired
+	ExecDir    string // autowired
 	// 配置文件路径
 	ConfPath string `flag:"name:config;short:c;usage:配置文件路径,默认./config.xxx或./config/config.xxx;env:CONFIG"`
 	BasicConfig
@@ -30,8 +30,6 @@ type BasicConfig struct {
 	Name string `flag:"name:name;usage:模块名;env:APP_NAME"`
 	// environment
 	Env string `flag:"name:env;short:e;default:dev;usage:环境;env:ENV"`
-	// 跳过注入的类型
-	SkipInjectTypes []string `flag:"name:skip-inject-types;usage:跳过注入的类型;env:SKIP_INJECT_TYPES"`
 }
 
 type EnvConfig struct {
@@ -39,7 +37,7 @@ type EnvConfig struct {
 	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:是否生成配置模板;env:CONFIG_TEMPLATE_DIR"`
 	// 代理, socks5://localhost:1080
 	Proxy       string `flag:"name:proxy;usage:代理;env:HTTP_PROXY" `
-	NoInject    []string
+	SkipInjects []string
 	LocalConfig conf_center.Local
 	// config字段顺序不能变,ConfigCenter 保持在最后
 	ConfigCenter conf_center.Config

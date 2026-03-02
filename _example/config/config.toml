@@ -5,14 +5,14 @@ Env = "dev"
 [dev]
 debug = true
 ConfigTemplateDir = "_example/config/template"
-NoInject = []
+SkipInjects = []
 [dev.LocalConfig]
 Paths = ["_example/config/local.toml"]
 ReloadInterval = "10s"
 
 [test]
 Debug = false
-NoInject = ["Apollo","Etcd", "Es"]
+SkipInject = ["Apollo","Etcd", "Es"]
 
 [test.LocalConfig]
 Paths = ["_example/config/local.test.toml"]

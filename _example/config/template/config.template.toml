@@ -89,4 +89,4 @@ Scheme = ''
 Paths = []
 ReloadInterval = 10000000000
 
-[[dev.NoInject]]
+[[dev.SkipInjects]]

@@ -28,7 +28,13 @@ var (
 			config.Squash = true
 		},
 	}
+
+	unSupportTemplateTypes = []string{"tls.Config"}
 )
+
+func RegisterUnSupportTemplateTypes(types ...string) {
+	unSupportTemplateTypes = append(unSupportTemplateTypes, types...)
+}
 
 type encoder interface {
 	Encode(format string, v map[string]any) ([]byte, error)
@@ -99,7 +105,7 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 	case reflect.Map:
 	case reflect.Ptr:
 		typName := typ.Elem().String()
-		if slices.Contains(skipInjectTypes, typName) {
+		if slices.Contains(unSupportTemplateTypes, typName) {
 			return
 		}
 		if value.IsNil() {
@@ -109,7 +115,7 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 	case reflect.Struct:
 		// 如果是tls.Config 类型，则不处理,这里可能会干扰其他相同的定义
 		typName := typ.String()
-		if slices.Contains(skipInjectTypes, typName) {
+		if slices.Contains(unSupportTemplateTypes, typName) {
 			return
 		}
 

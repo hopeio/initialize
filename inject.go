@@ -18,15 +18,6 @@ import (
 	daopkg "github.com/hopeio/initialize/dao"
 )
 
-var (
-	skipInjectTypes = []string{"tls.Config"}
-)
-
-
-func RegisterSkipInjectType(types ...string){
-	skipInjectTypes = append(skipInjectTypes, types...)
-}
-
 func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 	nameValueMap := make(map[string]reflect.Value)
 	var structFields []reflect.StructField
@@ -261,7 +252,7 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 				continue
 			}
 			confName := strings.ToUpper(structFiled.Name)
-			if slices.Contains(gc.RootConfig.NoInject, confName) {
+			if slices.Contains(gc.RootConfig.SkipInjects, confName) {
 				continue
 			}
 

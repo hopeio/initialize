@@ -7,10 +7,11 @@
 package initialize
 
 import (
-	"github.com/hopeio/gox/log"
-	stringsx "github.com/hopeio/gox/strings"
 	"os"
 	"path/filepath"
+
+	"github.com/hopeio/gox/log"
+	stringsx "github.com/hopeio/gox/strings"
 )
 
 func (gc *globalConfig[C, D]) setRootConfig() {
@@ -31,5 +32,4 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 	if gc.RootConfig.ConfPath != confPath {
 		gc.RootConfig.ConfPath = confPath
 	}
-	skipInjectTypes = append(skipInjectTypes, gc.RootConfig.SkipInjectTypes...)
 }

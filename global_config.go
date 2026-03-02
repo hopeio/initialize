@@ -203,8 +203,8 @@ func (gc *globalConfig[C, D]) loadConfig() {
 
 	gc.setRootConfig()
 	gc.setEnvConfig()
-	for i := range gc.RootConfig.NoInject {
-		gc.RootConfig.NoInject[i] = strings.ToUpper(gc.RootConfig.NoInject[i])
+	for i := range gc.RootConfig.SkipInjects {
+		gc.RootConfig.SkipInjects[i] = strings.ToUpper(gc.RootConfig.SkipInjects[i])
 	}
 
 	var singleTemplateFileConfig bool
