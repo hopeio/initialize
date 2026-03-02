@@ -87,7 +87,7 @@ func NewGlobalConfig[C Config](configCenter ...conf_center.ConfigCenter) *global
 }
 
 func (gc *globalConfig[C, D]) init(configCenter ...conf_center.ConfigCenter) {
-	applyFlagConfig(gc.Viper, &gc.RootConfig)
+	applyFlagConfig("", gc.Viper, &gc.RootConfig)
 	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
 	// 注册配置中心,默认注册本地文件
@@ -185,10 +185,10 @@ func (gc *globalConfig[C, D]) loadConfig() {
 				// remove .
 				format = format[1:]
 				if !slices.Contains(viper.SupportedExts, format) {
-					log.Fatalf("unsupport config format, support: %v", viper.SupportedExts)
+					log.Fatalf("unsupport config format:%s, support: %v", format, viper.SupportedExts)
 				}
 			} else {
-				log.Fatalf("config path need format ext, support: %v", viper.SupportedExts)
+				log.Fatalf("config path:%s need format ext, support: %v", gc.RootConfig.ConfPath, viper.SupportedExts)
 			}
 		}
 
@@ -203,9 +203,6 @@ func (gc *globalConfig[C, D]) loadConfig() {
 
 	gc.setRootConfig()
 	gc.setEnvConfig()
-	for i := range gc.RootConfig.SkipInjects {
-		gc.RootConfig.SkipInjects[i] = strings.ToUpper(gc.RootConfig.SkipInjects[i])
-	}
 
 	var singleTemplateFileConfig bool
 	if gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
@@ -218,7 +215,11 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	}
 	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
 	if cfgcenter != nil {
-		applyFlagConfig(gc.Viper, cfgcenter)
+		flagPrefix := strings.Join([]string{"configcenter", strings.ToLower(gc.RootConfig.ConfigCenter.Type)}, ".")
+		if gc.RootConfig.Name != "" {
+			flagPrefix = strings.ToLower(gc.RootConfig.Name) + "." + flagPrefix
+		}
+		applyFlagConfig(flagPrefix, gc.Viper, cfgcenter)
 	}
 	// hook function
 	gc.beforeInjectCall(gc.Config, gc.Dao)

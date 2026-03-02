@@ -1,18 +1,18 @@
-Name = "user"
+Name = "example"
 # dev | test | prod
 Env = "dev"
 
 [dev]
 debug = true
 ConfigTemplateDir = "_example/config/template"
-SkipInjects = []
+SkipInjectDaos = []
 [dev.LocalConfig]
 Paths = ["_example/config/local.toml"]
 ReloadInterval = "10s"
 
 [test]
 Debug = false
-SkipInject = ["Apollo","Etcd", "Es"]
+SkipInjectDaos = ["Apollo","Etcd", "Es"]
 
 [test.LocalConfig]
 Paths = ["_example/config/local.test.toml"]

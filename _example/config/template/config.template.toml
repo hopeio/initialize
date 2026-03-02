@@ -1,10 +1,11 @@
 Env = 'dev'
-Name = 'user'
+Name = 'example'
 
 [dev]
 ConfigTemplateDir = '_example/config/template'
 Debug = true
 Proxy = ''
+SkipInjectDaos = []
 
 [dev.ConfigCenter]
 Format = 'toml'
@@ -88,5 +89,5 @@ Scheme = ''
 [dev.LocalConfig]
 Paths = []
 ReloadInterval = 10000000000
-
-[[dev.SkipInjects]]
+Watch = false
+WatchReload = false

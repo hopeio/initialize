@@ -16,8 +16,8 @@ import (
 )
 
 type RootConfig struct {
-	Executable string // autowired
-	ExecDir    string // autowired
+	Executable string `init:"-"` // autowired
+	ExecDir    string `init:"-"` // autowired
 	// 配置文件路径
 	ConfPath string `flag:"name:config;short:c;usage:配置文件路径,默认./config.xxx或./config/config.xxx;env:CONFIG"`
 	BasicConfig
@@ -36,9 +36,9 @@ type EnvConfig struct {
 	Debug             bool   `flag:"name:debug;short:d;default:true;usage:是否测试;env:DEBUG"`
 	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:是否生成配置模板;env:CONFIG_TEMPLATE_DIR"`
 	// 代理, socks5://localhost:1080
-	Proxy       string `flag:"name:proxy;usage:代理;env:HTTP_PROXY" `
-	SkipInjects []string
-	LocalConfig conf_center.Local
+	Proxy          string `flag:"name:proxy;usage:代理;env:HTTP_PROXY" `
+	SkipInjectDaos []string
+	LocalConfig    conf_center.Local
 	// config字段顺序不能变,ConfigCenter 保持在最后
 	ConfigCenter conf_center.Config
 }

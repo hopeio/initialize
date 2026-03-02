@@ -192,7 +192,7 @@ func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 			return
 		}
 	}
-	applyFlagConfig(gc.Viper, tmpConfig)
+	applyFlagConfig(strings.ToLower(gc.RootConfig.Name), gc.Viper, tmpConfig)
 	gc.afterInjectConfigCall(tmpConfig)
 	conf.AfterInject()
 	if c, ok := conf.(afterInjectWithRoot); ok {
@@ -252,7 +252,7 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 				continue
 			}
 			confName := strings.ToUpper(structFiled.Name)
-			if slices.Contains(gc.RootConfig.SkipInjects, confName) {
+			if slices.Contains(gc.RootConfig.SkipInjectDaos, confName) {
 				continue
 			}
 
@@ -260,7 +260,7 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 			if daofield, ok := inter.(daopkg.DaoField); ok {
 				err := daofield.Init()
 				if err != nil {
-					log.Fatal(err)
+					log.Fatal("inject", confName, "err:", err)
 				}
 			}
 		}

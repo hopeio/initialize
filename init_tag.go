@@ -34,6 +34,7 @@ const (
 )
 
 type initTagSettings struct {
+	Skip         bool   `meta:"skip"`
 	ConfigName   string `meta:"config"`
 	DefaultValue string `meta:"default"`
 }
@@ -41,6 +42,9 @@ type initTagSettings struct {
 func parseInitTagSettings(str string) *initTagSettings {
 	if str == "" {
 		return &initTagSettings{}
+	}
+	if str == "-" {
+		return &initTagSettings{Skip: true}
 	}
 	var settings initTagSettings
 	parseTagSetting(str, &settings)

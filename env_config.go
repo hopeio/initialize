@@ -86,9 +86,12 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	applyFlagConfig(nil, &gc.RootConfig.EnvConfig)
+	flagPrefix := strings.ToLower(gc.RootConfig.Name)
+	applyFlagConfig(flagPrefix, nil, &gc.RootConfig.EnvConfig)
 	gc.RootConfig.EnvConfig.AfterInject()
-
+	for i := range gc.RootConfig.SkipInjectDaos {
+		gc.RootConfig.SkipInjectDaos[i] = strings.ToUpper(gc.RootConfig.SkipInjectDaos[i])
+	}
 	var configCenter conf_center.ConfigCenter
 	if gc.RootConfig.EnvConfig.ConfigCenter.Type != "" {
 		if gc.RootConfig.EnvConfig.ConfigCenter.Format == "" {
@@ -102,9 +105,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 			log.Warnf("lack of registered config center type : %s", gc.RootConfig.EnvConfig.ConfigCenter.Type)
 			return
 		}
-		applyFlagConfig(gc.Viper, configCenter.Config())
-		gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
-		configCenterConfig, ok := gc.Viper.Get(gc.RootConfig.Env + ".configCenter." + gc.RootConfig.EnvConfig.ConfigCenter.Type).(map[string]any)
+		configCenterConfig, ok := gc.Viper.Get(gc.RootConfig.Env + ".configcenter." + gc.RootConfig.EnvConfig.ConfigCenter.Type).(map[string]any)
 		if !ok {
 			log.Warn("lack of config center config")
 			return
@@ -113,5 +114,13 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		if flagPrefix != "" {
+			flagPrefix = flagPrefix + ".configcenter." + strings.ToLower(gc.RootConfig.EnvConfig.ConfigCenter.Type)
+		} else {
+			flagPrefix = "configcenter." + strings.ToLower(gc.RootConfig.EnvConfig.ConfigCenter.Type)
+		}
+		applyFlagConfig(flagPrefix, gc.Viper, configCenter.Config())
+		gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
 	}
 }

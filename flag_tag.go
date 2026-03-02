@@ -58,19 +58,19 @@ func (a anyValue) Set(v string) error {
 	return encodingx.ParseSetReflectValue(reflect.Value(a), v, nil)
 }
 
-func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue reflect.Value) {
+func injectFlagConfig(prefix string, commandLine *pflag.FlagSet, viper *viper.Viper, fcValue reflect.Value) {
 	fcValue = reflectx.DerefValue(fcValue)
 	if !fcValue.IsValid() {
 		return
 	}
 	fcTyp := fcValue.Type()
-
+	envPrefix := strings.ReplaceAll(strings.ToUpper(prefix), ".", "_")
 	for i := range fcTyp.NumField() {
 		fieldType := fcTyp.Field(i)
 		if !fieldType.IsExported() {
 			continue
 		}
-		flagTag := fieldType.Tag.Get(flagTagName)
+
 		fieldValue := fcValue.Field(i)
 		kind := fieldValue.Kind()
 		if kind == reflect.Pointer || kind == reflect.Interface {
@@ -80,6 +80,8 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 				continue
 			}
 		}
+
+		flagTag := fieldType.Tag.Get(flagTagName)
 		if flagTag != "" {
 			var flagTagSettings flagTagSettings
 			parseTagSetting(flagTag, &flagTagSettings)
@@ -106,21 +108,54 @@ func injectFlagConfig(commandLine *pflag.FlagSet, viper *viper.Viper, fcValue re
 			}
 			if flagTagSettings.Name != "" {
 				// flag设置
-				flag := commandLine.VarPF(anyValue(fieldValue), flagTagSettings.Name, flagTagSettings.Short, flagTagSettings.Usage)
+				flagv := commandLine.VarPF(anyValue(fieldValue), flagTagSettings.Name, flagTagSettings.Short, flagTagSettings.Usage)
 				if kind == reflect.Bool {
-					flag.NoOptDefVal = "true"
+					flagv.NoOptDefVal = "true"
 				}
 			}
-		} else if kind == reflect.Struct {
-			injectFlagConfig(commandLine, viper, fieldValue)
+		} else {
+			flag := strings.ToLower(fieldType.Name)
+			if prefix != "" {
+				flag = prefix + "." + flag
+			}
+			if kind == reflect.Struct {
+				if fieldType.Anonymous {
+					injectFlagConfig(prefix, commandLine, viper, fieldValue)
+				} else {
+					injectFlagConfig(flag, commandLine, viper, fieldValue)
+				}
+			} else if kind != reflect.Interface {
+				// default env
+				env := strings.ToUpper(fieldType.Name)
+				if envPrefix != "" {
+					env = envPrefix + "_" + env
+				}
+				if viper != nil {
+					err := viper.BindEnv(env)
+					if err != nil {
+						log.Fatal(err)
+					}
+				}
+				if value, ok := os.LookupEnv(env); ok {
+					err := encodingx.ParseSetReflectValue(fcValue.Field(i), value, &fieldType)
+					if err != nil {
+						log.Fatal(err)
+					}
+				}
+				// default flag
+				flagv := commandLine.VarPF(anyValue(fieldValue), flag, "", "")
+				if kind == reflect.Bool {
+					flagv.NoOptDefVal = "true"
+				}
+			}
 		}
 	}
 }
 
-func applyFlagConfig(viper *viper.Viper, confs ...any) {
+func applyFlagConfig(prefix string, viper *viper.Viper, confs ...any) {
 	commandLine := newCommandLine()
 	for _, conf := range confs {
-		injectFlagConfig(commandLine, viper, reflect.ValueOf(conf))
+		injectFlagConfig(prefix, commandLine, viper, reflect.ValueOf(conf))
 	}
 	if viper != nil {
 		err := viper.BindPFlags(commandLine)
@@ -147,6 +182,6 @@ func parseFlag(commandLine *pflag.FlagSet) {
 func InjectByFlag(args []string, conf any) error {
 	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true
-	injectFlagConfig(commandLine, nil, reflect.ValueOf(conf))
+	injectFlagConfig("", commandLine, nil, reflect.ValueOf(conf))
 	return commandLine.Parse(args[1:])
 }

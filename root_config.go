@@ -22,7 +22,7 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	applyFlagConfig(nil, &gc.RootConfig)
+	applyFlagConfig("", nil, &gc.RootConfig)
 	if gc.RootConfig.ConfigCenter.Format == "" {
 		gc.RootConfig.ConfigCenter.Format = format
 	}

@@ -9,6 +9,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/hopeio/initialize/_example/global"
 )
 
@@ -17,6 +18,7 @@ func main() {
 	global.Global.Defer(func() {
 		fmt.Println("defer")
 	})
-	fmt.Println(global.Global.Config)
+	spew.Dump(global.Global.Dao)
+	spew.Dump(global.Global.Config)
 	fmt.Println(global.Global.RootConfig.Env)
 }

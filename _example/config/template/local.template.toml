@@ -12,6 +12,7 @@ Development = false
 DisableCaller = false
 DisableStacktrace = false
 EncodeLevelType = ''
+ErrorOutputPaths = []
 FunctionKey = ''
 Level = 'info'
 LevelKey = ''
@@ -24,12 +25,9 @@ StacktraceKey = ''
 TimeKey = ''
 TimeLayout = ''
 
-[[Log.ErrorOutputPaths]]
-
 [Log.OutputPaths]
-[[Log.OutputPaths.Console]]
-
-[[Log.OutputPaths.Json]]
+Console = []
+Json = []
 
 [Log.Sampling]
 Initial = 0
@@ -38,6 +36,7 @@ Thereafter = 0
 [Mqtt]
 AutoAckDisabled = false
 AutoReconnect = false
+Brokers = []
 CAFile = ''
 CleanSession = false
 ClientID = ''
@@ -56,12 +55,11 @@ ResumeSubs = false
 ServerName = ''
 Username = ''
 WillEnabled = false
+WillPayload = []
 WillQos = 0
 WillRetained = false
 WillTopic = ''
 WriteTimeout = 0
-
-[[Mqtt.Brokers]]
 
 [Mqtt.Dialer]
 DualStack = false
@@ -94,5 +92,3 @@ Scheme = ''
 [Mqtt.WebsocketOptions]
 ReadBufferSize = 0
 WriteBufferSize = 0
-
-[[Mqtt.WillPayload]]
