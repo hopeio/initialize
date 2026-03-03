@@ -7,10 +7,9 @@
 package duckdb
 
 import (
-	"context"
 	"database/sql"
-	"database/sql/driver"
-	"github.com/marcboeker/go-duckdb"
+
+	_ "github.com/duckdb/duckdb-go/v2"
 )
 
 // https://github.com/marcboeker/go-duckdb/issues/115
@@ -19,17 +18,7 @@ import (
 // win: PATH=/path/to/libs:$PATH or copy dll to run dir or C:\Windows\System32和C:\Windows\SysWOW64 ./main
 
 type Config struct {
-	DSN          string
-	Path         string
-	AccessMode   string `json:"access_mode" comment:"read_only"`
-	Threads      int    `json:"threads"`
-	MaxMemory    int    `json:"max_memory"`
-	DefaultOrder int    `json:"default_order"`
-	BootQueries  []BootQuery
-}
-type BootQuery struct {
-	Query string
-	Args  []driver.NamedValue
+	DSN string `json:"dsn"`
 }
 
 func (c *Config) BeforeInject() {
@@ -40,16 +29,7 @@ func (c *Config) AfterInject() {
 }
 
 func (c *Config) Build() (*sql.DB, error) {
-	connector, err := duckdb.NewConnector(c.DSN, func(execer driver.ExecerContext) error {
-		for _, query := range c.BootQueries {
-			_, err := execer.ExecContext(context.Background(), query.Query, query.Args)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	})
-	return sql.OpenDB(connector), err
+	return sql.Open("duckdb", c.DSN)
 }
 
 type DB struct {
