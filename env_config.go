@@ -87,7 +87,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		log.Fatal(err)
 	}
 	flagPrefix := strings.ToLower(gc.RootConfig.Name)
-	applyFlagConfig(flagPrefix, nil, &gc.RootConfig.EnvConfig)
+	gc.applyFlagConfig(flagPrefix, nil, &gc.RootConfig.EnvConfig)
 	gc.RootConfig.EnvConfig.AfterInject()
 	for i := range gc.RootConfig.SkipInjectDaos {
 		gc.RootConfig.SkipInjectDaos[i] = strings.ToUpper(gc.RootConfig.SkipInjectDaos[i])
@@ -120,7 +120,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		} else {
 			flagPrefix = "configcenter." + strings.ToLower(gc.RootConfig.EnvConfig.ConfigCenter.Type)
 		}
-		applyFlagConfig(flagPrefix, gc.Viper, configCenter.Config())
+		gc.applyFlagConfig(flagPrefix, gc.Viper, configCenter.Config())
 		gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
 	}
 }

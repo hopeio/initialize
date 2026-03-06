@@ -87,7 +87,7 @@ func NewGlobalConfig[C Config](configCenter ...conf_center.ConfigCenter) *global
 }
 
 func (gc *globalConfig[C, D]) init(configCenter ...conf_center.ConfigCenter) {
-	applyFlagConfig("", gc.Viper, &gc.RootConfig)
+	gc.applyFlagConfig("", gc.Viper, &gc.RootConfig)
 	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
 	// 注册配置中心,默认注册本地文件
@@ -219,7 +219,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		if gc.RootConfig.Name != "" {
 			flagPrefix = strings.ToLower(gc.RootConfig.Name) + "." + flagPrefix
 		}
-		applyFlagConfig(flagPrefix, gc.Viper, cfgcenter)
+		gc.applyFlagConfig(flagPrefix, gc.Viper, cfgcenter)
 	}
 	// hook function
 	gc.beforeInjectCall(gc.Config, gc.Dao)

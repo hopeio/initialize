@@ -192,7 +192,7 @@ func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 			return
 		}
 	}
-	applyFlagConfig(strings.ToLower(gc.RootConfig.Name), gc.Viper, tmpConfig)
+	gc.applyFlagConfig(strings.ToLower(gc.RootConfig.Name), gc.Viper, tmpConfig)
 	gc.afterInjectConfigCall(tmpConfig)
 	conf.AfterInject()
 	if c, ok := conf.(afterInjectWithRoot); ok {
