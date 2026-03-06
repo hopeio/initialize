@@ -27,7 +27,7 @@ func (c *Config) AfterInjectWithRoot(rootconfig *rootconf.RootConfig) {
 		}
 	}
 	if !isZero {
-		log.SetDefaultLogger((*log.Config)(c))
+		log.SetDefaultLogger((*log.Config)(c).NewLogger())
 	}
 }
 
