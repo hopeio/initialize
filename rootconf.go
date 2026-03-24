@@ -8,10 +8,12 @@ package initialize
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/hopeio/gox/kvstruct"
 	"github.com/hopeio/gox/log"
+	stringsx "github.com/hopeio/gox/strings"
 	"github.com/hopeio/initialize/conf_center"
 	"github.com/spf13/viper"
 )
@@ -25,6 +27,27 @@ const (
 	prefixConfigTemplate          = "config.template."
 	prefixLocalTemplate           = "local.template."
 )
+
+func (gc *globalConfig[C, D]) setRootConfig() {
+	format := gc.RootConfig.ConfigCenter.Format
+	confPath := gc.RootConfig.ConfPath
+
+	err := gc.Viper.Unmarshal(&gc.RootConfig, decoderConfigOptions...)
+	if err != nil {
+		log.Fatal(err)
+	}
+	gc.applyFlagConfig("", &gc.RootConfig)
+	if gc.RootConfig.ConfigCenter.Format == "" {
+		gc.RootConfig.ConfigCenter.Format = format
+	}
+	if gc.RootConfig.Name == "" {
+		gc.RootConfig.Name = stringsx.CutPart(filepath.Base(os.Args[0]), ".")
+	}
+	if gc.RootConfig.ConfPath != confPath {
+		gc.RootConfig.ConfPath = confPath
+	}
+}
+
 
 func (gc *globalConfig[C, D]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
@@ -87,7 +110,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		log.Fatal(err)
 	}
 	flagPrefix := strings.ToLower(gc.RootConfig.Name)
-	gc.applyFlagConfig(flagPrefix, nil, &gc.RootConfig.EnvConfig)
+	gc.applyFlagConfig(flagPrefix, &gc.RootConfig.EnvConfig)
 	gc.RootConfig.EnvConfig.AfterInject()
 	for i := range gc.RootConfig.SkipInjectDaos {
 		gc.RootConfig.SkipInjectDaos[i] = strings.ToUpper(gc.RootConfig.SkipInjectDaos[i])
@@ -120,7 +143,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		} else {
 			flagPrefix = "configcenter." + strings.ToLower(gc.RootConfig.EnvConfig.ConfigCenter.Type)
 		}
-		gc.applyFlagConfig(flagPrefix, gc.Viper, configCenter.Config())
+		gc.applyFlagConfig(flagPrefix, configCenter.Config())
 		gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
 	}
 }

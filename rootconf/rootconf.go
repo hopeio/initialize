@@ -27,7 +27,7 @@ type RootConfig struct {
 // BasicConfig
 type BasicConfig struct {
 	// 模块名
-	Name string `flag:"name:name;usage:模块名;env:APP_NAME"`
+	Name string `flag:"name:name;usage:模块名;env:NAME"`
 	// environment
 	Env string `flag:"name:env;short:e;default:dev;usage:环境;env:ENV"`
 }
@@ -37,7 +37,7 @@ type EnvConfig struct {
 	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:是否生成配置模板;env:CONFIG_TEMPLATE_DIR"`
 	// 代理, socks5://localhost:1080
 	Proxy          string `flag:"name:proxy;usage:代理;env:HTTP_PROXY" `
-	SkipInjectDaos []string
+	SkipInjectDaos []string `flag:"name:skip_inject_daos;usage:跳过注入的dao"`
 	LocalConfig    conf_center.Local
 	// config字段顺序不能变,ConfigCenter 保持在最后
 	ConfigCenter conf_center.Config

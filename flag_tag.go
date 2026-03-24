@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	encodingx "github.com/hopeio/gox/encoding/text"
-	"github.com/spf13/viper"
 
 	"os"
 	"reflect"
@@ -58,7 +57,21 @@ func (a anyValue) Set(v string) error {
 	return encodingx.ParseSetReflectValue(reflect.Value(a), v, nil)
 }
 
-func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, viper *viper.Viper, fcValue reflect.Value) {
+func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, confs ...any) {
+	commandLine := newCommandLine()
+	for _, conf := range confs {
+		gc.injectFlagConfig(prefix, commandLine, reflect.ValueOf(conf))
+	}
+
+	err := gc.Viper.BindPFlags(commandLine)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	parseFlag(commandLine)
+}
+
+func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) {
 	fcValue = reflectx.DerefValue(fcValue)
 	if !fcValue.IsValid() {
 		return
@@ -88,18 +101,17 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 		}
 		if kind == reflect.Struct {
 			if fieldType.Anonymous {
-				gc.injectFlagConfig(prefix, commandLine, viper, fieldValue)
+				gc.injectFlagConfig(prefix, commandLine, fieldValue)
 			} else {
-				gc.injectFlagConfig(flag, commandLine, viper, fieldValue)
+				gc.injectFlagConfig(flag, commandLine, fieldValue)
 			}
 			continue
 		}
 
 		if kind == reflect.Chan || kind == reflect.Func || kind == reflect.Interface || kind == reflect.Map ||
-		 kind == reflect.Struct || kind == reflect.Slice || kind == reflect.Array{
+			kind == reflect.Struct {
 			continue
 		}
-
 
 		flagTag := fieldType.Tag.Get(flagTagName)
 		if flagTag != "" {
@@ -113,12 +125,12 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 			}
 			// 从环境变量设置
 			if flagTagSettings.Env != "" {
-				if viper != nil {
-					err := viper.BindEnv(flagTagSettings.Env)
-					if err != nil {
-						log.Fatal(err)
-					}
+
+				err := gc.Viper.BindEnv(flagTagSettings.Env)
+				if err != nil {
+					log.Fatal(err)
 				}
+
 				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
 					err := encodingx.ParseSetReflectValue(fcValue.Field(i), value, &fieldType)
 					if err != nil {
@@ -141,18 +153,18 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 					commandLine.AddFlag(flagv)
 				}
 			}
-		} else {
+		} else if kind != reflect.Slice && kind != reflect.Array {
 			// default env
 			env := strings.ToUpper(fieldType.Name)
 			if envPrefix != "" {
 				env = envPrefix + "_" + env
 			}
-			if viper != nil {
-				err := viper.BindEnv(env)
-				if err != nil {
-					log.Fatal(err)
-				}
+
+			err := gc.Viper.BindEnv(env)
+			if err != nil {
+				log.Fatal(err)
 			}
+
 			if value, ok := os.LookupEnv(env); ok {
 				err := encodingx.ParseSetReflectValue(fcValue.Field(i), value, &fieldType)
 				if err != nil {
@@ -174,20 +186,6 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 	}
 }
 
-func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, viper *viper.Viper, confs ...any) {
-	commandLine := newCommandLine()
-	for _, conf := range confs {
-		gc.injectFlagConfig(prefix, commandLine, viper, reflect.ValueOf(conf))
-	}
-	if viper != nil {
-		err := viper.BindPFlags(commandLine)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-	parseFlag(commandLine)
-}
-
 func newCommandLine() *pflag.FlagSet {
 	commandLine := pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true
@@ -204,6 +202,6 @@ func parseFlag(commandLine *pflag.FlagSet) {
 func (gc *globalConfig[C, D]) InjectByFlag(args []string, conf any) error {
 	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true
-	gc.injectFlagConfig("", commandLine, nil, reflect.ValueOf(conf))
+	gc.injectFlagConfig("", commandLine, reflect.ValueOf(conf))
 	return commandLine.Parse(args[1:])
 }
