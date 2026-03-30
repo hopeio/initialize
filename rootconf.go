@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/hopeio/gox/kvstruct"
 	"github.com/hopeio/gox/log"
 	stringsx "github.com/hopeio/gox/strings"
 	"github.com/hopeio/initialize/conf_center"
@@ -47,7 +46,6 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 		gc.RootConfig.ConfPath = confPath
 	}
 }
-
 
 func (gc *globalConfig[C, D]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
@@ -105,7 +103,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 		log.Warnf("lack of env configuration: %s", gc.RootConfig.Env)
 		return
 	}
-	err := kvstruct.Unmarshal(&gc.RootConfig.EnvConfig, envConfig)
+	err := Decode(&gc.RootConfig.EnvConfig, envConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -133,7 +131,7 @@ func (gc *globalConfig[C, D]) setEnvConfig() {
 			log.Warn("lack of config center config")
 			return
 		}
-		err = kvstruct.Unmarshal(configCenter.Config(), configCenterConfig)
+		err = Decode(configCenter.Config(), configCenterConfig)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -622,6 +622,10 @@ github.com/hashicorp/serf v0.10.1 h1:Z1H2J60yRKvfDYAOZLd2MU0ND4AH/WDz7xYHDWQsIPY
 github.com/hashicorp/serf v0.10.1/go.mod h1:yL2t6BqATOLGc5HF7qbFkTfXoPIY0WZdWHfEvMqbG+4=
 github.com/hopeio/gox v1.9.1 h1:hQkwAupRAVpgkWfmgnAyVf5fGMcUOPl9nkIQBJIYBCA=
 github.com/hopeio/gox v1.9.1/go.mod h1:cLgRX8UDvPyishVS9YzyOzou0GTh7DFdzQ19x81dEWU=
+github.com/hopeio/gox v1.10.0 h1:XWQwxVwfw3FskQUOXQ8/JD08aogro37GPtRtF9j9zUo=
+github.com/hopeio/gox v1.10.0/go.mod h1:cLgRX8UDvPyishVS9YzyOzou0GTh7DFdzQ19x81dEWU=
+github.com/hopeio/gox v1.10.1 h1:XoTBRBMAlv7gp7i0+kKz3mApfpQhGvtD/7BJM8S8tLg=
+github.com/hopeio/gox v1.10.1/go.mod h1:cLgRX8UDvPyishVS9YzyOzou0GTh7DFdzQ19x81dEWU=
 github.com/ianlancetaylor/demangle v0.0.0-20181102032728-5e5cf60278f6/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/imdario/mergo v0.3.16 h1:wwQJbIsHYGMUyLSPrEq1CT16AhnhNJQ51+4fdHUnCl4=

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/hopeio/gox/log"
-	stringsx "github.com/hopeio/gox/strings/ascii"
+	stringsx "github.com/hopeio/gox/text/encoding/ascii"
 )
 
 type ConfigType string

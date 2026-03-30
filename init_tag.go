@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/hopeio/gox/log"
-	"github.com/hopeio/gox/reflect/structtag"
+	"github.com/hopeio/gox/structtag"
 	stringsx "github.com/hopeio/gox/strings"
 )
 

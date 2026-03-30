@@ -12,7 +12,7 @@ import (
 	"time"
 
 	sqlx "github.com/hopeio/gox/database/sql"
-	loggerx "github.com/hopeio/gox/database/sql/gorm/logger"
+	gormx "github.com/hopeio/gox/database/sql/gorm"
 	"github.com/hopeio/gox/log"
 	"github.com/hopeio/initialize/rootconf"
 	"gorm.io/gorm"
@@ -131,7 +131,7 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 		// 默认日志
 		logger.Default = logger.New(stdlog.New(os.Stdout, "\r", stdlog.LstdFlags), c.Logger)
 	} else {
-		logger.Default = &loggerx.Logger{Logger: log.NoCallerLogger().Logger, Config: &c.Logger}
+		logger.Default = &gormx.Logger{Logger: log.NoCallerLogger().Logger, Config: &c.Logger}
 	}
 
 	db, err := gorm.Open(dialector, dbConfig)

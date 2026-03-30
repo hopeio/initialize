@@ -10,10 +10,10 @@ import (
 	"flag"
 	"strings"
 
-	encodingx "github.com/hopeio/gox/encoding/text"
-
 	"os"
 	"reflect"
+
+	strconvx "github.com/hopeio/gox/strconv"
 
 	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
@@ -46,7 +46,7 @@ func init() {
 type anyValue reflect.Value
 
 func (a anyValue) String() string {
-	return encodingx.FormatReflectValue(reflect.Value(a))
+	return strconvx.FormatReflectValue(reflect.Value(a))
 }
 
 func (a anyValue) Type() string {
@@ -54,7 +54,7 @@ func (a anyValue) Type() string {
 }
 
 func (a anyValue) Set(v string) error {
-	return encodingx.ParseSetReflectValue(reflect.Value(a), v, nil)
+	return strconvx.ParseStringSetReflectValue(reflect.Value(a), v, nil)
 }
 
 func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, confs ...any) {
@@ -118,7 +118,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 			var flagTagSettings flagTagSettings
 			parseTagSetting(flagTag, &flagTagSettings)
 			if flagTagSettings.Default != "" {
-				err := encodingx.ParseSetReflectValue(fcValue.Field(i), flagTagSettings.Default, &fieldType)
+				err := strconvx.ParseStringSetReflectValue(fcValue.Field(i), flagTagSettings.Default, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -132,7 +132,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 				}
 
 				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
-					err := encodingx.ParseSetReflectValue(fcValue.Field(i), value, &fieldType)
+					err := strconvx.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -166,7 +166,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 			}
 
 			if value, ok := os.LookupEnv(env); ok {
-				err := encodingx.ParseSetReflectValue(fcValue.Field(i), value, &fieldType)
+				err := strconvx.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
