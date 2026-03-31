@@ -140,25 +140,6 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 	}
 
 	if c.Prometheus.Enabled {
-		if c.Type == sqlx.Mysql {
-			for _, pc := range c.Prometheus.MetricsCollectors {
-				c.Prometheus.MetricsCollector = append(c.Prometheus.MetricsCollector, &prometheus.MySQL{
-					Prefix:        pc.Prefix,
-					Interval:      pc.Interval,
-					VariableNames: pc.VariableNames,
-				})
-			}
-
-		}
-		if c.Type == sqlx.Postgres {
-			for _, pc := range c.Prometheus.MetricsCollectors {
-				c.Prometheus.MetricsCollector = append(c.Prometheus.MetricsCollector, &prometheus.Postgres{
-					Prefix:        pc.Prefix,
-					Interval:      pc.Interval,
-					VariableNames: pc.VariableNames,
-				})
-			}
-		}
 		err = db.Use(prometheus.New(c.Prometheus.Config))
 		if err != nil {
 			return nil, err

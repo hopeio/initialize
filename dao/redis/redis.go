@@ -8,15 +8,17 @@ package redis
 
 import (
 	"context"
+
 	"github.com/hopeio/gox/crypto/tls"
 	"github.com/hopeio/gox/log"
-	"time"
 
-	"github.com/go-redis/redis/v8"
+	redisotel "github.com/redis/go-redis/extra/redisotel-native/v9"
+	"github.com/redis/go-redis/v9"
 )
 
 type Config struct {
 	redis.Options
+	Otel     redisotel.Config
 	CertFile string `json:"cert_file,omitempty"`
 	KeyFile  string `json:"key_file,omitempty"`
 }
@@ -25,16 +27,23 @@ func (c *Config) BeforeInject() {
 }
 
 func (c *Config) AfterInject() {
-	tlsConfig, err := tls.NewServerTLSConfig(c.CertFile, c.KeyFile)
-	if err != nil {
-		log.Fatal(err)
+	if c.CertFile != "" && c.KeyFile != "" {
+		tlsConfig, err := tls.NewServerTLSConfig(c.CertFile, c.KeyFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		c.TLSConfig = tlsConfig
 	}
-	c.TLSConfig = tlsConfig
-	log.ValueLevelNotify("IdleTimeout", c.IdleTimeout, time.Second)
 }
 
 func (c *Config) Build() (*redis.Client, error) {
 	client := redis.NewClient(&c.Options)
+	if c.Otel.Enabled {
+		otelInstance := redisotel.GetObservabilityInstance()
+		if err := otelInstance.Init(&c.Otel); err != nil {
+			log.Fatalf("Failed to initialize OTel: %v", err)
+		}
+	}
 	return client, client.Ping(context.Background()).Err()
 }
 
@@ -57,5 +66,12 @@ func (db *Client) Close() error {
 	if db.Client == nil {
 		return nil
 	}
-	return db.Client.Close()
+	err:= db.Client.Close()
+	if err != nil {
+		return err
+	}
+	if db.Conf.Otel.Enabled {
+		return redisotel.GetObservabilityInstance().Shutdown()
+	}
+	return nil
 }

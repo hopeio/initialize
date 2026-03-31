@@ -5,7 +5,6 @@ go 1.25.0
 require (
 	github.com/IBM/sarama v1.45.0
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -46,7 +45,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/grafana/loki-client-go v0.0.0-20251015150631-c42bbddc310a
-	github.com/hopeio/gox v1.10.2
+	github.com/hopeio/gox v1.10.3
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/linxGnu/grocksdb v1.9.1
 	github.com/minio/minio-go/v7 v7.0.88
@@ -59,6 +58,8 @@ require (
 	go.etcd.io/bbolt v1.4.0
 	gopkg.in/ini.v1 v1.67.0
 )
+
+require github.com/redis/go-redis/extra/redisotel-native/v9 v9.18.0
 
 require (
 	cloud.google.com/go v0.121.0 // indirect
@@ -191,7 +192,6 @@ require (
 	github.com/nats-io/nkeys v0.4.7 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
-	github.com/onsi/gomega v1.33.0 // indirect
 	github.com/opentracing/opentracing-go v1.2.1-0.20220228012449-10b1cf09e00b // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.25 // indirect
@@ -201,6 +201,7 @@ require (
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/prometheus/prometheus v0.302.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/redis/go-redis/v9 v9.18.0
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/rs/xid v1.6.0 // indirect
