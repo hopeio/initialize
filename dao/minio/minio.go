@@ -45,3 +45,23 @@ func (e *Client) Init() error {
 func (e *Client) Close() error {
 	return nil
 }
+
+
+type Core struct {
+	*minio.Core
+	Conf Config
+}
+
+func (e *Core) Config() any {
+	return &e.Conf
+}
+
+func (e *Core) Init() error {
+	var err error
+	e.Core, err = minio.NewCore(e.Conf.Endpoint, &e.Conf.Options)
+	return err
+}
+
+func (e *Core) Close() error {
+	return nil
+}
