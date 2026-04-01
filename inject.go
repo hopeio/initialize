@@ -146,7 +146,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 					}
 
 					if _, ok := nameValueMap[name]; ok {
-						log.Fatalf(`exists field: %s, please rename or use init tag [init:"{{otherConfigName}}"]`, name)
+						log.Fatalf(`detected %s use same configuration with %s, please rename or use init tag [init:"config:{{otherConfigName}}"]`, structField.Name, name)
 					}
 
 					structFields = append(structFields, reflect.StructField{

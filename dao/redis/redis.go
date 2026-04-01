@@ -38,8 +38,8 @@ func (c *Config) AfterInject() {
 
 func (c *Config) Build() (*redis.Client, error) {
 	client := redis.NewClient(&c.Options)
-	if c.Otel.Enabled {
-		otelInstance := redisotel.GetObservabilityInstance()
+	otelInstance := redisotel.GetObservabilityInstance()
+	if c.Otel.Enabled && !otelInstance.IsEnabled() {
 		if err := otelInstance.Init(&c.Otel); err != nil {
 			log.Fatalf("Failed to initialize OTel: %v", err)
 		}
@@ -70,8 +70,9 @@ func (db *Client) Close() error {
 	if err != nil {
 		return err
 	}
-	if db.Conf.Otel.Enabled {
-		return redisotel.GetObservabilityInstance().Shutdown()
+	otelInstance := redisotel.GetObservabilityInstance()
+	if db.Conf.Otel.Enabled && otelInstance.IsEnabled(){
+		return otelInstance.Shutdown()
 	}
 	return nil
 }
