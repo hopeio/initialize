@@ -131,7 +131,7 @@ func (ld *Local) watchTimer(handle func(reader io.Reader) error, done func() err
 				if fileInfo.ModTime().After(ld.modTime[i]) {
 					ld.modTime[i] = fileInfo.ModTime()
 					if err := load(handle, ld.Paths[i]); err != nil {
-						log.Error("failed to reload data from %v, got error %v", ld.Paths, err)
+						log.Errorf("failed to reload data from %v, got error %v", ld.Paths, err)
 					} else {
 						done()
 					}
@@ -143,7 +143,7 @@ func (ld *Local) watchTimer(handle func(reader io.Reader) error, done func() err
 }
 
 func load(handle func(io.Reader) error, filepath string) (err error) {
-	log.Debugf("load config from: '%v'", filepath)
+	log.Infof("load config from: '%v'", filepath)
 	file, err := os.Open(filepath)
 	if err != nil {
 		return err

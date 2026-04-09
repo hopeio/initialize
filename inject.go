@@ -248,7 +248,7 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 			inter := field.Addr().Interface()
 
 			if field.Kind() != reflect.Struct {
-				log.Debug("ignore inject pointer type: ", field.Type().String())
+				log.Info("ignore inject pointer type: ", field.Type().String())
 				continue
 			}
 			confName := strings.ToUpper(structFiled.Name)
