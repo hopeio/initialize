@@ -7,6 +7,7 @@
 package conf_center
 
 import (
+	"context"
 	"io"
 	"strings"
 
@@ -19,7 +20,7 @@ type ConfigType string
 type ConfigCenter interface {
 	Config() any
 	io.Closer
-	Handle(handle func(io.Reader) error) error
+	Handle(ctx context.Context, merge func(io.Reader) error, onChange func(io.Reader) error) error
 	Type() string
 }
 

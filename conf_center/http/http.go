@@ -7,6 +7,7 @@
 package http
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"time"
@@ -18,9 +19,10 @@ var ConfigCenter = &Http{}
 
 type Http struct {
 	ReloadInterval time.Duration
-	Url            string
+	Urls           []string
 	AuthBasic      string
 	Headers        map[string]string
+	modTime        []time.Time
 }
 
 func (cc *Http) Type() string {
@@ -28,10 +30,10 @@ func (cc *Http) Type() string {
 }
 
 // 本地配置
-func (cc *Http) Handle(handle func(io.Reader) error) error {
+func (cc *Http) Handle(ctx context.Context, merge func(io.Reader) error, onChange func(io.Reader) error) error {
 
-	if cc.ReloadInterval == 0 {
-		file, err := httpx.FetchFile(cc.Url, func(r *http.Request) {
+	for _, url := range cc.Urls {
+		file, err := httpx.FetchFile(url, func(r *http.Request) {
 			if cc.AuthBasic != "" {
 				r.Header.Add("Authorization", cc.AuthBasic)
 			}
@@ -42,16 +44,27 @@ func (cc *Http) Handle(handle func(io.Reader) error) error {
 		if err != nil {
 			return err
 		}
-		handle(file.Body)
-		return file.Body.Close()
+		merge(file.Body)
+		err = file.Body.Close()
+		if err != nil {
+			return err
+		}
 	}
 
-	watch := httpx.NewFileWatcher(time.Second * cc.ReloadInterval)
+	if cc.ReloadInterval > 0 {
+		watch := httpx.NewFileWatcher(time.Second * cc.ReloadInterval)
 
-	callback := func(hfile *httpx.FileInfo) {
-		handle(hfile.Body)
-		hfile.Body.Close()
+		callback := func(hfile *httpx.FileInfo) {
+			onChange(hfile.Body)
+			hfile.Body.Close()
+		}
+
+		for _, url := range cc.Urls {
+			err := watch.Add(url, callback)
+			if err != nil {
+				return err
+			}
+		}
 	}
-
-	return watch.Add(cc.Url, callback)
+	return nil
 }

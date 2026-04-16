@@ -22,7 +22,7 @@ type Etcd struct {
 
 type Config struct {
 	clientv3.Config
-	Key string
+	Keys []string
 }
 
 func (e *Etcd) Type() string {
@@ -33,8 +33,7 @@ func (cc *Etcd) Config() any {
 	return &cc.Conf
 }
 
-// TODO: 监听更改
-func (e *Etcd) Handle(handle func(io.Reader) error) error {
+func (e *Etcd) Handle(ctx context.Context, merge func(io.Reader) error, onChange func(io.Reader) error) error {
 	var err error
 	if e.Client == nil {
 		e.Client, err = clientv3.New(e.Conf.Config)
@@ -43,13 +42,29 @@ func (e *Etcd) Handle(handle func(io.Reader) error) error {
 		}
 	}
 
-	resp, err := e.Client.Get(context.Background(), e.Conf.Key)
-	if err != nil {
-		return err
+	for _, key := range e.Conf.Keys {
+		resp, err := e.Client.Get(ctx, key)
+		if err != nil {
+			return err
+		}
+		merge(bytes.NewReader(resp.Kvs[0].Value))
+		go func() {
+			watchChan := e.Client.Watch(ctx, key)
+			for watchResp := range watchChan {
+				for _, event := range watchResp.Events {
+					if event.Type == clientv3.EventTypePut {
+						onChange(bytes.NewReader(event.Kv.Value))
+					}
+				}
+			}
+		}()
 	}
-	return handle(bytes.NewReader(resp.Kvs[0].Value))
+	return nil
 }
 
 func (cc *Etcd) Close() error {
+	if cc.Client == nil {
+		return nil
+	}
 	return cc.Client.Close()
 }

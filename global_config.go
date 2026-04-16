@@ -7,6 +7,7 @@
 package initialize
 
 import (
+	"context"
 	"io"
 	"os"
 	"path/filepath"
@@ -78,7 +79,7 @@ func NewGlobal[C Config, D Dao](configCenter ...conf_center.ConfigCenter) *globa
 }
 
 func Start[C Config, D Dao](conf C, dao D, configCenter ...conf_center.ConfigCenter) func() {
-	gc := NewGlobalWith[C, D](conf, dao, configCenter...)
+	gc := NewGlobalWith(conf, dao, configCenter...)
 	return gc.Cleanup
 }
 
@@ -249,27 +250,31 @@ func (gc *globalConfig[C, D]) loadConfig() {
 			localConfig.Paths = append([]string{defaultEnvConfigPath}, localConfig.Paths...)
 		}
 	}
+
+	merge := func(data io.Reader) error {
+		gc.mu.Lock()
+		defer gc.mu.Unlock()
+		err := gc.Viper.MergeConfig(data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	}
+	onChange := func(data io.Reader) error {
+		gc.mu.Lock()
+		defer gc.mu.Unlock()
+		err := gc.Viper.MergeConfig(data)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		gc.inject(gc.Config, nil)
+		gc.editTimes++
+		return nil
+	}
+
 	if len(localConfig.Paths) > 0 {
-		err = localConfig.Handle(func(data io.Reader) error {
-			gc.mu.Lock()
-			defer gc.mu.Unlock()
-			err := gc.Viper.MergeConfig(data)
-			if err != nil {
-				if gc.editTimes == 0 {
-					log.Fatal(err)
-				} else {
-					log.Error(err)
-					return err
-				}
-			}
-			return nil
-		}, func() error {
-			gc.mu.Lock()
-			defer gc.mu.Unlock()
-			gc.inject(gc.Config, gc.Dao)
-			gc.editTimes++
-			return nil
-		})
+		err = localConfig.Handle(context.Background(), merge, onChange)
 		if err != nil {
 			log.Fatal(err)
 			return
@@ -282,29 +287,17 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	}
 
 	if cfgcenter != nil {
-		err = cfgcenter.Handle(func(data io.Reader) error {
-			gc.mu.TryLock()
-			defer gc.mu.Unlock()
-			gc.Viper.SetConfigType(gc.RootConfig.ConfigCenter.Format)
-			err := gc.Viper.MergeConfig(data)
-			if err != nil {
-				if gc.editTimes == 0 {
-					log.Fatal(err)
-				} else {
-					log.Error(err)
-					return err
-				}
-			}
-			gc.inject(gc.Config, gc.Dao)
-			gc.editTimes++
-			return nil
-		})
+		err = cfgcenter.Handle(context.Background(), merge, onChange)
 		if err != nil {
 			log.Fatalf("config error: %v", err)
 		}
-	} else {
-		gc.inject(gc.Config, gc.Dao)
+		gc.defers = append(gc.defers, func() {
+			if err := cfgcenter.Close(); err != nil {
+				log.Errorf("close config center error: %v", err)
+			}
+		})
 	}
+	gc.inject(gc.Config, gc.Dao)
 }
 
 func (gc *globalConfig[C, D]) beforeInjectCall(conf Config, dao Dao) {

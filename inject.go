@@ -106,7 +106,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 
 		nameValueMap[name] = field
 	}
-	// 不进行二次注入,无法确定业务中是否仍然使用,除非每次加锁,或者说每次业务中都交给一个零时变量?需要规范去控制
+
 	if dao != nil {
 		daoValue := reflect.ValueOf(dao).Elem()
 		daoType := daoValue.Type()
