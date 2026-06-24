@@ -14,7 +14,7 @@ import (
 	"reflect"
 
 	stringsx "github.com/hopeio/gox/strings"
-	strstruct "github.com/hopeio/gox/strstruct"
+	kvstruct "github.com/hopeio/gox/kvstruct"
 	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
 	"github.com/spf13/pflag"
@@ -54,7 +54,7 @@ func (a anyValue) Type() string {
 }
 
 func (a anyValue) Set(v string) error {
-	return strstruct.ParseStringSetReflectValue(reflect.Value(a), v, nil)
+	return kvstruct.ParseStringSetReflectValue(reflect.Value(a), v, nil)
 }
 
 func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, confs ...any) {
@@ -118,7 +118,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 			var flagTagSettings flagTagSettings
 			parseTagSetting(flagTag, &flagTagSettings)
 			if flagTagSettings.Default != "" {
-				err := strstruct.ParseStringSetReflectValue(fcValue.Field(i), flagTagSettings.Default, &fieldType)
+				err := kvstruct.ParseStringSetReflectValue(fcValue.Field(i), flagTagSettings.Default, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -132,7 +132,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 				}
 
 				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
-					err := strstruct.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
+					err := kvstruct.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -166,7 +166,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 			}
 
 			if value, ok := os.LookupEnv(env); ok {
-				err := strstruct.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
+				err := kvstruct.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
