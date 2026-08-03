@@ -10,8 +10,8 @@ import (
 	"fmt"
 
 	sqlx "github.com/hopeio/gox/database/sql"
-	pkdb "github.com/hopeio/initialize/dao/gormdb"
 	"github.com/hopeio/initialize"
+	pkdb "github.com/hopeio/initialize/dao/gormdb"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
