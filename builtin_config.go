@@ -10,7 +10,6 @@ import (
 	"reflect"
 
 	"github.com/hopeio/gox/log"
-	"github.com/hopeio/initialize/rootconf"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -21,7 +20,7 @@ type builtinConfig struct {
 // 全局变量,只一个实例,只提供config
 type LogConfig log.Config
 
-func (c *LogConfig) AfterInjectWithRoot(rootconfig *rootconf.RootConfig) {
+func (c *LogConfig) AfterInjectWithRoot(rootconfig *RootConfig) {
 	isZero := reflect.ValueOf(c).Elem().IsZero()
 	if rootconfig.Name != "" && c.Name == "" {
 		c.Name = rootconfig.Name

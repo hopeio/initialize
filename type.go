@@ -8,8 +8,6 @@ package initialize
 
 import (
 	"reflect"
-
-	"github.com/hopeio/initialize/rootconf"
 )
 
 type Init interface {
@@ -21,7 +19,7 @@ type beforeInject interface {
 }
 
 type beforeInjectWithRoot interface {
-	BeforeInjectWithRoot(*rootconf.RootConfig)
+	BeforeInjectWithRoot(*RootConfig)
 }
 
 type afterInject interface {
@@ -29,7 +27,7 @@ type afterInject interface {
 }
 
 type afterInjectWithRoot interface {
-	AfterInjectWithRoot(*rootconf.RootConfig)
+	AfterInjectWithRoot(*RootConfig)
 }
 
 type afterInjectConfig interface {
@@ -37,7 +35,7 @@ type afterInjectConfig interface {
 }
 
 type afterInjectConfigWithRoot interface {
-	AfterInjectConfigWithRoot(*rootconf.RootConfig)
+	AfterInjectConfigWithRoot(*RootConfig)
 }
 
 type Config interface {

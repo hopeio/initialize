@@ -21,7 +21,6 @@ import (
 	pathx "github.com/hopeio/gox/os/fs/path"
 	"github.com/hopeio/initialize/conf_center"
 	daopkg "github.com/hopeio/initialize/dao"
-	"github.com/hopeio/initialize/rootconf"
 	"github.com/spf13/viper"
 	"go.uber.org/multierr"
 )
@@ -29,7 +28,7 @@ import (
 // globalConfig
 // 全局配置
 type globalConfig[C Config, D Dao] struct {
-	RootConfig    rootconf.RootConfig `mapstructure:",squash"`
+	RootConfig    RootConfig `mapstructure:",squash"`
 	BuiltinConfig builtinConfig
 
 	Config C
@@ -46,8 +45,8 @@ type globalConfig[C Config, D Dao] struct {
 
 func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 	gc := &globalConfig[C, D]{
-		RootConfig: rootconf.RootConfig{
-			EnvConfig: rootconf.EnvConfig{Debug: true},
+		RootConfig: RootConfig{
+			EnvConfig: EnvConfig{Debug: true},
 		},
 		Viper: viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry)),
 	}
