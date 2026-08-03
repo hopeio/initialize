@@ -10,6 +10,7 @@ import (
 	"context"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/hopeio/gox/log"
 	stringsx "github.com/hopeio/gox/text/encoding/ascii"
@@ -33,26 +34,40 @@ type Config struct {
 	ConfigCenter ConfigCenter
 }
 
-var configCenter = map[string]ConfigCenter{}
+var (
+	configCenterMu sync.RWMutex
+	configCenter   = map[string]ConfigCenter{}
+)
 
 func RegisterConfigCenter(c ConfigCenter) {
-	if c != nil {
-		typ := strings.ToLower(c.Type())
-		if !stringsx.IsAllLetter(typ) {
-			log.Fatal("config type must be letters")
-		}
-		if _, ok := configCenter[typ]; !ok {
-			configCenter[typ] = c
-		}
+	if c == nil {
+		return
+	}
+	typ := strings.ToLower(c.Type())
+	if !stringsx.IsAllLetter(typ) {
+		log.Fatal("config type must be letters")
+	}
+	configCenterMu.Lock()
+	defer configCenterMu.Unlock()
+	if _, ok := configCenter[typ]; !ok {
+		configCenter[typ] = c
 	}
 }
 
 func GetConfigCenter(configType string) ConfigCenter {
+	configCenterMu.RLock()
+	defer configCenterMu.RUnlock()
 	return configCenter[configType]
 }
 
 func GetRegisteredConfigCenter() map[string]ConfigCenter {
-	return configCenter
+	configCenterMu.RLock()
+	defer configCenterMu.RUnlock()
+	cp := make(map[string]ConfigCenter, len(configCenter))
+	for k, v := range configCenter {
+		cp[k] = v
+	}
+	return cp
 }
 
 type Client interface {

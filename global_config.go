@@ -114,8 +114,8 @@ func (gc *globalConfig[C, D]) Cleanup() {
 	if !gc.initialized {
 		log.Fatalf("not initialize, please call initialize.initHandler or initialize.Start")
 	}
-	// 倒序调用defer
-	for i := len(gc.defers) - 1; i > 0; i-- {
+	// 倒序调用defer（先释放业务资源）
+	for i := len(gc.defers) - 1; i >= 0; i-- {
 		gc.defers[i]()
 	}
 	if gc.RootConfig.ConfigCenter.ConfigCenter != nil {

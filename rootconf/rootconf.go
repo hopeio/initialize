@@ -47,10 +47,11 @@ func (c *EnvConfig) AfterInject() {
 	if c.Proxy != "" {
 		proxyURL, err := url.Parse(c.Proxy)
 		if err != nil {
-			log.Fatal(err)
-		}
-		http.DefaultClient.Transport = &http.Transport{
-			Proxy: http.ProxyURL(proxyURL),
+			log.Errorf("invalid proxy url %q, ignore it: %v", c.Proxy, err)
+		} else {
+			http.DefaultClient.Transport = &http.Transport{
+				Proxy: http.ProxyURL(proxyURL),
+			}
 		}
 	}
 	var err error

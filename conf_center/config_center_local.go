@@ -11,7 +11,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"slices"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -46,19 +45,27 @@ func (ld *Local) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 		return errors.New("empty local config path")
 	}
 	now := time.Now()
-	for _, path := range ld.Paths {
-		err = load(merge, path)
-		if err != nil {
+	ld.modTime = make([]time.Time, len(ld.Paths))
+	for i, path := range ld.Paths {
+		if err = load(merge, path); err != nil {
 			return err
 		}
-		ld.modTime = append(ld.modTime, now)
+		ld.modTime[i] = now
 	}
 
 	if ld.Watch {
 		watcher, err := fsnotify.NewWatcher()
-		for _, path := range ld.Paths {
-			err = watcher.Add(path)
+		if err != nil {
+			return err
+		}
+		// 部分 Add 失败时关闭已创建的 watcher，避免 fd 泄漏
+		defer func() {
 			if err != nil {
+				watcher.Close()
+			}
+		}()
+		for _, path := range ld.Paths {
+			if err = watcher.Add(path); err != nil {
 				return err
 			}
 		}
@@ -70,6 +77,11 @@ func (ld *Local) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 }
 
 func (ld *Local) watchNotify(onChange func(reader io.Reader) error) {
+	// 路径可能重复，预先建立 path->index 映射，避免 slices.Index 定位错误
+	pathIndex := make(map[string]int, len(ld.Paths))
+	for i, p := range ld.Paths {
+		pathIndex[p] = i
+	}
 	for {
 		select {
 		case event, ok := <-ld.watcher.Events:
@@ -78,14 +90,17 @@ func (ld *Local) watchNotify(onChange func(reader io.Reader) error) {
 			}
 			log.Debugf("watch event: %v", event)
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				idx := slices.Index(ld.Paths, event.Name)
+				idx, ok := pathIndex[event.Name]
+				if !ok {
+					continue
+				}
 				now := time.Now()
 				if now.Sub(ld.modTime[idx]) < time.Second {
 					continue
 				}
 				ld.modTime[idx] = now
 				if err := load(onChange, ld.Paths[idx]); err != nil {
-					log.Errorf("failed to reload data from %v, got error %v", ld.Paths, err)
+					log.Errorf("failed to reload data from %v, got error %v", ld.Paths[idx], err)
 				}
 			}
 		case err, ok := <-ld.watcher.Errors:
