@@ -14,7 +14,7 @@ import (
 	sqlx "github.com/hopeio/gox/database/sql"
 	gormx "github.com/hopeio/gox/database/sql/gorm"
 	"github.com/hopeio/gox/log"
-	"github.com/hopeio/initialize/rootconf"
+	"github.com/hopeio/initialize"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
@@ -110,7 +110,7 @@ func (c *Config) Init() {
 	}
 }
 
-func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
+func (c *Config) BeforeInjectWithRoot(conf *initialize.RootConfig) {
 	c.UseGormLogger = conf.Debug
 	if c.Charset == "" {
 		c.Charset = "utf8mb4"

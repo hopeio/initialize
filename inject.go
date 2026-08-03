@@ -15,7 +15,6 @@ import (
 	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
 	stringsx "github.com/hopeio/gox/strings"
-	daopkg "github.com/hopeio/initialize/dao"
 )
 
 func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
@@ -117,7 +116,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 			}
 			if field.CanInterface() {
 				fieldAny := field.Interface()
-				if daoField, ok := fieldAny.(daopkg.DaoField); ok {
+				if daoField, ok := fieldAny.(DaoField); ok {
 
 					structField := daoType.Field(i)
 
@@ -257,7 +256,7 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 			}
 
 			// 根据DaoField接口实现获取配置和要注入的类型
-			if daofield, ok := inter.(daopkg.DaoField); ok {
+			if daofield, ok := inter.(DaoField); ok {
 				err := daofield.Init()
 				if err != nil {
 					log.Fatal("inject", confName, "err:", err)

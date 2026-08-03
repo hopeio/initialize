@@ -20,7 +20,6 @@ import (
 	"github.com/hopeio/gox/os/fs"
 	pathx "github.com/hopeio/gox/os/fs/path"
 	"github.com/hopeio/initialize/conf_center"
-	daopkg "github.com/hopeio/initialize/dao"
 	"github.com/spf13/viper"
 	"go.uber.org/multierr"
 )
@@ -333,7 +332,7 @@ func closeDao(dao Dao) error {
 			continue
 		}
 		inter := fieldV.Interface()
-		if daofield, ok := inter.(daopkg.DaoField); ok {
+		if daofield, ok := inter.(DaoField); ok {
 			if err := daofield.Close(); err != nil {
 				errs = multierr.Append(errs, err)
 			}

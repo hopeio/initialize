@@ -11,14 +11,14 @@ import (
 
 	sqlx "github.com/hopeio/gox/database/sql"
 	pkdb "github.com/hopeio/initialize/dao/gormdb"
-	"github.com/hopeio/initialize/rootconf"
+	"github.com/hopeio/initialize"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 type Config pkdb.Config
 
-func (c *Config) BeforeInjectWithRoot(conf *rootconf.RootConfig) {
+func (c *Config) BeforeInjectWithRoot(conf *initialize.RootConfig) {
 	(*pkdb.Config)(c).BeforeInjectWithRoot(conf)
 }
 func (c *Config) AfterInject() {

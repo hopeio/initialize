@@ -4,7 +4,20 @@
  * @Created by jyb
  */
 
-package dao
+package initialize
+
+import (
+	"io"
+	"reflect"
+)
+
+var DaoFieldType = reflect.TypeOf((*DaoField)(nil)).Elem()
+
+type DaoField interface {
+	Config() any
+	Init() error
+	io.Closer
+}
 
 type CloseFunc func() error
 

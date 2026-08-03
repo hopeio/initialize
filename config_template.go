@@ -12,7 +12,6 @@ import (
 
 	"github.com/hopeio/gox/log"
 	stringsx "github.com/hopeio/gox/strings"
-	"github.com/hopeio/initialize/dao"
 )
 
 func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
@@ -57,7 +56,7 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 	typ := value.Type()
 	for i := range value.NumField() {
 		field := value.Field(i)
-		if field.Addr().Type().Implements(dao.DaoFieldType) {
+		if field.Addr().Type().Implements(DaoFieldType) {
 			newconfMap := make(map[string]any)
 			fieldType := typ.Field(i)
 			name := fieldType.Name
@@ -67,7 +66,7 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 			}
 
 			confMap[name] = newconfMap
-			struct2Map(field.Addr().Interface().(dao.DaoField).Config(), newconfMap)
+			struct2Map(field.Addr().Interface().(DaoField).Config(), newconfMap)
 		}
 	}
 }
