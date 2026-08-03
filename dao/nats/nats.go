@@ -4,7 +4,7 @@
  * @Created by jyb
  */
 
-package client
+package nats
 
 import "github.com/nats-io/nats.go"
 
@@ -42,6 +42,6 @@ func (db *Client) Close() error {
 	if db.Conn == nil {
 		return nil
 	}
-	db.Conn.Close()
+	db.Conn.Drain()
 	return nil
 }

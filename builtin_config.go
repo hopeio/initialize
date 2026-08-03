@@ -6,8 +6,33 @@
 
 package initialize
 
-import "github.com/hopeio/initialize/dao/log"
+import (
+	"reflect"
+
+	"github.com/hopeio/gox/log"
+	"github.com/hopeio/initialize/rootconf"
+	"go.uber.org/zap/zapcore"
+)
 
 type builtinConfig struct {
-	Log log.Config
+	Log Config
+}
+
+// 全局变量,只一个实例,只提供config
+type LogConfig log.Config
+
+func (c *LogConfig) AfterInjectWithRoot(rootconfig *rootconf.RootConfig) {
+	isZero := reflect.ValueOf(c).Elem().IsZero()
+	if rootconfig.Name != "" && c.Name == "" {
+		c.Name = rootconfig.Name
+		if isZero {
+			c.Development = true
+			c.Level = zapcore.DebugLevel
+			isZero = false
+		}
+	}
+	if !isZero {
+		logger := (*log.Config)(c).NewLogger()
+		log.SetDefaultLogger(logger)
+	}
 }
