@@ -9,7 +9,7 @@ package sqlite
 import (
 	sqlx "github.com/hopeio/gox/database/sql"
 	"github.com/hopeio/initialize"
-	pkdb "github.com/hopeio/initialize/dao/gormdb"
+	pkdb "github.com/hopeio/initialize/contrib/gormdb"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

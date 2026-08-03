@@ -12,7 +12,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hopeio/initialize/dao/nacos"
+	"github.com/hopeio/initialize/contrib/nacos"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/cache"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/file"

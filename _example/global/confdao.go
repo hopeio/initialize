@@ -14,7 +14,7 @@ import (
 	timex "github.com/hopeio/gox/time"
 	"github.com/hopeio/initialize"
 	"github.com/hopeio/initialize/conf_center/nacos"
-	"github.com/hopeio/initialize/dao/mqtt"
+	"github.com/hopeio/initialize/contrib/mqtt"
 )
 
 var (
