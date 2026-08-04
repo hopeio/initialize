@@ -318,7 +318,10 @@ func (gc *globalConfig[C, D]) Defer(deferf ...func()) {
 func closeDao(dao Dao) error {
 	var errs error
 	daoValue := reflect.ValueOf(dao)
-	if daoValue.Kind() != reflect.Pointer {
+	if daoValue.Kind() == reflect.Pointer {
+		if daoValue.IsNil() {
+			return nil
+		}
 		daoValue = daoValue.Elem()
 	}
 	for i := range daoValue.NumField() {
