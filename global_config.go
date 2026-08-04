@@ -18,8 +18,6 @@ import (
 
 	"github.com/hopeio/gox/log"
 	"github.com/hopeio/gox/os/fs"
-	pathx "github.com/hopeio/gox/os/fs/path"
-	"github.com/hopeio/initialize/conf_center"
 	"github.com/spf13/viper"
 	"go.uber.org/multierr"
 )
@@ -51,7 +49,7 @@ func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 	}
 	return gc
 }
-func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...conf_center.ConfigCenter) *globalConfig[C, D] {
+func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) *globalConfig[C, D] {
 	gc := newGlobal[C, D]()
 	gc.Config = conf
 	gc.Dao = dao
@@ -60,7 +58,7 @@ func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...conf_center.C
 }
 
 // var Global = initialize.NewGlobal[C,D]()
-func NewGlobal[C Config, D Dao](configCenter ...conf_center.ConfigCenter) *globalConfig[C, D] {
+func NewGlobal[C Config, D Dao](configCenter ...ConfigCenter) *globalConfig[C, D] {
 	gc := newGlobal[C, D]()
 	v := reflect.ValueOf(&gc.Config).Elem()
 	if v.Kind() == reflect.Struct {
@@ -76,22 +74,22 @@ func NewGlobal[C Config, D Dao](configCenter ...conf_center.ConfigCenter) *globa
 	return gc
 }
 
-func Start[C Config, D Dao](conf C, dao D, configCenter ...conf_center.ConfigCenter) func() {
+func Start[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) func() {
 	gc := NewGlobalWith(conf, dao, configCenter...)
 	return gc.Cleanup
 }
 
-func NewGlobalConfig[C Config](configCenter ...conf_center.ConfigCenter) *globalConfig[C, *EmbeddedPresets] {
+func NewGlobalConfig[C Config](configCenter ...ConfigCenter) *globalConfig[C, *EmbeddedPresets] {
 	return NewGlobal[C, *EmbeddedPresets](configCenter...)
 }
 
-func (gc *globalConfig[C, D]) init(configCenter ...conf_center.ConfigCenter) {
+func (gc *globalConfig[C, D]) init(configCenter ...ConfigCenter) {
 	gc.applyFlagConfig("", &gc.RootConfig)
 	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
 	// 注册配置中心,默认注册本地文件
 	for _, cc := range configCenter {
-		conf_center.RegisterConfigCenter(cc)
+		RegisterConfigCenter(cc)
 	}
 
 	gc.defers = append(gc.defers, func() {
@@ -209,7 +207,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 			singleTemplateFileConfig = true
 		}
 		if gc.RootConfig.ConfigCenter.Type != "" {
-			gc.RootConfig.ConfigCenter.ConfigCenter = conf_center.GetConfigCenter(gc.RootConfig.ConfigCenter.Type)
+			gc.RootConfig.ConfigCenter.ConfigCenter = GetConfigCenter(gc.RootConfig.ConfigCenter.Type)
 		}
 	}
 	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
@@ -227,7 +225,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	if gc.RootConfig.Env != "" {
 		var defaultEnvConfigPath string
 		if gc.RootConfig.ConfPath != "" {
-			defaultEnvConfigPath = pathx.FileNoExt(gc.RootConfig.ConfPath) + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+			defaultEnvConfigPath = gc.RootConfig.ConfPath[:len(gc.RootConfig.ConfPath)-len(filepath.Ext(gc.RootConfig.ConfPath))] + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
 		} else if gc.RootConfig.ConfigCenter.Format != "" {
 			gc.Viper.SetConfigType(format)
 			defaultEnvConfigPath = defaultConfigName + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format

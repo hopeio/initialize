@@ -7,7 +7,6 @@
 package initialize
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -57,10 +56,6 @@ func parseTagSetting(str string, settings any) {
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-func genEncodingTag(name string) string {
-	return fmt.Sprintf(`json:"%s" toml:"%s" yaml:"%s"`, name, name, name)
 }
 
 // get field name, return filed config name and skip flag

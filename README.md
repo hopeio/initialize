@@ -130,13 +130,13 @@ func main() {
 ### 注入时使用root config
 ```go
 // initWithRootConfig
-import "github.com/hopeio/initialize/rootconf"
-func (c *conf) BeforeInjectWithRoot(root *rootconf.RootConfig) {
+import "github.com/hopeio/initialize"
+func (c *conf) BeforeInjectWithRoot(root *initialize.RootConfig) {
 }
-func (c *dao) BeforeInjectWithRoot(root *rootconf.RootConfig) {
+func (c *dao) BeforeInjectWithRoot(root *initialize.RootConfig) {
 }
-// AfterInjectConfigWithRoot(*rootconf.RootConfig)
-// AfterInjectWithRoot(*rootconf.RootConfig)
+// AfterInjectConfigWithRoot(*initialize.RootConfig)
+// AfterInjectWithRoot(*initialize.RootConfig)
 ```
 
 

@@ -25,23 +25,23 @@ type DaoConfig[D any] interface {
 	Build() (*D, CloseFunc, error)
 }
 
-type DaoT[C DaoConfig[D], D any] struct {
+type DaoG[C DaoConfig[D], D any] struct {
 	Conf   C
 	Client *D
 	close  CloseFunc
 }
 
-func (d *DaoT[C, D]) Config() any {
+func (d *DaoG[C, D]) Config() any {
 	return d.Conf
 }
 
-func (d *DaoT[C, D]) Init() error {
+func (d *DaoG[C, D]) Init() error {
 	var err error
 	d.Client, d.close, err = d.Conf.Build()
 	return err
 }
 
-func (d *DaoT[C, D]) Close() error {
+func (d *DaoG[C, D]) Close() error {
 	if d.close != nil {
 		return d.close()
 	}

@@ -31,6 +31,8 @@ func (c *LogConfig) AfterInjectWithRoot(rootconfig *RootConfig) {
 		}
 	}
 	if !isZero {
+		c.Name = rootconfig.Name
+		c.Development = rootconfig.EnvConfig.Debug
 		logger := (*log.Config)(c).NewLogger()
 		log.SetDefaultLogger(logger)
 	}
