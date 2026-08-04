@@ -118,7 +118,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 			var flagTagSettings flagTagSettings
 			parseTagSetting(flagTag, &flagTagSettings)
 			if flagTagSettings.Default != "" {
-				err := kvstruct.ParseStringSetReflectValue(fcValue.Field(i), flagTagSettings.Default, &fieldType)
+				err := kvstruct.ParseStringSetReflectValue(fieldValue, flagTagSettings.Default, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -132,7 +132,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 				}
 
 				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
-					err := kvstruct.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
+					err := kvstruct.ParseStringSetReflectValue(fieldValue, value, &fieldType)
 					if err != nil {
 						log.Fatal(err)
 					}
@@ -166,7 +166,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 			}
 
 			if value, ok := os.LookupEnv(env); ok {
-				err := kvstruct.ParseStringSetReflectValue(fcValue.Field(i), value, &fieldType)
+				err := kvstruct.ParseStringSetReflectValue(fieldValue, value, &fieldType)
 				if err != nil {
 					log.Fatal(err)
 				}
