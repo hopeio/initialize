@@ -14,7 +14,7 @@ import (
 )
 
 type builtinConfig struct {
-	Log Config
+	Log LogConfig
 }
 
 // 全局变量,只一个实例,只提供config
