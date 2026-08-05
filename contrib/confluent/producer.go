@@ -1,3 +1,5 @@
+//go:build cgo
+
 package confluent
 
 import (
@@ -17,9 +19,7 @@ func (c ProducerConfig) AfterInject() {
 }
 
 func (c ProducerConfig) Build() (*kafka.Producer, error) {
-	// 使用给定代理地址和配置创建一个同步生产者
 	return kafka.NewProducer((*kafka.ConfigMap)(&c))
-
 }
 
 type Producer struct {
