@@ -30,7 +30,7 @@ Name = "hoper"
 # dev | test | stage | prod |...
 Env = "dev" # 将会选择与Env名字相同的环境配置
 
-[dev] 
+[dev]
 debug = true
 SkipInjectDaos = ["Apollo","Etcd", "Es"]
 ConfigTemplateDir = "." # 将会生成配置模板
@@ -95,8 +95,8 @@ func main() {
 ### Dao注入
 ```go
 import(
-    "github.com/hopeio/initialize/dao/gormdb/sqlite"
-    initredis "github.com/hopeio/initialize/dao/redis"
+    "github.com/hopeio/initialize/contrib/gormdb/sqlite"
+    initredis "github.com/hopeio/initialize/contrib/redis"
 )
 // dao dao.
 type dao struct {

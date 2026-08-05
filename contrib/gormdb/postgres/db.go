@@ -47,7 +47,11 @@ func (db *DB) Init() error {
 }
 
 func (db *DB) Close() error {
-	return nil
+	dbx, err := db.DB.DB()
+	if err != nil {
+		return err
+	}
+	return dbx.Close()
 }
 
 func (db *DB) Table(name string) *gorm.DB {
