@@ -38,28 +38,33 @@ type afterInjectConfigWithRoot interface {
 	AfterInjectConfigWithRoot(*RootConfig)
 }
 
+// Config is the interface that application configs must implement.
+// BeforeInject sets default values before unmarshaling; AfterInject runs post-unmarshal initialization.
 type Config interface {
-	// 注入之前设置默认值
 	beforeInject
-	// 注入之后初始化
 	afterInject
 }
 
+// Dao is the interface that DAO structs must implement.
+// AfterInjectConfig runs after config is unmarshaled; AfterInject runs after all DAO fields are initialized.
 type Dao interface {
 	beforeInject
-	// 注入config后执行
 	afterInjectConfig
-	// 注入dao后执行
 	afterInject
 }
 
 type EmbeddedPresets struct {
 }
 
+// BeforeInject is a no-op placeholder satisfying the Config/Dao interface.
 func (u *EmbeddedPresets) BeforeInject() {
 }
+
+// AfterInjectConfig is a no-op placeholder satisfying the Dao interface.
 func (u *EmbeddedPresets) AfterInjectConfig() {
 }
+
+// AfterInject is a no-op placeholder satisfying the Config/Dao interface.
 func (u *EmbeddedPresets) AfterInject() {
 }
 

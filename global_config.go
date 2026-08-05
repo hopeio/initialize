@@ -22,8 +22,8 @@ import (
 	"go.uber.org/multierr"
 )
 
-// globalConfig
-// 全局配置
+// globalConfig is the central container that holds root config, builtin config,
+// user-defined Config and Dao, and drives the full initialization lifecycle.
 type globalConfig[C Config, D Dao] struct {
 	RootConfig    RootConfig `mapstructure:",squash"`
 	BuiltinConfig builtinConfig
@@ -40,6 +40,7 @@ type globalConfig[C Config, D Dao] struct {
 	mu          sync.RWMutex
 }
 
+// newGlobal allocates a globalConfig with sane defaults and a fresh Viper instance.
 func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 	gc := &globalConfig[C, D]{
 		RootConfig: RootConfig{
@@ -49,6 +50,8 @@ func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 	}
 	return gc
 }
+// NewGlobalWith creates a globalConfig with the provided Config and Dao instances and
+// immediately runs the full initialization sequence.
 func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) *globalConfig[C, D] {
 	gc := newGlobal[C, D]()
 	gc.Config = conf
@@ -57,6 +60,8 @@ func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter)
 	return gc
 }
 
+// NewGlobal creates a globalConfig by allocating zero-value instances of C and D via reflection,
+// then runs the full initialization sequence.
 // var Global = initialize.NewGlobal[C,D]()
 func NewGlobal[C Config, D Dao](configCenter ...ConfigCenter) *globalConfig[C, D] {
 	gc := newGlobal[C, D]()
@@ -74,15 +79,18 @@ func NewGlobal[C Config, D Dao](configCenter ...ConfigCenter) *globalConfig[C, D
 	return gc
 }
 
+// Start is a convenience wrapper around NewGlobalWith that returns only the Cleanup function.
 func Start[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) func() {
 	gc := NewGlobalWith(conf, dao, configCenter...)
 	return gc.Cleanup
 }
 
+// NewGlobalConfig is a shortcut for applications that only need a Config (no custom Dao).
 func NewGlobalConfig[C Config](configCenter ...ConfigCenter) *globalConfig[C, *EmbeddedPresets] {
 	return NewGlobal[C, *EmbeddedPresets](configCenter...)
 }
 
+// init registers config centers, loads the config file, and performs the first injection.
 func (gc *globalConfig[C, D]) init(configCenter ...ConfigCenter) {
 	gc.applyFlagConfig("", &gc.RootConfig)
 	gc.RootConfig.AfterInject()
@@ -106,10 +114,9 @@ func (gc *globalConfig[C, D]) init(configCenter ...ConfigCenter) {
 // 		defer global.Global.Cleanup()
 // }
 
+// Cleanup releases all resources in reverse registration order (defers), then closes the
+// config center and flushes the logger. Call via defer after NewGlobal/NewGlobalWith.
 func (gc *globalConfig[C, D]) Cleanup() {
-	if !gc.initialized {
-		log.Fatalf("not initialize, please call initialize.initHandler or initialize.Start")
-	}
 	// 倒序调用defer（先释放业务资源）
 	for i := len(gc.defers) - 1; i >= 0; i-- {
 		gc.defers[i]()
@@ -124,6 +131,8 @@ func (gc *globalConfig[C, D]) Cleanup() {
 
 const defaultConfigName = "config"
 
+// loadConfig discovers and reads the config file, sets up file watching,
+// connects to the config center, and performs the initial inject.
 func (gc *globalConfig[C, D]) loadConfig() {
 	executable, err := os.Executable()
 	if err != nil {
@@ -296,6 +305,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	gc.inject(gc.Config, gc.Dao)
 }
 
+// beforeInjectCall invokes BeforeInject and BeforeInjectWithRoot on the given conf and dao.
 func (gc *globalConfig[C, D]) beforeInjectCall(conf Config, dao Dao) {
 	conf.BeforeInject()
 	if c, ok := conf.(beforeInjectWithRoot); ok {
@@ -309,12 +319,14 @@ func (gc *globalConfig[C, D]) beforeInjectCall(conf Config, dao Dao) {
 	}
 }
 
+// Defer registers cleanup functions that will be called in reverse order during Cleanup.
 func (gc *globalConfig[C, D]) Defer(deferf ...func()) {
 	gc.mu.Lock()
 	defer gc.mu.Unlock()
 	gc.defers = append(gc.defers, deferf...)
 }
 
+// closeDao closes all DaoField instances within the Dao struct, collecting errors with multierr.
 func closeDao(dao Dao) error {
 	var errs error
 	daoValue := reflect.ValueOf(dao)

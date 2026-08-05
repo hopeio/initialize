@@ -1,5 +1,3 @@
-//go:build cgo
-
 package confluent
 
 type Config struct {

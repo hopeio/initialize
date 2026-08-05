@@ -12,11 +12,16 @@ import (
 
 type Config badger.Options
 
+// BeforeInject is a no-op satisfying the Config interface.
 func (c *Config) BeforeInject() {
 }
+
+// AfterInject is a no-op satisfying the Config interface.
 func (c *Config) AfterInject() {
 
 }
+
+// Build opens a Badger database with the configured options.
 func (c *Config) Build() (*badger.DB, error) {
 	return badger.Open(badger.Options(*c))
 }
@@ -26,16 +31,19 @@ type DB struct {
 	Conf Config
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (c *DB) Config() any {
 	return &c.Conf
 }
 
+// Init opens the Badger database and stores it.
 func (c *DB) Init() error {
 	var err error
 	c.DB, err = c.Conf.Build()
 	return err
 }
 
+// Close closes the Badger database.
 func (c *DB) Close() error {
 	return c.DB.Close()
 }

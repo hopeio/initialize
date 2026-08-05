@@ -32,14 +32,17 @@ type Config struct {
 	ConfigParams []vo.ConfigParam
 }
 
+// Type returns the identifier string "nacos" for this config center.
 func (cc *Nacos) Type() string {
 	return "nacos"
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (cc *Nacos) Config() any {
 	return &cc.Conf
 }
 
+// Handle connects to Nacos, fetches each ConfigParam, pre-populates the listen cache, and registers change listeners.
 func (cc *Nacos) Handle(ctx context.Context, merge func(io.Reader) error, onChange func(io.Reader) error) error {
 	if cc.Client == nil {
 		var err error
@@ -70,6 +73,7 @@ func (cc *Nacos) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 	return nil
 }
 
+// Close closes the Nacos config client.
 func (cc *Nacos) Close() error {
 	cc.Client.CloseClient()
 	return nil

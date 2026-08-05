@@ -38,6 +38,7 @@ type initTagSettings struct {
 	DefaultValue string `meta:"default"`
 }
 
+// parseInitTagSettings parses an "init" struct tag value into an initTagSettings struct.
 func parseInitTagSettings(str string) *initTagSettings {
 	if str == "" {
 		return &initTagSettings{}
@@ -58,7 +59,7 @@ func parseTagSetting(str string, settings any) {
 	}
 }
 
-// get field name, return filed config name and skip flag
+// getFieldConfigName returns the effective mapstructure name, tag options, and whether the field should be included.
 func getFieldConfigName(v *reflect.StructField) (string, tagOptions, bool) {
 	tag := v.Tag.Get("mapstructure")
 	if tag == "" {

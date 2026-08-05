@@ -69,6 +69,7 @@ type MetricsCollectorConfig struct {
 	VariableNames []string
 }
 
+// Init sets database type defaults, charset, port, timezone, SSL mode and Sqlite DSN.
 func (c *Config) Init() {
 	if c.Type == "" {
 		c.Type = sqlx.Postgres
@@ -110,6 +111,7 @@ func (c *Config) Init() {
 	}
 }
 
+// BeforeInjectWithRoot copies the Debug flag and sets a default charset from the root config.
 func (c *Config) BeforeInjectWithRoot(conf *initialize.RootConfig) {
 	c.UseGormLogger = conf.Debug
 	if c.Charset == "" {
@@ -117,10 +119,13 @@ func (c *Config) BeforeInjectWithRoot(conf *initialize.RootConfig) {
 	}
 }
 
+// AfterInject calls Init to apply defaults after config fields are populated.
 func (c *Config) AfterInject() {
 	c.Init()
 }
 
+// Build opens a GORM database with the given dialector, applies Prometheus metrics if enabled,
+// and configures connection pool settings.
 func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 
 	dbConfig := &c.Gorm
@@ -162,6 +167,7 @@ type DB struct {
 	Conf Config
 }
 
+// Table returns a *gorm.DB scoped to the named table without resetting other clauses.
 func (db *DB) Table(name string) *gorm.DB {
 	gdb := db.DB.Clauses()
 	gdb.Statement.TableExpr = &clause.Expr{SQL: gdb.Statement.Quote(name)}

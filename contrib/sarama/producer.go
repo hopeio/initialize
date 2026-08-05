@@ -12,14 +12,17 @@ import (
 
 type ProducerConfig Config
 
+// BeforeInject is a no-op satisfying the Config interface.
 func (c *ProducerConfig) BeforeInject() {
 }
+
+// AfterInject delegates to Config.AfterInject.
 func (c *ProducerConfig) AfterInject() {
 	(*Config)(c).AfterInject()
 }
 
+// Build creates a Sarama synchronous Kafka producer.
 func (c *ProducerConfig) Build() (sarama.SyncProducer, error) {
-	// 使用给定代理地址和配置创建一个同步生产者
 	return sarama.NewSyncProducer(c.Addrs, c.Config)
 
 }
@@ -29,17 +32,20 @@ type Producer struct {
 	Conf ProducerConfig
 }
 
+// Config returns the embedded Conf (with a fresh sarama.Config) as the configuration for injection.
 func (p *Producer) Config() any {
 	p.Conf.Config = sarama.NewConfig()
 	return &p.Conf
 }
 
+// Init creates the Sarama sync producer and stores it.
 func (p *Producer) Init() error {
 	var err error
 	p.SyncProducer, err = p.Conf.Build()
 	return err
 }
 
+// Close closes the Sarama sync producer.
 func (p *Producer) Close() error {
 	if p.SyncProducer == nil {
 		return nil

@@ -21,14 +21,17 @@ type Config struct {
 	ServerName string
 }
 
+// BeforeInject initializes the embedded ClientOptions with MQTT defaults.
 func (c *Config) BeforeInject() {
 	c.ClientOptions = mqtt.NewClientOptions()
 }
 
+// AfterInject calls Init to finalize broker addresses and TLS config.
 func (c *Config) AfterInject() {
 	c.Init()
 }
 
+// Init sets up TLS and broker addresses, logs warnings for unset timeouts.
 func (c *Config) Init() *Config {
 	if c.CAFile != "" && c.ServerName != "" {
 		tlsConfig, err := tls.NewClientTLSConfig(c.CAFile, c.ServerName)
@@ -50,6 +53,7 @@ func (c *Config) Init() *Config {
 	return c
 }
 
+// Build creates an MQTT client, connects to all configured brokers, and returns it.
 func (c *Config) Build() (mqtt.Client, error) {
 	client := mqtt.NewClient(c.ClientOptions)
 	if token := client.Connect(); token.Wait() && token.Error() != nil {
@@ -63,16 +67,19 @@ type Client struct {
 	mqtt.Client
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (c *Client) Config() any {
 	return &c.Conf
 }
 
+// Init creates and connects the MQTT client.
 func (c *Client) Init() error {
 	var err error
 	c.Client, err = c.Conf.Build()
 	return err
 }
 
+// Close disconnects the MQTT client with a 5ms quiesce period.
 func (c *Client) Close() error {
 	c.Client.Disconnect(5)
 	return nil

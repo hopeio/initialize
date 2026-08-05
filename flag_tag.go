@@ -45,18 +45,23 @@ func init() {
 
 type anyValue reflect.Value
 
+// String returns the flag's current value as a formatted string.
 func (a anyValue) String() string {
 	return stringsx.FormatReflectValue(reflect.Value(a))
 }
 
+// Type returns the kind name of the underlying reflect.Value (used by pflag).
 func (a anyValue) Type() string {
 	return reflect.Value(a).Kind().String()
 }
 
+// Set parses the string v and assigns it to the underlying reflect.Value.
 func (a anyValue) Set(v string) error {
 	return kvstruct.ParseStringSetReflectValue(reflect.Value(a), v, nil)
 }
 
+// applyFlagConfig registers and parses all "flag" tagged fields in the given config structs,
+// then binds the resulting pflag set to Viper.
 func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, confs ...any) {
 	commandLine := newCommandLine()
 	for _, conf := range confs {
@@ -71,6 +76,8 @@ func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, confs ...any) {
 	parseFlag(commandLine)
 }
 
+// injectFlagConfig recursively walks a config value, registers each field as a pflag flag,
+// and binds default/env values from the "flag" tag.
 func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) {
 	fcValue = reflectx.DerefValue(fcValue)
 	if !fcValue.IsValid() {
@@ -186,12 +193,14 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 	}
 }
 
+// newCommandLine creates a pflag.FlagSet that silently ignores unknown flags.
 func newCommandLine() *pflag.FlagSet {
 	commandLine := pflag.NewFlagSet(os.Args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true
 	return commandLine
 }
 
+// parseFlag parses os.Args[1:] into the given flag set, fatal on error.
 func parseFlag(commandLine *pflag.FlagSet) {
 	err := commandLine.Parse(os.Args[1:])
 	if err != nil {
@@ -199,6 +208,7 @@ func parseFlag(commandLine *pflag.FlagSet) {
 	}
 }
 
+// InjectByFlag parses the given args slice and injects flag values into conf.
 func (gc *globalConfig[C, D]) InjectByFlag(args []string, conf any) error {
 	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true

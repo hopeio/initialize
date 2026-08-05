@@ -35,13 +35,16 @@ type RemoteProvider struct {
 	SecretKeyring string
 }
 
+// BeforeInject is a no-op satisfying the Config interface.
 func (c *Config) BeforeInject() {
 
 }
 
+// AfterInject calls Init after config fields are populated.
 func (c *Config) AfterInject() {
 	c.Init()
 }
+// Init sets the default config type to "toml" if not specified.
 func (c *Config) Init() *Config {
 	if c.ConfigType == "" {
 		c.ConfigType = "toml"
@@ -49,11 +52,13 @@ func (c *Config) Init() *Config {
 	return c
 }
 
+// Build creates and configures a new Viper instance (remote or local) based on the config fields.
 func (c *Config) Build() (*viper.Viper, error) {
 	var runtimeViper = viper.New()
 	return runtimeViper, c.build(runtimeViper)
 }
 
+// build applies the full configuration (remote/local providers, env, watch) to runtimeViper.
 func (c *Config) build(runtimeViper *viper.Viper) error {
 	if c.Debug {
 		runtimeViper.Debug()
@@ -131,22 +136,25 @@ func (c *Config) build(runtimeViper *viper.Viper) error {
 	return nil
 }
 
-// 不建议使用,请使用viper全局变量
+// Viper is a DaoField wrapper around viper.Viper. Prefer using the global Viper instance instead.
 type Viper struct {
 	*viper.Viper
 	Conf Config
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (v *Viper) Config() any {
 	return &v.Conf
 }
 
+// Init creates and stores the Viper instance.
 func (v *Viper) Init() error {
 	var err error
 	v.Viper, err = v.Conf.Build()
 	return err
 }
 
+// Close is intentionally a no-op (the Viper type has no teardown); prefer using the global Viper instance.
 func (v *Viper) Close() error {
 	return v.Close()
 }

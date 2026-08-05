@@ -43,6 +43,8 @@ var (
 	configCenter   = map[string]ConfigCenter{}
 )
 
+// RegisterConfigCenter registers a ConfigCenter implementation by its type name (lowercase letters only).
+// Duplicate registrations are silently ignored.
 func RegisterConfigCenter(c ConfigCenter) {
 	if c == nil {
 		return
@@ -58,12 +60,14 @@ func RegisterConfigCenter(c ConfigCenter) {
 	}
 }
 
+// GetConfigCenter returns the registered ConfigCenter for the given type string, or nil if not found.
 func GetConfigCenter(configType string) ConfigCenter {
 	configCenterMu.RLock()
 	defer configCenterMu.RUnlock()
 	return configCenter[configType]
 }
 
+// GetRegisteredConfigCenter returns a snapshot copy of all currently registered ConfigCenter instances.
 func GetRegisteredConfigCenter() map[string]ConfigCenter {
 	configCenterMu.RLock()
 	defer configCenterMu.RUnlock()
@@ -88,14 +92,17 @@ type Local struct {
 	modTime []time.Time
 }
 
+// Type returns the identifier string "local" for this config source.
 func (ld *Local) Type() string {
 	return "local"
 }
 
+// Config returns the Local struct itself as its own configuration.
 func (ld *Local) Config() any {
 	return ld
 }
 
+// Close stops the fsnotify watcher, if one is running.
 func (ld *Local) Close() error {
 	if ld.watcher != nil {
 		return ld.watcher.Close()
@@ -140,6 +147,8 @@ func (ld *Local) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 	return nil
 }
 
+// watchNotify is the goroutine that listens for fsnotify write events and calls onChange,
+// debouncing rapid writes with a 1-second minimum interval per path.
 func (ld *Local) watchNotify(onChange func(reader io.Reader) error) {
 	// 路径可能重复，预先建立 path->index 映射，避免 slices.Index 定位错误
 	pathIndex := make(map[string]int, len(ld.Paths))
@@ -176,6 +185,7 @@ func (ld *Local) watchNotify(onChange func(reader io.Reader) error) {
 	}
 }
 
+// load opens a file and passes it to handle (merge or onChange callback).
 func load(handle func(io.Reader) error, filepath string) (err error) {
 	log.Infof("load config from: '%v'", filepath)
 	file, err := os.Open(filepath)

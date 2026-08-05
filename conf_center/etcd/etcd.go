@@ -25,14 +25,17 @@ type Config struct {
 	Keys []string
 }
 
+// Type returns the identifier string "etcd" for this config center.
 func (e *Etcd) Type() string {
 	return "etcd"
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (cc *Etcd) Config() any {
 	return &cc.Conf
 }
 
+// Handle connects to etcd, fetches each configured key, merges it, and starts a watch goroutine per key.
 func (e *Etcd) Handle(ctx context.Context, merge func(io.Reader) error, onChange func(io.Reader) error) error {
 	var err error
 	if e.Client == nil {
@@ -62,6 +65,7 @@ func (e *Etcd) Handle(ctx context.Context, merge func(io.Reader) error, onChange
 	return nil
 }
 
+// Close closes the etcd client if it has been initialized.
 func (cc *Etcd) Close() error {
 	if cc.Client == nil {
 		return nil

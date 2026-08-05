@@ -25,11 +25,13 @@ type Http struct {
 	modTime        []time.Time
 }
 
+// Type returns the identifier string "http" for this config center.
 func (cc *Http) Type() string {
 	return "http"
 }
 
-// 本地配置
+// Handle fetches each URL and calls merge; if ReloadInterval > 0, starts a background watcher
+// that calls onChange whenever any URL content changes.
 func (cc *Http) Handle(ctx context.Context, merge func(io.Reader) error, onChange func(io.Reader) error) error {
 
 	for _, url := range cc.Urls {

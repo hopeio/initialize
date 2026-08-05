@@ -23,9 +23,11 @@ type Config struct {
 	KeyFile  string `json:"key_file,omitempty"`
 }
 
+// BeforeInject is a no-op satisfying the Config interface.
 func (c *Config) BeforeInject() {
 }
 
+// AfterInject loads TLS certificates when both CertFile and KeyFile are set.
 func (c *Config) AfterInject() {
 	if c.CertFile != "" && c.KeyFile != "" {
 		tlsConfig, err := tls.NewServerTLSConfig(c.CertFile, c.KeyFile)
@@ -36,6 +38,7 @@ func (c *Config) AfterInject() {
 	}
 }
 
+// Build creates a Redis client and verifies connectivity with a PING.
 func (c *Config) Build() (*redis.Client, error) {
 	client := redis.NewClient(&c.Options)
 	otelInstance := redisotel.GetObservabilityInstance()
@@ -52,16 +55,19 @@ type Client struct {
 	Conf Config
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (db *Client) Config() any {
 	return &db.Conf
 }
 
+// Init calls Build to create and connect the Redis client.
 func (db *Client) Init() error {
 	var err error
 	db.Client, err = db.Conf.Build()
 	return err
 }
 
+// Close disconnects the Redis client and shuts down the OTel instance if enabled.
 func (db *Client) Close() error {
 	if db.Client == nil {
 		return nil

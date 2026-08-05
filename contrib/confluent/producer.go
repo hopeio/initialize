@@ -1,5 +1,3 @@
-//go:build cgo
-
 package confluent
 
 import (
@@ -10,14 +8,17 @@ import (
 
 type ProducerConfig kafka.ConfigMap
 
+// BeforeInject normalizes underscore-keyed config entries to dot notation.
 func (c ProducerConfig) BeforeInject() {
 	for k, v := range c {
 		c[strings.ReplaceAll(k, "_", ".")] = v
 	}
 }
+// AfterInject is a no-op satisfying the Config interface.
 func (c ProducerConfig) AfterInject() {
 }
 
+// Build creates a Confluent Kafka producer from this config map.
 func (c ProducerConfig) Build() (*kafka.Producer, error) {
 	return kafka.NewProducer((*kafka.ConfigMap)(&c))
 }
@@ -27,17 +28,20 @@ type Producer struct {
 	Conf ProducerConfig
 }
 
+// Config initializes an empty ProducerConfig map and returns it for injection.
 func (p *Producer) Config() any {
 	p.Conf = make(ProducerConfig)
 	return &p.Conf
 }
 
+// Init creates the Confluent Kafka producer and stores it.
 func (p *Producer) Init() error {
 	var err error
 	p.Producer, err = p.Conf.Build()
 	return err
 }
 
+// Close closes the Confluent Kafka producer and waits for in-flight messages.
 func (p *Producer) Close() error {
 	if p.Producer == nil {
 		return nil

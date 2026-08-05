@@ -21,13 +21,16 @@ type Config struct {
 	DSN string `json:"dsn"`
 }
 
+// BeforeInject is a no-op satisfying the Config interface.
 func (c *Config) BeforeInject() {
 
 }
 
+// AfterInject is a no-op satisfying the Config interface.
 func (c *Config) AfterInject() {
 }
 
+// Build opens a DuckDB database using the standard database/sql interface.
 func (c *Config) Build() (*sql.DB, error) {
 	return sql.Open("duckdb", c.DSN)
 }
@@ -37,16 +40,19 @@ type DB struct {
 	Conf Config
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (m *DB) Config() any {
 	return &m.Conf
 }
 
+// Init opens the DuckDB database and stores it.
 func (m *DB) Init() error {
 	var err error
 	m.DB, err = m.Conf.Build()
 	return err
 }
 
+// Close closes the DuckDB database connection.
 func (m *DB) Close() error {
 	return m.DB.Close()
 }

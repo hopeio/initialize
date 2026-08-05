@@ -15,7 +15,10 @@ type Config struct {
 	*sarama.Config
 }
 
+// BeforeInject is a no-op satisfying the Config interface.
 func (c *Config) BeforeInject() {
 }
+
+// AfterInject is a no-op satisfying the Config interface.
 func (c *Config) AfterInject() {
 }

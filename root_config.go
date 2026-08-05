@@ -46,6 +46,7 @@ type EnvConfig struct {
 	ConfigCenter ConfigCenterConfig
 }
 
+// AfterInject sets up the HTTP proxy from the Proxy field and resolves all local config paths to absolute paths.
 func (c *EnvConfig) AfterInject() {
 	if c.Proxy != "" {
 		proxyURL, err := url.Parse(c.Proxy)
@@ -76,6 +77,8 @@ const (
 	prefixLocalTemplate           = "local.template."
 )
 
+// setRootConfig unmarshals the top-level (squash) keys from Viper into RootConfig,
+// applies flag overrides, and fills in defaults for Name and ConfPath.
 func (gc *globalConfig[C, D]) setRootConfig() {
 	format := gc.RootConfig.ConfigCenter.Format
 	confPath := gc.RootConfig.ConfPath
@@ -96,6 +99,8 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 	}
 }
 
+// setEnvConfig reads the environment-specific config section (keyed by RootConfig.Env),
+// decodes it into EnvConfig, optionally connects to a config center, and writes a config template if requested.
 func (gc *globalConfig[C, D]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
 		if gc.RootConfig.ConfPath == "" {

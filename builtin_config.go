@@ -21,6 +21,8 @@ type builtinConfig struct {
 // 全局变量,只一个实例,只提供config
 type LogConfig log.Config
 
+// AfterInjectWithRoot configures and replaces the default global logger using the root config's
+// Name and Debug fields. It is a no-op if the config is still fully zero-valued.
 func (c *LogConfig) AfterInjectWithRoot(rootconfig *RootConfig) {
 	isZero := reflect.ValueOf(c).Elem().IsZero()
 	if rootconfig.Name != "" && c.Name == "" {

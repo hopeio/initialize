@@ -32,6 +32,8 @@ var (
 	unSupportTemplateTypes = []string{"tls.Config"}
 )
 
+// RegisterUnSupportTemplateTypes appends additional type name strings that should be excluded
+// from config template generation (e.g. types that cannot be marshaled generically).
 func RegisterUnSupportTemplateTypes(types ...string) {
 	unSupportTemplateTypes = append(unSupportTemplateTypes, types...)
 }
@@ -40,6 +42,7 @@ type encoder interface {
 	Encode(format string, v map[string]any) ([]byte, error)
 }
 
+// formatDecoderConfigOption returns decoder options that set the tag name to the given format.
 func formatDecoderConfigOption(format encoding.Format) []viper.DecoderConfigOption {
 	return append(decoderConfigOptions, func(config *mapstructure.DecoderConfig) {
 		if format == encoding.Yml {
@@ -49,11 +52,12 @@ func formatDecoderConfigOption(format encoding.Format) []viper.DecoderConfigOpti
 	})
 }
 
+// struct2Map converts a pointer-to-struct into a nested map[string]any using mapstructure field names.
 func struct2Map(v any, confMap map[string]any) {
 	structValue2Map(reflect.ValueOf(v).Elem(), nil, confMap)
 }
 
-// 递归的根据反射将对象中的指针变量赋值
+// structValue2Map recursively converts a reflect.Value (struct/ptr/slice/scalar) into confMap entries.
 func structValue2Map(value reflect.Value, field *reflect.StructField, confMap map[string]any) {
 	var name string
 	var opt tagOptions

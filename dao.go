@@ -31,16 +31,19 @@ type DaoG[C DaoConfig[D], D any] struct {
 	close  CloseFunc
 }
 
+// Config returns the embedded Conf pointer as the configuration object for injection.
 func (d *DaoG[C, D]) Config() any {
 	return d.Conf
 }
 
+// Init calls Build on the configuration and stores the resulting client.
 func (d *DaoG[C, D]) Init() error {
 	var err error
 	d.Client, d.close, err = d.Conf.Build()
 	return err
 }
 
+// Close calls the cleanup function returned by Build, if any.
 func (d *DaoG[C, D]) Close() error {
 	if d.close != nil {
 		return d.close()

@@ -19,14 +19,17 @@ import (
 
 type Config pkdb.Config
 
+// BeforeInjectWithRoot delegates to the parent gormdb Config.
 func (c *Config) BeforeInjectWithRoot(conf *initialize.RootConfig) {
 	(*pkdb.Config)(c).BeforeInjectWithRoot(conf)
 }
 
+// AfterInject delegates to the parent gormdb Config.
 func (c *Config) AfterInject() {
 	(*pkdb.Config)(c).AfterInject()
 }
 
+// Build constructs a PostgreSQL DSN and opens a GORM DB connection.
 func (c *Config) Build() (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s dbname=%s port=%d sslmode=%s password=%s TimeZone=%s",
 		c.Host, c.User, c.Database, c.Port, c.Postgres.SSLMode, c.Password, c.TimeZone)
@@ -35,10 +38,12 @@ func (c *Config) Build() (*gorm.DB, error) {
 
 type DB pkdb.DB
 
+// Config returns the embedded Conf as the configuration for injection.
 func (db *DB) Config() any {
 	return (*Config)(&db.Conf)
 }
 
+// Init opens the PostgreSQL connection and stores it in DB.
 func (db *DB) Init() error {
 	var err error
 	db.Conf.Type = sqlx.Mysql
@@ -46,6 +51,7 @@ func (db *DB) Init() error {
 	return err
 }
 
+// Close closes the underlying sql.DB connection.
 func (db *DB) Close() error {
 	dbx, err := db.DB.DB()
 	if err != nil {
@@ -54,6 +60,7 @@ func (db *DB) Close() error {
 	return dbx.Close()
 }
 
+// Table returns a *gorm.DB scoped to the given table name (with schema prefix if configured).
 func (db *DB) Table(name string) *gorm.DB {
 	name = db.TableName(name)
 	gdb := db.DB.Clauses()
@@ -62,6 +69,7 @@ func (db *DB) Table(name string) *gorm.DB {
 	return gdb
 }
 
+// TableName returns the schema-qualified table name when a Postgres schema is configured.
 func (db *DB) TableName(name string) string {
 	if db.Conf.Postgres.Schema != "" {
 		return db.Conf.Postgres.Schema + "." + name

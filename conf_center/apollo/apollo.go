@@ -30,15 +30,18 @@ type Config struct {
 	Namespaces []string
 }
 
+// Type returns the identifier string "apollo" for this config center.
 func (e *Apollo) Type() string {
 	return "apollo"
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (cc *Apollo) Config() any {
 	return &cc.Conf
 }
 
-// TODD: 更改监听
+// Handle starts the Apollo client, merges all configured namespaces, and registers a change listener.
+// TODO: improve change-listener update handling.
 func (e *Apollo) Handle(ctx context.Context, merge func(io.Reader) error, onChange func(io.Reader) error) error {
 	var err error
 	if e.Client == nil {
@@ -62,6 +65,7 @@ func (e *Apollo) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 	return nil
 }
 
+// Close is a no-op; the Apollo client does not require explicit shutdown.
 func (cc *Apollo) Close() error {
 	return nil
 }
@@ -71,7 +75,8 @@ type CustomListener struct {
 	handle func(io.Reader) error
 }
 
-// 2. 实现 OnChange 方法
+// OnChange is called when any Apollo config key changes; it serializes the changes as properties
+// and passes them to the registered onChange handler.
 func (l *CustomListener) OnChange(event *storage.ChangeEvent) {
 
 	properties := ""
@@ -84,5 +89,5 @@ func (l *CustomListener) OnChange(event *storage.ChangeEvent) {
 	}
 }
 
-// 3. 实现 OnNewestChange 方法（通常留空或记录日志）
+// OnNewestChange is called with the full diff; currently a no-op.
 func (l *CustomListener) OnNewestChange(event *storage.FullChangeEvent) {}

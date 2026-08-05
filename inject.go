@@ -17,6 +17,8 @@ import (
 	stringsx "github.com/hopeio/gox/strings"
 )
 
+// newStruct dynamically builds a merged struct containing all config and DAO config fields,
+// calling lifecycle hooks (Init, BeforeInject, BeforeInjectWithRoot) on each sub-config.
 func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 	nameValueMap := make(map[string]reflect.Value)
 	var structFields []reflect.StructField
@@ -164,6 +166,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 	return newStruct.Interface()
 }
 
+// setNewStruct copies values from typValueMap into the dynamically-created struct fields.
 func (gc *globalConfig[C, D]) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) {
 	typ := value.Type()
 	for i := range value.NumField() {
@@ -179,7 +182,8 @@ func (gc *globalConfig[C, D]) setNewStruct(value reflect.Value, typValueMap map[
 	}
 }
 
-// 注入配置及生成DAO
+// inject unmarshals the merged config struct from Viper, applies flag overrides,
+// and then invokes all AfterInject lifecycle hooks on the config and DAO.
 func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 	tmpConfig := gc.newStruct(conf, dao)
 	err := gc.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
@@ -207,6 +211,8 @@ func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 	//log.Debugf("config:  %+v", tmpConfig)
 }
 
+// afterInjectConfigCall recursively walks all fields in tmpConfig and calls AfterInject /
+// AfterInjectWithRoot on any field that implements the corresponding interface.
 func (gc *globalConfig[C, D]) afterInjectConfigCall(tmpConfig any) {
 	v := reflectx.DerefValue(reflect.ValueOf(tmpConfig))
 	if !v.IsValid() || v.Kind() != reflect.Struct {
@@ -233,6 +239,7 @@ func (gc *globalConfig[C, D]) afterInjectConfigCall(tmpConfig any) {
 	}
 }
 
+// injectDao initializes each DaoField in the Dao struct, skipping entries listed in RootConfig.SkipInjectDaos.
 func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 	v := reflect.ValueOf(dao).Elem()
 	if !v.IsValid() {
@@ -270,7 +277,8 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 	}
 }
 
-// 当初始化完成后,仍然有需要注入的config和dao
+// Inject injects additional Config/Dao after the global config is already initialized.
+// Returns an error if the global config has not yet been initialized.
 func (gc *globalConfig[C, D]) Inject(conf Config, dao Dao) error {
 	if !gc.initialized {
 		return errors.New("not initialize, please call initialize.NewGlobal or initialize.Start")

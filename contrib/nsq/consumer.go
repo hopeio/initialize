@@ -18,15 +18,19 @@ type ConsumerConfig struct {
 	*nsq.Config
 }
 
+// BeforeInject is a no-op satisfying the Config interface.
 func (c *ConsumerConfig) BeforeInject() {
 }
 
+// AfterInject is a no-op satisfying the Config interface.
 func (c *ConsumerConfig) AfterInject() {
 }
 
+// Init is a no-op placeholder for future default initialization.
 func (c *ConsumerConfig) Init() {
 }
 
+// Build creates an NSQ consumer and connects it to configured lookupd/nsqd addresses.
 func (c *ConsumerConfig) Build() (*nsq.Consumer, error) {
 	consumer, err := nsq.NewConsumer(c.Topic, c.Channel, c.Config)
 	if err != nil {
@@ -53,17 +57,20 @@ type Consumer struct {
 	Conf ConsumerConfig
 }
 
+// Config returns the embedded Conf (with a fresh nsq.Config) as the configuration for injection.
 func (c *Consumer) Config() any {
 	c.Conf.Config = nsq.NewConfig()
 	return &c.Conf
 }
 
+// Init creates the NSQ consumer and stores it.
 func (c *Consumer) Init() error {
 	var err error
 	c.Consumer, err = c.Conf.Build()
 	return err
 }
 
+// Close stops the NSQ consumer gracefully.
 func (c *Consumer) Close() error {
 	if c.Consumer != nil {
 		c.Consumer.Stop()

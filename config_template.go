@@ -14,6 +14,9 @@ import (
 	stringsx "github.com/hopeio/gox/strings"
 )
 
+// genConfigTemplate writes a config template file to the directory specified by ConfigTemplateDir.
+// In single-file mode the template merges builtin, user config and DAO fields into one file;
+// otherwise only the env-local fields are written.
 func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
 	dir := gc.RootConfig.ConfigTemplateDir
 	if dir == "" {
@@ -52,6 +55,7 @@ func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
 	}
 }
 
+// daoConfig2Map iterates over DAO fields that implement DaoField and adds their Config() result to confMap.
 func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 	typ := value.Type()
 	for i := range value.NumField() {

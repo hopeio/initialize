@@ -36,10 +36,12 @@ type serverConfig struct {
 	time.Duration
 }
 
+// BeforeInject sets default values before config is unmarshaled.
 func (c *config) BeforeInject() {
 	c.Customize.Duration = timex.Day
 }
 
+// AfterInject normalizes the Duration to hour granularity on non-Windows platforms.
 func (c *config) AfterInject() {
 	if runtime.GOOS == "windows" {
 	}
@@ -47,21 +49,24 @@ func (c *config) AfterInject() {
 	c.Customize.Duration = timex.NormalizeDuration(c.Customize.Duration, time.Hour)
 }
 
-// dao dao.
+// dao holds all DAO (data access object) fields for the application.
 type dao struct {
 	initialize.EmbeddedPresets
-	// GORMDB 数据库连接
+	// Mqtt is the MQTT client connection.
 	Mqtt mqtt.Client
 }
 
+// BeforeInject is a no-op satisfying the Dao interface.
 func (d *dao) BeforeInject() {
 
 }
 
+// AfterInjectConfig is called after the Mqtt config is injected; logs a message.
 func (d *dao) AfterInjectConfig() {
-	fmt.Println("这里后执行")
+	fmt.Println("AfterInjectConfig called")
 }
 
+// AfterInject publishes a test MQTT message to verify connectivity.
 func (d *dao) AfterInject() {
 	if token := d.Mqtt.Publish("test", 0, false, "test"); token.Wait() && token.Error() != nil {
 		panic(token.Error())

@@ -14,6 +14,7 @@ type Config struct {
 	options   *influxdb2.Options
 }
 
+// Build creates an InfluxDB v2 client.
 func (c *Config) Build() influxdb2.Client {
 	client := influxdb2.NewClientWithOptions(c.ServerURL, c.AuthToken, c.options)
 	return client
@@ -24,15 +25,18 @@ type Client struct {
 	Conf   Config
 }
 
+// Config returns the embedded Conf as the configuration for injection.
 func (c *Client) Config() any {
 	return c.Conf
 }
 
+// Init creates the InfluxDB client and stores it.
 func (c *Client) Init() error {
 	c.Client = c.Conf.Build()
 	return nil
 }
 
+// Close shuts down the InfluxDB client.
 func (c *Client) Close() error {
 	c.Client.Close()
 	return nil
