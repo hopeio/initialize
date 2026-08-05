@@ -19,7 +19,6 @@ import (
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"gorm.io/plugin/prometheus"
 )
 
 type Config struct {
@@ -39,14 +38,6 @@ type Config struct {
 	Logger        logger.Config
 
 	NamingStrategy schema.NamingStrategy
-
-	Prometheus PrometheusConfig
-}
-
-type PrometheusConfig struct {
-	Enabled bool
-	prometheus.Config
-	MetricsCollectors []MetricsCollectorConfig
 }
 
 type PostgresConfig struct {
@@ -142,13 +133,6 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 	db, err := gorm.Open(dialector, dbConfig)
 	if err != nil {
 		return nil, err
-	}
-
-	if c.Prometheus.Enabled {
-		err = db.Use(prometheus.New(c.Prometheus.Config))
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	rawDB, err := db.DB()

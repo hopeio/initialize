@@ -40,7 +40,7 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.17.10
 	github.com/elastic/go-elasticsearch/v8 v8.19.7
 	github.com/go-viper/mapstructure/v2 v2.5.0
-	github.com/hopeio/gox v1.11.8
+	github.com/hopeio/gox v1.12.0
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/minio/minio-go/v7 v7.2.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.5
@@ -80,10 +80,7 @@ require (
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 )
 
-require (
-	github.com/apolloconfig/agollo/v5 v5.0.0
-	gorm.io/plugin/prometheus v0.1.0
-)
+require github.com/apolloconfig/agollo/v5 v5.0.0
 
 require (
 	cloud.google.com/go v0.123.0 // indirect
