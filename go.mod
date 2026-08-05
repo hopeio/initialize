@@ -45,7 +45,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8
 	github.com/grafana/loki-client-go v0.0.0-20251015150631-c42bbddc310a
-	github.com/hopeio/gox v1.11.5
+	github.com/hopeio/gox v1.11.8
 	github.com/influxdata/influxdb-client-go/v2 v2.13.0
 	github.com/linxGnu/grocksdb v1.9.1
 	github.com/minio/minio-go/v7 v7.0.88
@@ -248,7 +248,7 @@ require (
 	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.41.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260116145544-c6413dc483f5 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/time v0.15.0 // indirect

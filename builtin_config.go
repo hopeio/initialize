@@ -10,6 +10,7 @@ import (
 	"reflect"
 
 	"github.com/hopeio/gox/log"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -26,7 +27,7 @@ func (c *LogConfig) AfterInjectWithRoot(rootconfig *RootConfig) {
 		c.Name = rootconfig.Name
 		if isZero {
 			c.Development = true
-			c.Level = zapcore.DebugLevel
+			c.Level = zap.NewAtomicLevelAt(zapcore.DebugLevel)
 			isZero = false
 		}
 	}

@@ -1,8 +1,5 @@
 [Log]
 Development = true
+OutputPaths = ["stdout"]
 ErrorOutputPaths = []
 Level = "debug"
-
-[Log.OutputPaths]
-Console = ["stdout"]
-Json = []
