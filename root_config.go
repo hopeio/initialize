@@ -20,7 +20,7 @@ type RootConfig struct {
 	Executable string `init:"-"` // autowired
 	ExecDir    string `init:"-"` // autowired
 	// Config file path
-	ConfPath string `flag:"name:config;short:c;usage:配置文件路径,默认./config.xxx或./config/config.xxx;env:CONFIG"`
+	ConfPath string `flag:"name:config;short:c;usage:config file path, default ./config.xxx or ./config/config.xxx;env:CONFIG"`
 	BasicConfig
 	EnvConfig
 }
@@ -28,16 +28,16 @@ type RootConfig struct {
 // BasicConfig holds module identity fields shared across environments.
 type BasicConfig struct {
 	// Module name
-	Name string `flag:"name:name;usage:模块名;env:NAME"`
+	Name string `flag:"name:name;usage:module name;env:NAME"`
 	// environment
-	Env string `flag:"name:env;short:e;default:dev;usage:环境;env:ENV"`
+	Env string `flag:"name:env;short:e;default:dev;usage:environment;env:ENV"`
 }
 
 type EnvConfig struct {
-	Debug             bool   `flag:"name:debug;short:d;default:true;usage:是否测试;env:DEBUG"`
-	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:是否生成配置模板;env:CONFIG_TEMPLATE_DIR"`
-	SkipInjectDaos []string `flag:"name:skip_inject_daos;usage:跳过注入的dao"`
-	LocalConfig    Local
+	Debug             bool   `flag:"name:debug;short:d;default:true;usage:enable debug mode;env:DEBUG"`
+	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:directory to write config templates;env:CONFIG_TEMPLATE_DIR"`
+	SkipInjectDaos    []string `flag:"name:skip_inject_daos;usage:dao names to skip during injection"`
+	LocalConfig       Local
 	// Field order must stay unchanged; ConfigCenter must remain last.
 	ConfigCenter ConfigCenterConfig
 }
