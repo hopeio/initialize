@@ -7,8 +7,6 @@
 package initialize
 
 import (
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -21,15 +19,15 @@ import (
 type RootConfig struct {
 	Executable string `init:"-"` // autowired
 	ExecDir    string `init:"-"` // autowired
-	// 配置文件路径
+	// Config file path
 	ConfPath string `flag:"name:config;short:c;usage:配置文件路径,默认./config.xxx或./config/config.xxx;env:CONFIG"`
 	BasicConfig
 	EnvConfig
 }
 
-// BasicConfig
+// BasicConfig holds module identity fields shared across environments.
 type BasicConfig struct {
-	// 模块名
+	// Module name
 	Name string `flag:"name:name;usage:模块名;env:NAME"`
 	// environment
 	Env string `flag:"name:env;short:e;default:dev;usage:环境;env:ENV"`
@@ -38,26 +36,14 @@ type BasicConfig struct {
 type EnvConfig struct {
 	Debug             bool   `flag:"name:debug;short:d;default:true;usage:是否测试;env:DEBUG"`
 	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:是否生成配置模板;env:CONFIG_TEMPLATE_DIR"`
-	// 代理, socks5://localhost:1080
-	Proxy          string   `flag:"name:proxy;usage:代理;env:HTTP_PROXY" `
 	SkipInjectDaos []string `flag:"name:skip_inject_daos;usage:跳过注入的dao"`
 	LocalConfig    Local
-	// config字段顺序不能变,ConfigCenter 保持在最后
+	// Field order must stay unchanged; ConfigCenter must remain last.
 	ConfigCenter ConfigCenterConfig
 }
 
 // AfterInject sets up the HTTP proxy from the Proxy field and resolves all local config paths to absolute paths.
 func (c *EnvConfig) AfterInject() {
-	if c.Proxy != "" {
-		proxyURL, err := url.Parse(c.Proxy)
-		if err != nil {
-			log.Errorf("invalid proxy url %q, ignore it: %v", c.Proxy, err)
-		} else {
-			http.DefaultClient.Transport = &http.Transport{
-				Proxy: http.ProxyURL(proxyURL),
-			}
-		}
-	}
 	var err error
 	for i := range c.LocalConfig.Paths {
 		c.LocalConfig.Paths[i], err = filepath.Abs(c.LocalConfig.Paths[i])
