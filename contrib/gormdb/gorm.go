@@ -104,7 +104,6 @@ func (c *Config) Init() {
 
 // BeforeInjectWithRoot copies the Debug flag and sets a default charset from the root config.
 func (c *Config) BeforeInjectWithRoot(conf *initialize.RootConfig) {
-	c.UseGormLogger = conf.Debug
 	if c.Charset == "" {
 		c.Charset = "utf8mb4"
 	}
