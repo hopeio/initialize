@@ -6,39 +6,43 @@
 
 [中文文档](README.zh-CN.md)
 
-Reflection-based bootstrap for **config** and **DAO** — declare fields, get wired clients.
-
-![initialize](_assets/initialize.webp)
-
 ```bash
 go get github.com/hopeio/initialize@latest
 ```
 
-## What is initialize?
+**initialize** boots your process from configuration: it loads settings, builds clients (databases, caches, brokers, …), and exposes them on a typed global handle. You describe *what* you need as struct fields; the library wires *how* they are created.
 
-**initialize** loads application configuration (local files and/or remote centers), then reflectively constructs data-access objects (Redis, GORM, message queues, …) from struct fields.
+## Problem it solves
 
-You define `Config` and `Dao` types, call `NewGlobal`, and get a single process-wide handle with lifecycle hooks and cleanup.
+`main` often becomes a script of `viper.ReadInConfig`, `gorm.Open`, `redis.NewClient`, retry loops, and cleanup. Environments differ, secrets move to a config center, and hot reload is bolted on later.
 
-It does **not** dictate how you serve HTTP or gRPC. It only owns bootstrap: config → inject → ready.
+With initialize you:
 
-## Features
+1. Define root settings (app name, env, local files, remote center).
+2. Declare a `Config` struct and a `Dao` struct.
+3. Call `NewGlobal[*Config, *Dao](...)`.
+4. Use `Global.Config` / `Global.Dao` and `defer Global.Cleanup()`.
 
-- **Root config** — app name, environment (`dev` / `test` / `prod` / custom), paths to local files and config centers (not hot-reloaded)
-- **Local multi-file** — merge several paths; optional filesystem watch
-- **Remote centers** — Nacos, Apollo, etcd, HTTP; register your own
-- **Formats** — everything Viper supports (JSON, TOML, YAML, INI, dotenv, …)
-- **Overrides** — environment variables and command-line flags via struct tags
-- **DAO plugins (`contrib/`)** — GORM (MySQL / Postgres / SQLite), Redis, Kafka (sarama / confluent), NATS, NSQ, etcd, Elasticsearch, MinIO, MQTT, Badger, Pebble, Ristretto, InfluxDB, …
-- **Templates** — generate a config skeleton from your structs
-- **Hooks** — `BeforeInject` / `AfterInjectConfig` / `AfterInject` (and `*WithRoot` variants)
-- **Cleanup** — `Cleanup()` and `Defer(fn)` for orderly shutdown
+## Capabilities
 
-## Quick start
+- **Root vs business config** — root chooses environment and sources; business fields come from local files and/or a center
+- **Environments** — `dev` / `test` / `prod` or any name you define
+- **Local files** — multiple paths, optional reload interval / file watch
+- **Remote centers** — Nacos, Apollo, etcd, HTTP; register custom implementations
+- **Formats** — Viper codecs (TOML, YAML, JSON, INI, dotenv, …)
+- **Overrides** — struct tags for flags and environment variables
+- **DAO plugins** — drop fields typed as contrib clients; they `Init` from nested config
+- **Lifecycle hooks** — `BeforeInject`, `AfterInjectConfig`, `AfterInject` (optional `*WithRoot`)
+- **Template generation** — emit a config skeleton from your structs
+- **Shutdown** — `Cleanup` closes resources; `Defer` registers extra teardown
+
+## Try the example
 
 ```bash
-go run _example/main.go -c _example/config/config.toml
+go run ./_example -c _example/config/config.toml
 ```
+
+## Minimal usage
 
 ```go
 package global
@@ -47,72 +51,86 @@ import (
 	"time"
 
 	"github.com/hopeio/initialize"
-	"github.com/hopeio/initialize/contrib/gormdb/sqlite"
+	"github.com/hopeio/initialize/contrib/gormdb/postgres"
 	initredis "github.com/hopeio/initialize/contrib/redis"
 )
 
-type config struct {
+type Config struct {
 	initialize.EmbeddedPresets
-	Customize struct {
-		TokenMaxAge time.Duration
+	HTTP struct {
+		ReadTimeout time.Duration
 	}
 }
 
-func (c *config) BeforeInject() {
-	c.Customize.TokenMaxAge = 24 * time.Hour
+func (c *Config) BeforeInject() {
+	if c.HTTP.ReadTimeout == 0 {
+		c.HTTP.ReadTimeout = 5 * time.Second
+	}
 }
 
-type dao struct {
+type Dao struct {
 	initialize.EmbeddedPresets
-	GORMDB *sqlite.DB
-	Redis  *initredis.Client
+	DB    *postgres.DB
+	Cache *initredis.Client
 }
 
-func (d *dao) AfterInject() {
-	// tune pools, register callbacks, etc.
+func (d *Dao) AfterInject() {
+	// register GORM callbacks, tune pools, …
 }
 
-var Global = initialize.NewGlobal[*config, *dao]()
+var Global = initialize.NewGlobal[*Config, *Dao]()
 ```
 
 ```go
 func main() {
-	defer Global.Cleanup()
-	_ = Global.Config
-	_ = Global.Dao
+	defer global.Global.Cleanup()
+	db := global.Global.Dao.DB
+	_ = db
 }
 ```
 
-Minimal root TOML:
+### Root config sketch
 
 ```toml
-Name = "myapp"
+Name = "orders"
 Env = "dev"
 
 [dev]
 debug = true
-ConfigTemplateDir = "."
 
 [dev.localConfig]
 Paths = ["local.toml"]
-ReloadInterval = "1s"
+ReloadInterval = "2s"
+
+[dev.ConfigCenter]
+Format = "toml"
+Type = "nacos"
 ```
 
-Single-environment apps can skip `Env` and use `-c` / a local `config.*` file.
+Business keys (`[HTTP]`, `[DB]`, `[Cache]`, …) live in `local.toml` or the remote document. Use `SkipInjectDaos` when a field should be skipped in a given environment.
 
-## Lifecycle
+Single-env apps can omit `Env` and pass `-c path/to/config.toml`.
 
-| Hook | When |
-|------|------|
-| `BeforeInject` (+ `WithRoot`) | Before unmarshalling into your structs |
-| `AfterInjectConfig` (+ `WithRoot`) | Config ready; DAO `Init` not finished |
-| `AfterInject` (+ `WithRoot`) | All DAO fields initialized |
+## Hooks
 
-Use `SkipInjectDaos` in root config to skip named fields when a dependency is unavailable locally.
+| Method | Moment |
+|--------|--------|
+| `BeforeInject` / `BeforeInjectWithRoot` | Defaults before decode |
+| `AfterInjectConfig` / `AfterInjectConfigWithRoot` | Config filled; DAO init pending |
+| `AfterInject` / `AfterInjectWithRoot` | All DAO fields ready |
 
-## Writing a plugin
+## Contrib clients
 
-Implement `DaoField` (`Config()` / `Init()` / `Closer`) or the generic `DaoG` / `DaoConfig` helpers — same injection path as built-in contrib packages.
+Ship-ready field types under `contrib/`:
+
+`gormdb` (mysql / postgres / sqlite) · `redis` · `sarama` · `confluent` · `nats` · `nsq` · `etcd` · `elasticsearch` · `minio` · `mqtt` · `badger` · `pebble` · `bbolt` · `ristretto` · `influxdb` · `duckdb` · `flightsql` · `mail` · `apollo` · `nacos` · `viper`
+
+Custom type: implement `DaoField` (`Config` / `Init` / `Closer`) or use `DaoG` / `DaoConfig`.
+
+## Config centers
+
+Built-in: local multi-file, Nacos, Apollo, etcd, HTTP.  
+Extend with `RegisterConfigCenter`.
 
 ## License
 
