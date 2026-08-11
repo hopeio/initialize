@@ -1,11 +1,12 @@
 # initialize
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/hopeio/initialize.svg)](https://pkg.go.dev/github.com/hopeio/initialize)
-[![Go Version](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
+[![Go](https://img.shields.io/badge/Go-1.26+-00ADD8?logo=go)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**Config & DAO, injected. Not configured by hand.**  
-基于反射的配置与数据访问对象（DAO）初始化框架：本地多文件 + 远程配置中心 + env/flag，一行 `NewGlobal` 拉起整站依赖。
+Reflection-based bootstrap for **config** and **DAO** — declare fields, get wired clients.
+
+基于反射的 **配置** 与 **DAO** 启动框架——声明字段，自动注入连接。
 
 ![initialize](_assets/initialize.webp)
 
@@ -13,38 +14,35 @@
 go get github.com/hopeio/initialize@latest
 ```
 
-## 解决什么问题
+---
 
-手写 `viper.ReadInConfig` → 解析 → `redis.NewClient` → `gorm.Open` → 再拼 OTel，容易散落在 `main` 里、难以分环境、更难热更新。
+## English
 
-**initialize** 把这件事收成固定生命周期：
+### What is initialize?
 
-1. 读 **RootConfig**（应用名、环境、本地路径、配置中心）
-2. 合并本地 / 远程配置（Viper 全格式）
-3. 反射注入 **Config** 与 **Dao** 字段
-4. 调用 `BeforeInject` / `AfterInject*` 钩子
-5. `Cleanup` / `Defer` 优雅释放
+**initialize** loads application configuration (local files and/or remote centers), then reflectively constructs data-access objects (Redis, GORM, message queues, …) from struct fields.
 
-你只声明结构体字段；连接怎么建，交给 `contrib/*` 插件。
+You define `Config` and `Dao` types, call `NewGlobal`, and get a single process-wide handle with lifecycle hooks and cleanup.
 
-## 特性
+It does **not** dictate how you serve HTTP or gRPC. It only owns bootstrap: config → inject → ready.
 
-- **本地多配置** — 多路径合并，可选 `fsnotify` 热重载
-- **环境隔离** — `dev` / `test` / `prod`（可自定义），按 `Env` 选段
-- **env + flag** — 结构体 tag 覆盖配置项
-- **远程配置中心** — Nacos / Apollo / etcd / HTTP，可 `RegisterConfigCenter` 扩展
-- **格式自由** — json、toml、yaml、ini、dotenv、hcl…（Viper 支持的均可）
-- **DAO 插件生态** — GORM（MySQL/Postgres/SQLite）、Redis、Kafka、NATS、NSQ、etcd、ES、MinIO、MQTT、Badger、Pebble、Ristretto…
-- **模板生成** — 最小 Root 配置启动即可吐出业务配置骨架
-- **边界清晰** — **不**绑定 HTTP/gRPC 框架，**不**侵入 DAO 塞业务观测字段；OTel 等请在 `AfterInject` 用客户端原生钩子挂载
+### Features
 
-## 30 秒上手
+- **Root config** — app name, environment (`dev` / `test` / `prod` / custom), paths to local files and config centers (not hot-reloaded)
+- **Local multi-file** — merge several paths; optional filesystem watch
+- **Remote centers** — Nacos, Apollo, etcd, HTTP; register your own
+- **Formats** — everything Viper supports (JSON, TOML, YAML, INI, dotenv, …)
+- **Overrides** — environment variables and command-line flags via struct tags
+- **DAO plugins (`contrib/`)** — GORM (MySQL / Postgres / SQLite), Redis, Kafka (sarama / confluent), NATS, NSQ, etcd, Elasticsearch, MinIO, MQTT, Badger, Pebble, Ristretto, InfluxDB, …
+- **Templates** — generate a config skeleton from your structs
+- **Hooks** — `BeforeInject` / `AfterInjectConfig` / `AfterInject` (and `*WithRoot` variants)
+- **Cleanup** — `Cleanup()` and `Defer(fn)` for orderly shutdown
+
+### Quick start
 
 ```bash
 go run _example/main.go -c _example/config/config.toml
 ```
-
-### 声明 Config / Dao
 
 ```go
 package global
@@ -75,7 +73,7 @@ type dao struct {
 }
 
 func (d *dao) AfterInject() {
-	// 在此挂 GORM 插件、OTel、连接池调优等
+	// tune pools, register callbacks, etc.
 }
 
 var Global = initialize.NewGlobal[*config, *dao]()
@@ -89,7 +87,7 @@ func main() {
 }
 ```
 
-### Root 配置（不热更）
+Minimal root TOML:
 
 ```toml
 Name = "myapp"
@@ -102,61 +100,132 @@ ConfigTemplateDir = "."
 [dev.localConfig]
 Paths = ["local.toml"]
 ReloadInterval = "1s"
-
-[dev.ConfigCenter]
-Format = "toml"
-Type = "nacos"
 ```
 
-单环境项目可省略 `Env`，放 `config.toml` 或 `-c` 指定路径。
+Single-environment apps can skip `Env` and use `-c` / a local `config.*` file.
 
-## 生命周期钩子
+### Lifecycle
 
-| 接口 | 时机 |
+| Hook | When |
 |------|------|
-| `BeforeInject` / `BeforeInjectWithRoot` | 注入前（可设默认值） |
-| `AfterInjectConfig` / `*WithRoot` | 配置已解析、DAO `Init` 前 |
-| `AfterInject` / `AfterInjectWithRoot` | DAO 全部就绪（挂插件、补业务初始化） |
+| `BeforeInject` (+ `WithRoot`) | Before unmarshalling into your structs |
+| `AfterInjectConfig` (+ `WithRoot`) | Config ready; DAO `Init` not finished |
+| `AfterInject` (+ `WithRoot`) | All DAO fields initialized |
 
-`SkipInjectDaos` 可跳过指定 DAO 字段（例如本地不启 Apollo）。
+Use `SkipInjectDaos` in root config to skip named fields when a dependency is unavailable locally.
 
-## contrib 一览
+### Writing a plugin
 
-`apollo` · `badger` · `bbolt` · `confluent` · `duckdb` · `elasticsearch` · `etcd` · `flightsql` · `gormdb` · `influxdb` · `mail` · `minio` · `mqtt` · `nacos` · `nats` · `nsq` · `pebble` · `redis` · `ristretto` · `sarama` · `viper`
+Implement `DaoField` (`Config()` / `Init()` / `Closer`) or the generic `DaoG` / `DaoConfig` helpers — same injection path as built-in contrib packages.
 
-自定义：实现 `DaoField`（`Config()` / `Init()` / `Closer`）即可接入同一套注入。
+### License
 
-## 与生态如何协作
+[MIT](LICENSE)
 
+---
+
+## 中文
+
+### initialize 是什么？
+
+**initialize** 负责加载应用配置（本地文件和/或远程配置中心），再通过反射根据结构体字段构造数据访问对象（Redis、GORM、消息队列等）。
+
+你定义 `Config` 与 `Dao`，调用 `NewGlobal`，即可得到带生命周期钩子与清理逻辑的全局句柄。
+
+它**不**规定 HTTP / gRPC 怎么写，只负责启动链路：配置 → 注入 → 就绪。
+
+### 特性
+
+- **Root 配置** — 应用名、环境（`dev` / `test` / `prod` / 自定义）、本地路径与配置中心（根配置本身不热更）
+- **本地多文件** — 多路径合并，可选文件监听
+- **远程中心** — Nacos、Apollo、etcd、HTTP；可自行注册
+- **格式** — Viper 支持的格式均可（JSON、TOML、YAML、INI、dotenv…）
+- **覆盖** — 环境变量与命令行 flag（结构体 tag）
+- **DAO 插件（`contrib/`）** — GORM（MySQL / Postgres / SQLite）、Redis、Kafka（sarama / confluent）、NATS、NSQ、etcd、Elasticsearch、MinIO、MQTT、Badger、Pebble、Ristretto、InfluxDB…
+- **模板** — 根据结构体生成配置骨架
+- **钩子** — `BeforeInject` / `AfterInjectConfig` / `AfterInject`（及 `*WithRoot` 变体）
+- **清理** — `Cleanup()` 与 `Defer(fn)` 有序退出
+
+### 快速开始
+
+```bash
+go run _example/main.go -c _example/config/config.toml
 ```
-initialize  ──注入──►  Config / Dao（Redis、GORM…）
-     │
-     │ AfterInject 里挂 OTel / 业务插件
-     ▼
-   mix.Server.Run()     ← HTTP + gRPC 运行时
-     │
-   gox                  ← 日志、HTTP 工具、ID…
-protobuf / protogen     ← 接口定义与代码生成
+
+```go
+package global
+
+import (
+	"time"
+
+	"github.com/hopeio/initialize"
+	"github.com/hopeio/initialize/contrib/gormdb/sqlite"
+	initredis "github.com/hopeio/initialize/contrib/redis"
+)
+
+type config struct {
+	initialize.EmbeddedPresets
+	Customize struct {
+		TokenMaxAge time.Duration
+	}
+}
+
+func (c *config) BeforeInject() {
+	c.Customize.TokenMaxAge = 24 * time.Hour
+}
+
+type dao struct {
+	initialize.EmbeddedPresets
+	GORMDB *sqlite.DB
+	Redis  *initredis.Client
+}
+
+func (d *dao) AfterInject() {
+	// 连接池、回调、业务侧初始化…
+}
+
+var Global = initialize.NewGlobal[*config, *dao]()
 ```
 
-| 仓库 | 关系 |
+```go
+func main() {
+	defer Global.Cleanup()
+	_ = Global.Config
+	_ = Global.Dao
+}
+```
+
+最小 Root TOML：
+
+```toml
+Name = "myapp"
+Env = "dev"
+
+[dev]
+debug = true
+ConfigTemplateDir = "."
+
+[dev.localConfig]
+Paths = ["local.toml"]
+ReloadInterval = "1s"
+```
+
+单环境项目可省略 `Env`，使用 `-c` 或目录下的 `config.*`。
+
+### 生命周期
+
+| 钩子 | 时机 |
 |------|------|
-| [gox](https://github.com/hopeio/gox) | 日志等基础能力；initialize 可依赖 |
-| [mix](https://github.com/hopeio/mix) | 服务运行时；`Server` 可实现 Inject 钩子，由 initialize 拉起 |
-| [protobuf](https://github.com/hopeio/protobuf) | 与 initialize **无直接依赖**；各自服务契约与启动配置 |
+| `BeforeInject`（及 `WithRoot`） | 反序列化写入结构体之前 |
+| `AfterInjectConfig`（及 `WithRoot`） | 配置已就绪，DAO `Init` 尚未完成 |
+| `AfterInject`（及 `WithRoot`） | 全部 DAO 字段已初始化 |
 
-## 关键 API
+Root 中的 `SkipInjectDaos` 可跳过本地暂不需要的字段。
 
-| API | 说明 |
-|-----|------|
-| `NewGlobal` / `NewGlobalWith` / `NewGlobalConfig` | 创建全局容器 |
-| `Cleanup` / `Defer` | 关闭资源 / 注册退出回调 |
-| `RootConfig` | 启动根配置 |
-| `RegisterConfigCenter` | 扩展远程配置中心 |
-| `DaoField` / `DaoG` | DAO 插件契约 |
+### 自定义插件
 
-详见 [pkg.go.dev/github.com/hopeio/initialize](https://pkg.go.dev/github.com/hopeio/initialize) 与 [`_example/`](_example/)。
+实现 `DaoField`（`Config()` / `Init()` / `Closer`），或使用 `DaoG` / `DaoConfig` 辅助类型，即可走与内置 `contrib` 相同的注入路径。
 
-## License
+### 许可证
 
-[MIT](LICENSE) · Copyright © hopeio
+[MIT](LICENSE)
