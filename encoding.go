@@ -92,19 +92,17 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 
 		if field != nil {
 			var values []any
-			confMap[name] = values
 			if value.Len() > 0 {
 				for i := 0; i < value.Len(); i++ {
 					values = append(values, value.Index(i).Interface())
 				}
-			} else {
-				if slices.Contains([]reflect.Kind{reflect.Ptr, reflect.Map, reflect.Struct}, ekind) {
-					newconfMap := make(map[string]any)
-					values = append(values, newconfMap)
-					confMap[name] = values
-					structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap)
-				}
+			} else if slices.Contains([]reflect.Kind{reflect.Ptr, reflect.Map, reflect.Struct}, ekind) {
+				// 空 slice 时生成一个零值元素作为模板示例
+				newconfMap := make(map[string]any)
+				values = append(values, newconfMap)
+				structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap)
 			}
+			confMap[name] = values
 		}
 	case reflect.Map:
 	case reflect.Ptr:
@@ -114,6 +112,8 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 		}
 		if value.IsNil() {
 			value = reflect.New(typ.Elem()).Elem()
+		} else {
+			value = value.Elem()
 		}
 		structValue2Map(value, field, confMap)
 	case reflect.Struct:

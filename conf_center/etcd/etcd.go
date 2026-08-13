@@ -9,8 +9,10 @@ package etcd
 import (
 	"bytes"
 	"context"
-	clientv3 "go.etcd.io/etcd/client/v3"
+	"fmt"
 	"io"
+
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 var ConfigCenter = &Etcd{}
@@ -50,7 +52,12 @@ func (e *Etcd) Handle(ctx context.Context, merge func(io.Reader) error, onChange
 		if err != nil {
 			return err
 		}
-		merge(bytes.NewReader(resp.Kvs[0].Value))
+		if len(resp.Kvs) == 0 {
+			return fmt.Errorf("etcd config key not found: %s", key)
+		}
+		if err := merge(bytes.NewReader(resp.Kvs[0].Value)); err != nil {
+			return err
+		}
 		go func() {
 			watchChan := e.Client.Watch(ctx, key)
 			for watchResp := range watchChan {

@@ -50,6 +50,7 @@ func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 	}
 	return gc
 }
+
 // NewGlobalWith creates a globalConfig with the provided Config and Dao instances and
 // immediately runs the full initialization sequence.
 func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) *globalConfig[C, D] {
@@ -296,11 +297,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		if err != nil {
 			log.Fatalf("config error: %v", err)
 		}
-		gc.defers = append(gc.defers, func() {
-			if err := cfgcenter.Close(); err != nil {
-				log.Errorf("close config center error: %v", err)
-			}
-		})
+		// 配置中心由 Cleanup 统一关闭（业务 defers 之后），不在此重复注册，避免双重 Close
 	}
 	gc.inject(gc.Config, gc.Dao)
 }
@@ -338,18 +335,23 @@ func closeDao(dao Dao) error {
 	}
 	for i := range daoValue.NumField() {
 		fieldV := daoValue.Field(i)
-		if fieldV.Type().Kind() == reflect.Struct {
-			fieldV = daoValue.Field(i).Addr()
+		if fieldV.Kind() == reflect.Struct && fieldV.CanAddr() {
+			fieldV = fieldV.Addr()
 		}
-		if !fieldV.IsValid() || fieldV.IsNil() {
+		// 未导出字段不能 Interface；IsNil 只对可为 nil 的 kind 合法
+		if !fieldV.IsValid() || !fieldV.CanInterface() {
 			continue
 		}
-		inter := fieldV.Interface()
-		if daofield, ok := inter.(DaoField); ok {
+		switch fieldV.Kind() {
+		case reflect.Pointer, reflect.Interface, reflect.Map, reflect.Slice, reflect.Func, reflect.Chan:
+			if fieldV.IsNil() {
+				continue
+			}
+		}
+		if daofield, ok := fieldV.Interface().(DaoField); ok {
 			if err := daofield.Close(); err != nil {
 				errs = multierr.Append(errs, err)
 			}
-
 		}
 	}
 	return errs

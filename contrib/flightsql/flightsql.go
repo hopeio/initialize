@@ -46,7 +46,10 @@ func (m *DB) Init() error {
 	return err
 }
 
-// Close closes the FlightSQL database connection.
+// Close closes the FlightSQL database connection if it was initialized.
 func (m *DB) Close() error {
+	if m.DB == nil {
+		return nil
+	}
 	return m.DB.Close()
 }

@@ -51,13 +51,12 @@ func TestStruct2Map_BasicFields(t *testing.T) {
 	if m["Port"] != 8080 {
 		t.Fatalf("Port=%v want 8080", m["Port"])
 	}
-	// structValue2Map 对非空 slice 先写入 confMap 再 append 本地变量，Labels 保持空 slice。
 	labels, ok := m["Labels"].([]any)
 	if !ok {
 		t.Fatalf("Labels=%T want []any", m["Labels"])
 	}
-	if len(labels) != 0 {
-		t.Fatalf("Labels len=%d want 0 (current struct2Map behavior)", len(labels))
+	if len(labels) != 2 || labels[0] != "a" || labels[1] != "b" {
+		t.Fatalf("Labels=%v want [a b]", labels)
 	}
 	nested, ok := m["Nested"].(map[string]any)
 	if !ok || nested["Enabled"] != true {
@@ -80,6 +79,23 @@ func TestStruct2Map_EmptySliceCreatesTemplateElement(t *testing.T) {
 	}
 	if _, ok := items[0].(map[string]any); !ok {
 		t.Fatalf("Items[0]=%T want map template", items[0])
+	}
+}
+
+func TestStruct2Map_NonNilPointerField(t *testing.T) {
+	type inner struct {
+		Name string
+	}
+	type outer struct {
+		Inner *inner
+	}
+	src := &outer{Inner: &inner{Name: "x"}}
+	m := make(map[string]any)
+	// 非 nil 指针字段曾导致无限递归栈溢出
+	struct2Map(src, m)
+	innerMap, ok := m["Inner"].(map[string]any)
+	if !ok || innerMap["Name"] != "x" {
+		t.Fatalf("Inner=%v want map with Name=x", m["Inner"])
 	}
 }
 

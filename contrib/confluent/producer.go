@@ -1,21 +1,19 @@
 package confluent
 
 import (
-	"strings"
-
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type ProducerConfig kafka.ConfigMap
 
-// BeforeInject normalizes underscore-keyed config entries to dot notation.
+// BeforeInject is a no-op satisfying the Config interface.
 func (c ProducerConfig) BeforeInject() {
-	for k, v := range c {
-		c[strings.ReplaceAll(k, "_", ".")] = v
-	}
 }
-// AfterInject is a no-op satisfying the Config interface.
+
+// AfterInject normalizes underscore-keyed config entries to dot notation.
+// It must run after unmarshaling, otherwise the map is still empty.
 func (c ProducerConfig) AfterInject() {
+	normalizeKeys(kafka.ConfigMap(c))
 }
 
 // Build creates a Confluent Kafka producer from this config map.

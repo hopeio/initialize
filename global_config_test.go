@@ -69,6 +69,28 @@ func TestCloseDao_ClosesDaoFields(t *testing.T) {
 	}
 }
 
+func TestCloseDao_IgnoresScalarAndUnexportedFields(t *testing.T) {
+	type daoMixedFields struct {
+		EmbeddedPresets
+		Name    string
+		Count   int
+		Tags    []string
+		hidden  int
+		Store   closingDaoField
+		NilPtr  *closingDaoField
+		Handler func()
+	}
+	d := &daoMixedFields{}
+	_ = d.hidden
+	// 普通字段/未导出字段/nil 指针曾导致 closeDao panic
+	if err := closeDao(d); err != nil {
+		t.Fatal(err)
+	}
+	if !d.Store.closed {
+		t.Fatal("Store should be closed")
+	}
+}
+
 func TestCloseDao_AggregatesErrors(t *testing.T) {
 	type errField struct {
 		EmbeddedPresets

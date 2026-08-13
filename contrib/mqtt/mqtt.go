@@ -81,6 +81,8 @@ func (c *Client) Init() error {
 
 // Close disconnects the MQTT client with a 5ms quiesce period.
 func (c *Client) Close() error {
-	c.Client.Disconnect(5)
+	if c.Client != nil {
+		c.Client.Disconnect(5)
+	}
 	return nil
 }

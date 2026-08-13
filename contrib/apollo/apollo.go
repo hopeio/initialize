@@ -47,8 +47,10 @@ func (c *Client) Init() error {
 	return err
 }
 
-// Close stops the Apollo client.
+// Close stops the Apollo client if it was initialized.
 func (c *Client) Close() error {
-	c.Client.Close()
+	if c.Client != nil {
+		c.Client.Close()
+	}
 	return nil
 }

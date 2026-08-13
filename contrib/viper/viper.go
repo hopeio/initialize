@@ -44,6 +44,7 @@ func (c *Config) BeforeInject() {
 func (c *Config) AfterInject() {
 	c.Init()
 }
+
 // Init sets the default config type to "toml" if not specified.
 func (c *Config) Init() *Config {
 	if c.ConfigType == "" {
@@ -154,7 +155,7 @@ func (v *Viper) Init() error {
 	return err
 }
 
-// Close is intentionally a no-op (the Viper type has no teardown); prefer using the global Viper instance.
+// Close is a no-op (viper.Viper has no teardown); prefer using the global Viper instance.
 func (v *Viper) Close() error {
-	return v.Close()
+	return nil
 }

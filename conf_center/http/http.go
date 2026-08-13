@@ -12,22 +12,39 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hopeio/gox/log"
 	httpx "github.com/hopeio/gox/net/http"
+	"github.com/hopeio/initialize"
 )
 
 var ConfigCenter = &Http{}
+
+var _ initialize.ConfigCenter = (*Http)(nil)
 
 type Http struct {
 	ReloadInterval time.Duration
 	Urls           []string
 	AuthBasic      string
 	Headers        map[string]string
-	modTime        []time.Time
+	watcher        *httpx.FileWatcher
 }
 
 // Type returns the identifier string "http" for this config center.
 func (cc *Http) Type() string {
 	return "http"
+}
+
+// Config returns the Http struct itself as its own configuration.
+func (cc *Http) Config() any {
+	return cc
+}
+
+// Close stops the background URL watcher, if one is running.
+func (cc *Http) Close() error {
+	if cc.watcher != nil {
+		cc.watcher.Close()
+	}
+	return nil
 }
 
 // Handle fetches each URL and calls merge; if ReloadInterval > 0, starts a background watcher
@@ -46,27 +63,34 @@ func (cc *Http) Handle(ctx context.Context, merge func(io.Reader) error, onChang
 		if err != nil {
 			return err
 		}
-		merge(file.Body)
-		err = file.Body.Close()
-		if err != nil {
+		mergeErr := merge(file.Body)
+		if err := file.Body.Close(); err != nil {
 			return err
+		}
+		if mergeErr != nil {
+			return mergeErr
 		}
 	}
 
 	if cc.ReloadInterval > 0 {
-		watch := httpx.NewFileWatcher(time.Second * cc.ReloadInterval)
+		// ReloadInterval 本身即 time.Duration，不能再乘 time.Second
+		watch := httpx.NewFileWatcher(cc.ReloadInterval)
 
 		callback := func(hfile *httpx.FileInfo) {
-			onChange(hfile.Body)
+			if err := onChange(hfile.Body); err != nil {
+				log.Errorf("http config center onChange error: %v", err)
+			}
 			hfile.Body.Close()
 		}
 
 		for _, url := range cc.Urls {
 			err := watch.Add(url, callback)
 			if err != nil {
+				watch.Close()
 				return err
 			}
 		}
+		cc.watcher = watch
 	}
 	return nil
 }

@@ -44,7 +44,10 @@ func (c *DB) Init() error {
 	return err
 }
 
-// Close closes the bbolt database.
+// Close closes the bbolt database if it was initialized.
 func (c *DB) Close() error {
+	if c.DB == nil {
+		return nil
+	}
 	return c.DB.Close()
 }

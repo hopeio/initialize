@@ -16,8 +16,12 @@ import (
 
 type Config pkdb.Config
 
-// BeforeInjectWithRoot delegates to the parent gormdb Config.
+// BeforeInjectWithRoot sets the SQLite database type before defaults are applied,
+// then delegates to the parent gormdb Config.
 func (c *Config) BeforeInjectWithRoot(conf *initialize.RootConfig) {
+	if c.Type == "" {
+		c.Type = sqlx.Sqlite
+	}
 	(*pkdb.Config)(c).BeforeInjectWithRoot(conf)
 }
 
@@ -46,8 +50,11 @@ func (db *DB) Init() error {
 	return err
 }
 
-// Close closes the underlying sql.DB connection.
+// Close closes the underlying sql.DB connection if it was initialized.
 func (db *DB) Close() error {
+	if db.DB == nil {
+		return nil
+	}
 	dbx, err := db.DB.DB()
 	if err != nil {
 		return err

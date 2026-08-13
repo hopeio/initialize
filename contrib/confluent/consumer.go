@@ -1,23 +1,19 @@
 package confluent
 
 import (
-	"strings"
-
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 )
 
 type ConsumerConfig kafka.ConfigMap
 
-// BeforeInject normalizes underscore-keyed config entries to dot notation (confluent-kafka-go convention).
+// BeforeInject is a no-op satisfying the Config interface.
 func (c ConsumerConfig) BeforeInject() {
-	for k, v := range c {
-		c[strings.ReplaceAll(k, "_", ".")] = v
-	}
 }
 
-// AfterInject is a no-op satisfying the Config interface.
+// AfterInject normalizes underscore-keyed config entries to dot notation (confluent-kafka-go convention).
+// It must run after unmarshaling, otherwise the map is still empty.
 func (c ConsumerConfig) AfterInject() {
-
+	normalizeKeys(kafka.ConfigMap(c))
 }
 
 // Build creates a Confluent Kafka consumer from this config map.

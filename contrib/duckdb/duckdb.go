@@ -52,7 +52,10 @@ func (m *DB) Init() error {
 	return err
 }
 
-// Close closes the DuckDB database connection.
+// Close closes the DuckDB database connection if it was initialized.
 func (m *DB) Close() error {
+	if m.DB == nil {
+		return nil
+	}
 	return m.DB.Close()
 }

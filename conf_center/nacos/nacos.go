@@ -73,8 +73,10 @@ func (cc *Nacos) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 	return nil
 }
 
-// Close closes the Nacos config client.
+// Close closes the Nacos config client if it was initialized.
 func (cc *Nacos) Close() error {
-	cc.Client.CloseClient()
+	if cc.Client != nil {
+		cc.Client.CloseClient()
+	}
 	return nil
 }

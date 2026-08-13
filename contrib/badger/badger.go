@@ -43,7 +43,10 @@ func (c *DB) Init() error {
 	return err
 }
 
-// Close closes the Badger database.
+// Close closes the Badger database if it was initialized.
 func (c *DB) Close() error {
+	if c.DB == nil {
+		return nil
+	}
 	return c.DB.Close()
 }

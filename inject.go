@@ -188,7 +188,8 @@ func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 	tmpConfig := gc.newStruct(conf, dao)
 	err := gc.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
 	if err != nil {
-		if gc.editTimes == 0 {
+		// 启动期配置错误直接退出；初始化完成后（热更新/追加注入）只记录错误，不能杀死运行中的服务
+		if !gc.initialized {
 			log.Fatal(err)
 		} else {
 			log.Error(err)

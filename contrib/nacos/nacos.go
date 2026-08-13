@@ -53,8 +53,10 @@ func (m *ConfigClient) Init() error {
 	return err
 }
 
-// Close closes the Nacos config client connection.
+// Close closes the Nacos config client connection if it was initialized.
 func (m *ConfigClient) Close() error {
-	m.Client.CloseClient()
+	if m.Client != nil {
+		m.Client.CloseClient()
+	}
 	return nil
 }
