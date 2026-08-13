@@ -67,7 +67,7 @@ type globalConfig[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 // Conf returns the current config snapshot without locking. After a hot reload it
 // returns the newly built snapshot. Published snapshots are immutable: never write
 // to the returned value. It returns nil only before the initial injection completes
-// (i.e. before NewGlobal/NewGlobalWith returns).
+// (i.e. before NewGlobal returns).
 func (gc *globalConfig[C, D, CPtr, DPtr]) Conf() CPtr {
 	return CPtr(gc.confSnapshot.Load())
 }
@@ -83,17 +83,10 @@ func newGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *globalConfig[
 	return gc
 }
 
-// NewGlobalWith creates a globalConfig with the provided Config and Dao instances and
-// immediately runs the full initialization sequence.
-func NewGlobalWith[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](conf CPtr, dao DPtr, configCenter ...ConfigCenter) *globalConfig[C, D, CPtr, DPtr] {
-	gc := newGlobal[C, D, CPtr, DPtr]()
-	gc.Dao = dao
-	gc.init(conf, configCenter...)
-	return gc
-}
-
 // NewGlobal creates a globalConfig by allocating zero-value instances of C and D,
-// then runs the full initialization sequence.
+// then runs the full initialization sequence. The library owns both instances:
+// config is read exclusively through Conf(), so callers can never hold on to a
+// stale pre-reload pointer; defaults belong in the BeforeInject hook.
 // var Global = initialize.NewGlobal[config, dao]()
 func NewGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](configCenter ...ConfigCenter) *globalConfig[C, D, CPtr, DPtr] {
 	gc := newGlobal[C, D, CPtr, DPtr]()
@@ -133,7 +126,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...Config
 // }
 
 // Cleanup releases all resources in reverse registration order (defers), then closes the
-// config center and flushes the logger. Call via defer after NewGlobal/NewGlobalWith.
+// config center and flushes the logger. Call via defer after NewGlobal.
 func (gc *globalConfig[C, D, CPtr, DPtr]) Cleanup() {
 	gc.mu.Lock()
 	defers := gc.defers

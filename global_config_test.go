@@ -239,16 +239,17 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 	t.Fatalf("hot reload not observed, snapshot=%+v", gc.Conf())
 }
 
-func TestNewGlobalWith_InjectsAndCleansUp(t *testing.T) {
+func TestNewGlobal_PublishesSnapshotAndCleansUp(t *testing.T) {
 	oldArgs := os.Args
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	conf := &UserConfig{}
-	dao := &EmbeddedPresets{}
-	gc := NewGlobalWith(conf, dao)
-	if gc.Conf() != conf {
-		t.Fatal("initial snapshot should be the injected conf instance")
+	gc := NewGlobal[UserConfig, EmbeddedPresets]()
+	if gc.Conf() == nil {
+		t.Fatal("snapshot should be published after NewGlobal returns")
+	}
+	if gc.Dao == nil {
+		t.Fatal("Dao should be allocated by NewGlobal")
 	}
 	gc.Cleanup()
 }
