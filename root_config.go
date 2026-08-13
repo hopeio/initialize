@@ -34,8 +34,8 @@ type BasicConfig struct {
 }
 
 type EnvConfig struct {
-	Debug             bool   `flag:"name:debug;short:d;default:true;usage:enable debug mode;env:DEBUG"`
-	ConfigTemplateDir string `flag:"name:conf_tmpl_dir;usage:directory to write config templates;env:CONFIG_TEMPLATE_DIR"`
+	Debug             bool     `flag:"name:debug;short:d;default:true;usage:enable debug mode;env:DEBUG"`
+	ConfigTemplateDir string   `flag:"name:conf_tmpl_dir;usage:directory to write config templates;env:CONFIG_TEMPLATE_DIR"`
 	SkipInjectDaos    []string `flag:"name:skip_inject_daos;usage:dao names to skip during injection"`
 	LocalConfig       Local
 	// Field order must stay unchanged; ConfigCenter must remain last.
@@ -65,7 +65,7 @@ const (
 
 // setRootConfig unmarshals the top-level (squash) keys from Viper into RootConfig,
 // applies flag overrides, and fills in defaults for Name and ConfPath.
-func (gc *globalConfig[C, D]) setRootConfig() {
+func (gc *globalConfig[C, D, CPtr, DPtr]) setRootConfig() {
 	format := gc.RootConfig.ConfigCenter.Format
 	confPath := gc.RootConfig.ConfPath
 
@@ -87,7 +87,7 @@ func (gc *globalConfig[C, D]) setRootConfig() {
 
 // setEnvConfig reads the environment-specific config section (keyed by RootConfig.Env),
 // decodes it into EnvConfig, optionally connects to a config center, and writes a config template if requested.
-func (gc *globalConfig[C, D]) setEnvConfig() {
+func (gc *globalConfig[C, D, CPtr, DPtr]) setEnvConfig() {
 	if gc.RootConfig.Env == "" {
 		if gc.RootConfig.ConfPath == "" {
 			log.Warn("not found config file, use env and flag")

@@ -12,8 +12,8 @@ import (
 )
 
 type injectFlagTagged struct {
-	Name string `flag:"name:name;short:n;default:def;usage:name"`
-	Age  int    `flag:"name:age;default:18;usage:age"`
+	Name string        `flag:"name:name;short:n;default:def;usage:name"`
+	Age  int           `flag:"name:age;default:18;usage:age"`
 	Wait time.Duration `flag:"name:wait;default:1s;usage:wait"`
 }
 
@@ -27,7 +27,7 @@ type injectFlagNested struct {
 }
 
 func TestInjectByFlag_OverridesDefaults(t *testing.T) {
-	gc := newGlobal[*UserConfig, *EmbeddedPresets]()
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagTagged{}
 	err := gc.InjectByFlag([]string{"prog", "--name", "cli", "--age", "30", "--wait", "2h"}, conf)
 	if err != nil {
@@ -45,7 +45,7 @@ func TestInjectByFlag_OverridesDefaults(t *testing.T) {
 }
 
 func TestInjectByFlag_AppliesTagDefaults(t *testing.T) {
-	gc := newGlobal[*UserConfig, *EmbeddedPresets]()
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagTagged{}
 	err := gc.InjectByFlag([]string{"prog"}, conf)
 	if err != nil {
@@ -64,7 +64,7 @@ func TestInjectByFlag_AppliesTagDefaults(t *testing.T) {
 
 func TestInjectByFlag_DefaultEnvWithoutFlagTag(t *testing.T) {
 	t.Setenv("PORT", "9090")
-	gc := newGlobal[*UserConfig, *EmbeddedPresets]()
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagDefaultEnv{}
 	err := gc.InjectByFlag([]string{"prog"}, conf)
 	if err != nil {
@@ -77,7 +77,7 @@ func TestInjectByFlag_DefaultEnvWithoutFlagTag(t *testing.T) {
 
 func TestInjectByFlag_NestedStructEnvPrefix(t *testing.T) {
 	t.Setenv("SERVER_PORT", "7070")
-	gc := newGlobal[*UserConfig, *EmbeddedPresets]()
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagNested{}
 	err := gc.InjectByFlag([]string{"prog"}, conf)
 	if err != nil {
@@ -89,7 +89,7 @@ func TestInjectByFlag_NestedStructEnvPrefix(t *testing.T) {
 }
 
 func TestInjectByFlag_BoolNoOptDefVal(t *testing.T) {
-	gc := newGlobal[*UserConfig, *EmbeddedPresets]()
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagDefaultEnv{}
 	err := gc.InjectByFlag([]string{"prog", "--debug"}, conf)
 	if err != nil {
@@ -111,7 +111,7 @@ func TestInjectByFlag_BoolNoOptDefVal(t *testing.T) {
 
 func TestInjectByFlag_CLIOverridesEnv(t *testing.T) {
 	t.Setenv("PORT", "1111")
-	gc := newGlobal[*UserConfig, *EmbeddedPresets]()
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagDefaultEnv{}
 	err := gc.InjectByFlag([]string{"prog", "--port", "2222"}, conf)
 	if err != nil {

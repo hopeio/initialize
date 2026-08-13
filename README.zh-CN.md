@@ -20,7 +20,7 @@ go get github.com/hopeio/initialize@latest
 
 1. 写好根配置（应用名、环境、本地文件、远程中心）。
 2. 声明 `Config` 与 `Dao` 结构体。
-3. 调用 `NewGlobal[*Config, *Dao](...)`。
+3. 调用 `NewGlobal[Config, Dao](...)`。
 4. 使用 `Global.Conf()` / `Global.Dao`，并 `defer Global.Cleanup()`。
 
 ## 能力
@@ -78,7 +78,7 @@ func (d *Dao) AfterInject() {
 	// GORM 回调、连接池等
 }
 
-var Global = initialize.NewGlobal[*Config, *Dao]()
+var Global = initialize.NewGlobal[Config, Dao]()
 ```
 
 ```go
@@ -116,7 +116,7 @@ Type = "nacos"
 开启 `Watch = true`（本地文件）或接入配置中心后，每次变更会构建一份**全新的 Config 快照**，走完整注入生命周期后原子替换，旧对象不会被原地修改：
 
 - `Global.Conf()` — 无锁返回当前最新快照，默认入口；需要感知热更新的代码每次使用时调用。
-- `Global.StartupConf()` — 启动快照，初始化后不再变化。仅在需要与进程实际启动值保持一致时使用（如监听地址）。
+- 需要「进程启动时生效的值」（如监听地址）：在启动期读一次 `Conf()` 存入自己的变量即可，库不保留第一代引用。
 
 快照一经发布即不可变，请勿写入其字段。DAO（连接类资源）不参与热更新。
 

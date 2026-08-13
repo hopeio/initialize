@@ -62,7 +62,7 @@ func (a anyValue) Set(v string) error {
 
 // applyFlagConfig registers and parses all "flag" tagged fields in the given config structs,
 // then binds the resulting pflag set to Viper.
-func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, confs ...any) {
+func (gc *globalConfig[C, D, CPtr, DPtr]) applyFlagConfig(prefix string, confs ...any) {
 	commandLine := newCommandLine()
 	for _, conf := range confs {
 		gc.injectFlagConfig(prefix, commandLine, reflect.ValueOf(conf))
@@ -78,7 +78,7 @@ func (gc *globalConfig[C, D]) applyFlagConfig(prefix string, confs ...any) {
 
 // injectFlagConfig recursively walks a config value, registers each field as a pflag flag,
 // and binds default/env values from the "flag" tag.
-func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) {
+func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) {
 	fcValue = reflectx.DerefValue(fcValue)
 	if !fcValue.IsValid() {
 		return
@@ -209,7 +209,7 @@ func parseFlag(commandLine *pflag.FlagSet) {
 }
 
 // InjectByFlag parses the given args slice and injects flag values into conf.
-func (gc *globalConfig[C, D]) InjectByFlag(args []string, conf any) error {
+func (gc *globalConfig[C, D, CPtr, DPtr]) InjectByFlag(args []string, conf any) error {
 	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true
 	gc.injectFlagConfig("", commandLine, reflect.ValueOf(conf))

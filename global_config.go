@@ -23,25 +23,35 @@ import (
 	"go.uber.org/multierr"
 )
 
+// ConfigPtr constrains CPtr to be *C and implement Config,
+// letting the type system guarantee "must be a pointer type" at compile time.
+type ConfigPtr[T any] interface {
+	*T
+	Config
+}
+
+// DaoPtr constrains DPtr to be *D and implement Dao.
+type DaoPtr[T any] interface {
+	*T
+	Dao
+}
+
 // globalConfig is the central container that holds root config, builtin config,
 // user-defined Config and Dao, and drives the full initialization lifecycle.
 //
-// 并发模型（快照替换）：Config 字段是启动时注入的快照，初始化完成后不再被写入；
-// 热更新会构建一个全新的 C 实例，走完整注入生命周期后原子替换 confSnapshot。
-// 读方通过 Conf() 无锁获取当前快照，快照一经发布即不可变。
-type globalConfig[C Config, D Dao] struct {
+// 并发模型（快照替换）：配置唯一的存储点是 confSnapshot，唯一的读取入口是 Conf()。
+// 热更新会构建一个全新的实例，走完整注入生命周期后原子替换 confSnapshot；
+// 快照一经发布即不可变。需要「进程启动时生效的值」的调用方，在启动期读一次
+// Conf() 自行持有即可，库不保留第一代引用。
+type globalConfig[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	RootConfig    RootConfig `mapstructure:",squash"`
 	BuiltinConfig builtinConfig
 
-	// conf 是启动快照：初始注入完成后不再写入。
-	// 刻意不导出：外部只能经 Conf()（当前快照）或 StartupConf()（启动快照）访问，
-	// 避免调用方误把启动快照当作能感知热更新的实时配置。
-	conf C
-	Dao  D
+	Dao DPtr
 
 	*viper.Viper
-	// 当前配置快照（存 C），热更新成功后整体替换，读方零锁
-	confSnapshot atomic.Value
+	// 当前配置快照，热更新成功后整体替换，读方零锁
+	confSnapshot atomic.Pointer[C]
 	editTimes    uint32
 	defers       []func()
 	initialized  atomic.Bool
@@ -56,25 +66,15 @@ type globalConfig[C Config, D Dao] struct {
 
 // Conf returns the current config snapshot without locking. After a hot reload it
 // returns the newly built snapshot. Published snapshots are immutable: never write
-// to the returned value. This is the default accessor for reading config.
-func (gc *globalConfig[C, D]) Conf() C {
-	if v := gc.confSnapshot.Load(); v != nil {
-		return v.(C)
-	}
-	return gc.conf
-}
-
-// StartupConf returns the startup snapshot: the Config instance injected at boot,
-// which never observes hot reloads. Use it only when values must stay consistent
-// with what the process actually started with (e.g. the listen address);
-// otherwise prefer Conf.
-func (gc *globalConfig[C, D]) StartupConf() C {
-	return gc.conf
+// to the returned value. It returns nil only before the initial injection completes
+// (i.e. before NewGlobal/NewGlobalWith returns).
+func (gc *globalConfig[C, D, CPtr, DPtr]) Conf() CPtr {
+	return CPtr(gc.confSnapshot.Load())
 }
 
 // newGlobal allocates a globalConfig with sane defaults and a fresh Viper instance.
-func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
-	gc := &globalConfig[C, D]{
+func newGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *globalConfig[C, D, CPtr, DPtr] {
+	gc := &globalConfig[C, D, CPtr, DPtr]{
 		RootConfig: RootConfig{
 			EnvConfig: EnvConfig{Debug: true},
 		},
@@ -85,46 +85,37 @@ func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 
 // NewGlobalWith creates a globalConfig with the provided Config and Dao instances and
 // immediately runs the full initialization sequence.
-func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) *globalConfig[C, D] {
-	gc := newGlobal[C, D]()
-	gc.conf = conf
+func NewGlobalWith[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](conf CPtr, dao DPtr, configCenter ...ConfigCenter) *globalConfig[C, D, CPtr, DPtr] {
+	gc := newGlobal[C, D, CPtr, DPtr]()
 	gc.Dao = dao
-	gc.init(configCenter...)
+	gc.init(conf, configCenter...)
 	return gc
 }
 
-// NewGlobal creates a globalConfig by allocating zero-value instances of C and D via reflection,
+// NewGlobal creates a globalConfig by allocating zero-value instances of C and D,
 // then runs the full initialization sequence.
-// var Global = initialize.NewGlobal[C,D]()
-func NewGlobal[C Config, D Dao](configCenter ...ConfigCenter) *globalConfig[C, D] {
-	gc := newGlobal[C, D]()
-	v := reflect.ValueOf(&gc.conf).Elem()
-	if v.Kind() == reflect.Struct {
-		log.Fatalf("generic type should be a pointer type")
-	}
-	v.Set(reflect.New(reflect.TypeOf(gc.conf).Elem()))
-	v = reflect.ValueOf(&gc.Dao).Elem()
-	if v.Kind() == reflect.Struct {
-		log.Fatalf("generic type should be a pointer type")
-	}
-	v.Set(reflect.New(reflect.TypeOf(gc.Dao).Elem()))
-	gc.init(configCenter...)
+// var Global = initialize.NewGlobal[config, dao]()
+func NewGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](configCenter ...ConfigCenter) *globalConfig[C, D, CPtr, DPtr] {
+	gc := newGlobal[C, D, CPtr, DPtr]()
+	gc.Dao = DPtr(new(D))
+	gc.init(CPtr(new(C)), configCenter...)
 	return gc
 }
 
 // Start is a convenience wrapper around NewGlobalWith that returns only the Cleanup function.
-func Start[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) func() {
-	gc := NewGlobalWith(conf, dao, configCenter...)
+func Start[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](conf CPtr, dao DPtr, configCenter ...ConfigCenter) func() {
+	gc := NewGlobalWith[C, D](conf, dao, configCenter...)
 	return gc.Cleanup
 }
 
 // NewGlobalConfig is a shortcut for applications that only need a Config (no custom Dao).
-func NewGlobalConfig[C Config](configCenter ...ConfigCenter) *globalConfig[C, *EmbeddedPresets] {
-	return NewGlobal[C, *EmbeddedPresets](configCenter...)
+func NewGlobalConfig[C any, CPtr ConfigPtr[C]](configCenter ...ConfigCenter) *globalConfig[C, EmbeddedPresets, CPtr, *EmbeddedPresets] {
+	return NewGlobal[C, EmbeddedPresets, CPtr, *EmbeddedPresets](configCenter...)
 }
 
-// init registers config centers, loads the config file, and performs the first injection.
-func (gc *globalConfig[C, D]) init(configCenter ...ConfigCenter) {
+// init registers config centers, loads the config file, and performs the first injection
+// into conf.
+func (gc *globalConfig[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...ConfigCenter) {
 	gc.applyFlagConfig("", &gc.RootConfig)
 	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
@@ -138,7 +129,7 @@ func (gc *globalConfig[C, D]) init(configCenter ...ConfigCenter) {
 			log.Errorf("close Dao error: %v", err)
 		}
 	})
-	gc.loadConfig()
+	gc.loadConfig(conf)
 	gc.initialized.Store(true)
 }
 
@@ -149,7 +140,7 @@ func (gc *globalConfig[C, D]) init(configCenter ...ConfigCenter) {
 
 // Cleanup releases all resources in reverse registration order (defers), then closes the
 // config center and flushes the logger. Call via defer after NewGlobal/NewGlobalWith.
-func (gc *globalConfig[C, D]) Cleanup() {
+func (gc *globalConfig[C, D, CPtr, DPtr]) Cleanup() {
 	gc.mu.Lock()
 	defers := gc.defers
 	gc.defers = nil
@@ -169,8 +160,8 @@ func (gc *globalConfig[C, D]) Cleanup() {
 const defaultConfigName = "config"
 
 // loadConfig discovers and reads the config file, sets up file watching,
-// connects to the config center, and performs the initial inject.
-func (gc *globalConfig[C, D]) loadConfig() {
+// connects to the config center, and performs the initial inject into conf.
+func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 	executable, err := os.Executable()
 	if err != nil {
 		log.Fatalf("get executable error: %v", err)
@@ -265,8 +256,8 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		gc.applyFlagConfig(flagPrefix, cfgcenter)
 	}
 	// hook function
-	gc.beforeInjectCall(gc.conf, gc.Dao)
-	gc.genConfigTemplate(singleTemplateFileConfig)
+	gc.beforeInjectCall(conf, gc.Dao)
+	gc.genConfigTemplate(conf, singleTemplateFileConfig)
 	localConfig := &gc.RootConfig.LocalConfig
 	if gc.RootConfig.Env != "" {
 		var defaultEnvConfigPath string
@@ -340,8 +331,8 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	// watcher 已启动，初始注入与热更新用 reloadMu 串行
 	gc.reloadMu.Lock()
 	defer gc.reloadMu.Unlock()
-	if err := gc.inject(gc.conf, gc.Dao); err == nil {
-		gc.confSnapshot.Store(gc.conf)
+	if err := gc.inject(conf, gc.Dao); err == nil {
+		gc.confSnapshot.Store(conf)
 	}
 }
 
@@ -349,10 +340,10 @@ func (gc *globalConfig[C, D]) loadConfig() {
 // Config instance, runs the full injection lifecycle on it, and atomically publishes
 // it on success. Readers holding the old snapshot keep a consistent view; a failed
 // reload leaves the current snapshot untouched.
-func (gc *globalConfig[C, D]) reloadConfig() {
+func (gc *globalConfig[C, D, CPtr, DPtr]) reloadConfig() {
 	gc.reloadMu.Lock()
 	defer gc.reloadMu.Unlock()
-	newConf := reflect.New(reflect.TypeOf(gc.conf).Elem()).Interface().(C)
+	newConf := CPtr(new(C))
 	gc.beforeInjectCall(newConf, nil)
 	if err := gc.inject(newConf, nil); err != nil {
 		return
@@ -362,7 +353,7 @@ func (gc *globalConfig[C, D]) reloadConfig() {
 }
 
 // beforeInjectCall invokes BeforeInject and BeforeInjectWithRoot on the given conf and dao.
-func (gc *globalConfig[C, D]) beforeInjectCall(conf Config, dao Dao) {
+func (gc *globalConfig[C, D, CPtr, DPtr]) beforeInjectCall(conf Config, dao Dao) {
 	conf.BeforeInject()
 	if c, ok := conf.(beforeInjectWithRoot); ok {
 		c.BeforeInjectWithRoot(&gc.RootConfig)
@@ -376,7 +367,7 @@ func (gc *globalConfig[C, D]) beforeInjectCall(conf Config, dao Dao) {
 }
 
 // Defer registers cleanup functions that will be called in reverse order during Cleanup.
-func (gc *globalConfig[C, D]) Defer(deferf ...func()) {
+func (gc *globalConfig[C, D, CPtr, DPtr]) Defer(deferf ...func()) {
 	gc.mu.Lock()
 	defer gc.mu.Unlock()
 	gc.defers = append(gc.defers, deferf...)

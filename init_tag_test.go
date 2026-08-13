@@ -149,7 +149,7 @@ func TestGetFieldConfigName(t *testing.T) {
 func TestNewStruct_InitTagConfigName_RenameField(t *testing.T) {
 	// 只测 init tag 对“临时注入 struct 字段名/指针绑定”的影响，
 	// 不走 viper 注入，避免对配置文件/环境敏感。
-	gc := newGlobal[*initRenameConfig, *EmbeddedPresets]()
+	gc := newGlobal[initRenameConfig, EmbeddedPresets]()
 	conf := &initRenameConfig{}
 
 	tmp := gc.newStruct(conf, nil)
@@ -183,4 +183,3 @@ func listStructFieldNames(t reflect.Type) []string {
 	}
 	return names
 }
-

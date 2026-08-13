@@ -42,7 +42,7 @@ func TestNoConfigFile(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test", "-n", "aaa", "-a", "12"}
 
-	gc := NewGlobalConfig[*UserConfig]()
+	gc := NewGlobalConfig[UserConfig]()
 	if gc.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -62,7 +62,7 @@ func TestNoConfigFileWithEnv(t *testing.T) {
 	t.Setenv("NAME", "envname")
 	t.Setenv("AGE", "21")
 
-	gc := NewGlobalConfig[*UserConfig]()
+	gc := NewGlobalConfig[UserConfig]()
 	if gc.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -79,7 +79,7 @@ func TestNoConfigFile_Defaults(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[*UserConfig]()
+	gc := NewGlobalConfig[UserConfig]()
 	if gc.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -96,7 +96,7 @@ func TestNoConfigFile_SliceDefaults(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[*UserSliceConfig]()
+	gc := NewGlobalConfig[UserSliceConfig]()
 	if gc.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -110,7 +110,7 @@ func TestNoConfigFile_DurationDefaults(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[*UserDurationConfig]()
+	gc := NewGlobalConfig[UserDurationConfig]()
 	if gc.Conf() == nil {
 		t.Fatal("nil Config")
 	}

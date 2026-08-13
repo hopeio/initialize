@@ -20,7 +20,7 @@ With initialize you:
 
 1. Define root settings (app name, env, local files, remote center).
 2. Declare a `Config` struct and a `Dao` struct.
-3. Call `NewGlobal[*Config, *Dao](...)`.
+3. Call `NewGlobal[Config, Dao](...)`.
 4. Use `Global.Conf()` / `Global.Dao` and `defer Global.Cleanup()`.
 
 ## Capabilities
@@ -78,7 +78,7 @@ func (d *Dao) AfterInject() {
 	// register GORM callbacks, tune pools, …
 }
 
-var Global = initialize.NewGlobal[*Config, *Dao]()
+var Global = initialize.NewGlobal[Config, Dao]()
 ```
 
 ```go
@@ -116,7 +116,7 @@ Single-env apps can omit `Env` and pass `-c path/to/config.toml`.
 With `Watch = true` (local files) or a config center attached, every change builds a **brand-new Config snapshot**, runs the full injection lifecycle on it, and publishes it atomically — the old object is never mutated in place:
 
 - `Global.Conf()` — returns the latest snapshot lock-free; the default accessor, call it on each use to observe reloads.
-- `Global.StartupConf()` — the startup snapshot; it never changes after init. Use it only when values must match what the process actually started with (e.g. the listen address).
+- Need boot-time values (e.g. the listen address)? Read `Conf()` once during startup and keep it yourself; the library does not retain a first-generation reference.
 
 Published snapshots are immutable: never write to their fields. DAOs (connection-like resources) do not participate in hot reload.
 

@@ -17,7 +17,7 @@ import (
 // genConfigTemplate writes a config template file to the directory specified by ConfigTemplateDir.
 // In single-file mode the template merges builtin, user config and DAO fields into one file;
 // otherwise only the env-local fields are written.
-func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
+func (gc *globalConfig[C, D, CPtr, DPtr]) genConfigTemplate(conf CPtr, singleTemplateFileConfig bool) {
 	dir := gc.RootConfig.ConfigTemplateDir
 	if dir == "" {
 		return
@@ -38,7 +38,7 @@ func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
 		delete(confMap, fixedFieldNameConfigCenter)
 	}
 	struct2Map(&gc.BuiltinConfig, confMap)
-	struct2Map(gc.conf, confMap)
+	struct2Map(conf, confMap)
 	daoConfig2Map(reflect.ValueOf(gc.Dao).Elem(), confMap)
 
 	endocer, err := codecRegistry.Encoder(format)

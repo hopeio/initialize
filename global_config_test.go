@@ -39,7 +39,7 @@ func TestGlobalConfig_Cleanup_RunsDefers(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[*UserConfig]()
+	gc := NewGlobalConfig[UserConfig]()
 	var deferCalled bool
 	gc.Defer(func() { deferCalled = true })
 	gc.Cleanup()
@@ -53,7 +53,7 @@ func TestGlobalConfig_Cleanup_DefersReverseOrder(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[*UserConfig]()
+	gc := NewGlobalConfig[UserConfig]()
 	var order []int
 	gc.Defer(func() { order = append(order, 1) })
 	gc.Defer(func() { order = append(order, 2) })
@@ -128,10 +128,10 @@ func TestReloadConfig_SnapshotSwap(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[*reloadTestConfig]()
-	startup := gc.StartupConf()
-	if gc.Conf() != startup {
-		t.Fatal("initial snapshot should be the startup Config")
+	gc := NewGlobalConfig[reloadTestConfig]()
+	startup := gc.Conf()
+	if startup == nil {
+		t.Fatal("initial snapshot should be published after NewGlobalConfig returns")
 	}
 
 	if err := gc.Viper.MergeConfigMap(map[string]any{"addr": "reloaded", "level": 7}); err != nil {
@@ -150,9 +150,6 @@ func TestReloadConfig_SnapshotSwap(t *testing.T) {
 	if startup.Addr != "" || startup.Level != 0 {
 		t.Fatalf("startup snapshot mutated: %+v", startup)
 	}
-	if gc.StartupConf() != startup {
-		t.Fatal("StartupConf should keep pointing at the startup snapshot")
-	}
 }
 
 func TestConf_ConcurrentReadDuringReload(t *testing.T) {
@@ -160,7 +157,7 @@ func TestConf_ConcurrentReadDuringReload(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[*reloadTestConfig]()
+	gc := NewGlobalConfig[reloadTestConfig]()
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 	for range 4 {
@@ -211,7 +208,7 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 	}
 	os.Args = []string{"test", "-c", confPath}
 
-	gc := NewGlobalConfig[*reloadTestConfig]()
+	gc := NewGlobalConfig[reloadTestConfig]()
 	t.Cleanup(gc.Cleanup)
 
 	startup := gc.Conf()
