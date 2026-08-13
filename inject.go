@@ -25,7 +25,7 @@ func (gc *globalConfig[C, D]) newStruct(conf Config, dao Dao) any {
 	var confValue reflect.Value
 	var confType reflect.Type
 	// BuiltinConfig
-	if !gc.initialized {
+	if !gc.initialized.Load() {
 		confValue = reflect.ValueOf(&gc.BuiltinConfig).Elem()
 		confType = confValue.Type()
 		for i := range confValue.NumField() {
@@ -184,19 +184,24 @@ func (gc *globalConfig[C, D]) setNewStruct(value reflect.Value, typValueMap map[
 
 // inject unmarshals the merged config struct from Viper, applies flag overrides,
 // and then invokes all AfterInject lifecycle hooks on the config and DAO.
-func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
+// Viper access happens under gc.mu; user hooks always run outside the lock so they
+// may safely call Defer/Conf without deadlocking.
+func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) error {
 	tmpConfig := gc.newStruct(conf, dao)
+	gc.mu.Lock()
 	err := gc.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
+	if err == nil {
+		gc.applyFlagConfig(strings.ToLower(gc.RootConfig.Name), tmpConfig)
+	}
+	gc.mu.Unlock()
 	if err != nil {
 		// 启动期配置错误直接退出；初始化完成后（热更新/追加注入）只记录错误，不能杀死运行中的服务
-		if !gc.initialized {
+		if !gc.initialized.Load() {
 			log.Fatal(err)
-		} else {
-			log.Error(err)
-			return
 		}
+		log.Error(err)
+		return err
 	}
-	gc.applyFlagConfig(strings.ToLower(gc.RootConfig.Name), tmpConfig)
 	gc.afterInjectConfigCall(tmpConfig)
 	conf.AfterInject()
 	if c, ok := conf.(afterInjectWithRoot); ok {
@@ -210,6 +215,7 @@ func (gc *globalConfig[C, D]) inject(conf Config, dao Dao) {
 		gc.injectDao(dao)
 	}
 	//log.Debugf("config:  %+v", tmpConfig)
+	return nil
 }
 
 // afterInjectConfigCall recursively walks all fields in tmpConfig and calls AfterInject /
@@ -281,18 +287,19 @@ func (gc *globalConfig[C, D]) injectDao(dao Dao) {
 // Inject injects additional Config/Dao after the global config is already initialized.
 // Returns an error if the global config has not yet been initialized.
 func (gc *globalConfig[C, D]) Inject(conf Config, dao Dao) error {
-	if !gc.initialized {
+	if !gc.initialized.Load() {
 		return errors.New("not initialize, please call initialize.NewGlobal or initialize.Start")
 	}
 
 	if dao != nil {
-		gc.defers = append(gc.defers, func() {
+		gc.Defer(func() {
 			if err := closeDao(dao); err != nil {
 				log.Errorf("close Dao error: %v", err)
 			}
 		})
 	}
+	gc.reloadMu.Lock()
+	defer gc.reloadMu.Unlock()
 	gc.beforeInjectCall(conf, dao)
-	gc.inject(conf, dao)
-	return nil
+	return gc.inject(conf, dao)
 }

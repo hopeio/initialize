@@ -13,10 +13,10 @@ import (
 	"os"
 	"reflect"
 
-	stringsx "github.com/hopeio/gox/strings"
 	kvstruct "github.com/hopeio/gox/kvstruct"
 	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
+	stringsx "github.com/hopeio/gox/strings"
 	"github.com/spf13/pflag"
 )
 
@@ -145,7 +145,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 					}
 				}
 			}
-			if !gc.initialized {
+			if !gc.initialized.Load() {
 				if flagTagSettings.Name != "" {
 					// flag设置
 					flagv := &pflag.Flag{
@@ -179,7 +179,7 @@ func (gc *globalConfig[C, D]) injectFlagConfig(prefix string, commandLine *pflag
 				}
 			}
 			// default flag
-			if !gc.initialized {
+			if !gc.initialized.Load() {
 				flagv := &pflag.Flag{
 					Name:  flag[strings.IndexByte(flag, '.')+1:],
 					Value: anyValue(fieldValue),

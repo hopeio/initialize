@@ -111,6 +111,15 @@ Business keys (`[HTTP]`, `[DB]`, `[Cache]`, …) live in `local.toml` or the rem
 
 Single-env apps can omit `Env` and pass `-c path/to/config.toml`.
 
+## Hot reload & snapshots
+
+With `Watch = true` (local files) or a config center attached, every change builds a **brand-new Config snapshot**, runs the full injection lifecycle on it, and publishes it atomically — the old object is never mutated in place:
+
+- `Global.Config` — the startup snapshot; it never changes after init and is safe to hold long-term.
+- `Global.Conf()` — returns the latest snapshot lock-free; call it on each use when you need to observe reloads.
+
+Published snapshots are immutable: never write to their fields. DAOs (connection-like resources) do not participate in hot reload.
+
 ## Hooks
 
 | Method | Moment |
