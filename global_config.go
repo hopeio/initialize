@@ -102,12 +102,6 @@ func NewGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](configCenter ...
 	return gc
 }
 
-// Start is a convenience wrapper around NewGlobalWith that returns only the Cleanup function.
-func Start[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](conf CPtr, dao DPtr, configCenter ...ConfigCenter) func() {
-	gc := NewGlobalWith[C, D](conf, dao, configCenter...)
-	return gc.Cleanup
-}
-
 // NewGlobalConfig is a shortcut for applications that only need a Config (no custom Dao).
 func NewGlobalConfig[C any, CPtr ConfigPtr[C]](configCenter ...ConfigCenter) *globalConfig[C, EmbeddedPresets, CPtr, *EmbeddedPresets] {
 	return NewGlobal[C, EmbeddedPresets, CPtr, *EmbeddedPresets](configCenter...)

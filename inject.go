@@ -288,7 +288,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) {
 // Returns an error if the global config has not yet been initialized.
 func (gc *globalConfig[C, D, CPtr, DPtr]) Inject(conf Config, dao Dao) error {
 	if !gc.initialized.Load() {
-		return errors.New("not initialize, please call initialize.NewGlobal or initialize.Start")
+		return errors.New("not initialized, please call initialize.NewGlobal or initialize.NewGlobalWith first")
 	}
 
 	if dao != nil {
