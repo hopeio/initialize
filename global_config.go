@@ -45,9 +45,12 @@ type globalConfig[C Config, D Dao] struct {
 	editTimes    uint32
 	defers       []func()
 	initialized  atomic.Bool
-	// mu 只保护 Viper 操作与 defers 的短临界区，锁内不执行任何用户 hook
-	mu sync.RWMutex
-	// reloadMu 串行化初始注入、热更新与追加注入
+	// 锁层次（只允许 reloadMu → mu 单向嵌套）：
+	// mu 是内层数据锁：保护 Viper 操作与 defers 的短临界区（微秒级），锁内不执行任何用户 hook，
+	// 否则 hook 里调 Defer 会自死锁；
+	// reloadMu 是外层流程锁：串行化初始注入、热更新与追加注入的完整流程（可达秒级，如 injectDao 建连），
+	// 保证从读取 Viper 到发布快照不被并发 reload 交错，避免旧快照覆盖新快照。
+	mu       sync.Mutex
 	reloadMu sync.Mutex
 }
 
