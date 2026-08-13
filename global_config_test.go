@@ -239,18 +239,6 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 	t.Fatalf("hot reload not observed, snapshot=%+v", gc.Conf())
 }
 
-func TestStart_ReturnsCleanup(t *testing.T) {
-	oldArgs := os.Args
-	t.Cleanup(func() { os.Args = oldArgs })
-	os.Args = []string{"test"}
-
-	cleanup := Start(&UserConfig{}, &EmbeddedPresets{})
-	if cleanup == nil {
-		t.Fatal("Start should return Cleanup func")
-	}
-	cleanup()
-}
-
 func TestNewGlobalWith_InjectsAndCleansUp(t *testing.T) {
 	oldArgs := os.Args
 	t.Cleanup(func() { os.Args = oldArgs })
