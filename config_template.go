@@ -38,7 +38,7 @@ func (gc *globalConfig[C, D]) genConfigTemplate(singleTemplateFileConfig bool) {
 		delete(confMap, fixedFieldNameConfigCenter)
 	}
 	struct2Map(&gc.BuiltinConfig, confMap)
-	struct2Map(gc.Config, confMap)
+	struct2Map(gc.conf, confMap)
 	daoConfig2Map(reflect.ValueOf(gc.Dao).Elem(), confMap)
 
 	endocer, err := codecRegistry.Encoder(format)

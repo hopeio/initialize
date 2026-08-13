@@ -129,7 +129,7 @@ func TestReloadConfig_SnapshotSwap(t *testing.T) {
 	os.Args = []string{"test"}
 
 	gc := NewGlobalConfig[*reloadTestConfig]()
-	startup := gc.Config
+	startup := gc.StartupConf()
 	if gc.Conf() != startup {
 		t.Fatal("initial snapshot should be the startup Config")
 	}
@@ -150,8 +150,8 @@ func TestReloadConfig_SnapshotSwap(t *testing.T) {
 	if startup.Addr != "" || startup.Level != 0 {
 		t.Fatalf("startup snapshot mutated: %+v", startup)
 	}
-	if gc.Config != startup {
-		t.Fatal("Config field should keep pointing at the startup snapshot")
+	if gc.StartupConf() != startup {
+		t.Fatal("StartupConf should keep pointing at the startup snapshot")
 	}
 }
 

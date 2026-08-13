@@ -165,7 +165,7 @@ func TestGenConfigTemplate_WritesLocalTemplate(t *testing.T) {
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Fatalf("template file missing: %v", err)
 	}
-	if gc.Config == nil {
+	if gc.Conf() == nil {
 		t.Fatal("nil Config")
 	}
 }
@@ -187,8 +187,8 @@ func TestGenConfigTemplate_SingleFileMode(t *testing.T) {
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Fatalf("single template file missing: %v", err)
 	}
-	if gc.Config.Wait != time.Hour {
-		t.Fatalf("Wait=%v want default 1h", gc.Config.Wait)
+	if gc.Conf().Wait != time.Hour {
+		t.Fatalf("Wait=%v want default 1h", gc.Conf().Wait)
 	}
 }
 

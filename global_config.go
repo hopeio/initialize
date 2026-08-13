@@ -33,8 +33,11 @@ type globalConfig[C Config, D Dao] struct {
 	RootConfig    RootConfig `mapstructure:",squash"`
 	BuiltinConfig builtinConfig
 
-	Config C
-	Dao    D
+	// conf 是启动快照：初始注入完成后不再写入。
+	// 刻意不导出：外部只能经 Conf()（当前快照）或 StartupConf()（启动快照）访问，
+	// 避免调用方误把启动快照当作能感知热更新的实时配置。
+	conf C
+	Dao  D
 
 	*viper.Viper
 	// 当前配置快照（存 C），热更新成功后整体替换，读方零锁
@@ -49,13 +52,21 @@ type globalConfig[C Config, D Dao] struct {
 }
 
 // Conf returns the current config snapshot without locking. After a hot reload it
-// returns the newly built snapshot, while the Config field keeps the startup snapshot.
-// Published snapshots are immutable: never write to the returned value.
+// returns the newly built snapshot. Published snapshots are immutable: never write
+// to the returned value. This is the default accessor for reading config.
 func (gc *globalConfig[C, D]) Conf() C {
 	if v := gc.confSnapshot.Load(); v != nil {
 		return v.(C)
 	}
-	return gc.Config
+	return gc.conf
+}
+
+// StartupConf returns the startup snapshot: the Config instance injected at boot,
+// which never observes hot reloads. Use it only when values must stay consistent
+// with what the process actually started with (e.g. the listen address);
+// otherwise prefer Conf.
+func (gc *globalConfig[C, D]) StartupConf() C {
+	return gc.conf
 }
 
 // newGlobal allocates a globalConfig with sane defaults and a fresh Viper instance.
@@ -73,7 +84,7 @@ func newGlobal[C Config, D Dao]() *globalConfig[C, D] {
 // immediately runs the full initialization sequence.
 func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter) *globalConfig[C, D] {
 	gc := newGlobal[C, D]()
-	gc.Config = conf
+	gc.conf = conf
 	gc.Dao = dao
 	gc.init(configCenter...)
 	return gc
@@ -84,11 +95,11 @@ func NewGlobalWith[C Config, D Dao](conf C, dao D, configCenter ...ConfigCenter)
 // var Global = initialize.NewGlobal[C,D]()
 func NewGlobal[C Config, D Dao](configCenter ...ConfigCenter) *globalConfig[C, D] {
 	gc := newGlobal[C, D]()
-	v := reflect.ValueOf(&gc.Config).Elem()
+	v := reflect.ValueOf(&gc.conf).Elem()
 	if v.Kind() == reflect.Struct {
 		log.Fatalf("generic type should be a pointer type")
 	}
-	v.Set(reflect.New(reflect.TypeOf(gc.Config).Elem()))
+	v.Set(reflect.New(reflect.TypeOf(gc.conf).Elem()))
 	v = reflect.ValueOf(&gc.Dao).Elem()
 	if v.Kind() == reflect.Struct {
 		log.Fatalf("generic type should be a pointer type")
@@ -251,7 +262,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 		gc.applyFlagConfig(flagPrefix, cfgcenter)
 	}
 	// hook function
-	gc.beforeInjectCall(gc.Config, gc.Dao)
+	gc.beforeInjectCall(gc.conf, gc.Dao)
 	gc.genConfigTemplate(singleTemplateFileConfig)
 	localConfig := &gc.RootConfig.LocalConfig
 	if gc.RootConfig.Env != "" {
@@ -326,8 +337,8 @@ func (gc *globalConfig[C, D]) loadConfig() {
 	// watcher 已启动，初始注入与热更新用 reloadMu 串行
 	gc.reloadMu.Lock()
 	defer gc.reloadMu.Unlock()
-	if err := gc.inject(gc.Config, gc.Dao); err == nil {
-		gc.confSnapshot.Store(gc.Config)
+	if err := gc.inject(gc.conf, gc.Dao); err == nil {
+		gc.confSnapshot.Store(gc.conf)
 	}
 }
 
@@ -338,7 +349,7 @@ func (gc *globalConfig[C, D]) loadConfig() {
 func (gc *globalConfig[C, D]) reloadConfig() {
 	gc.reloadMu.Lock()
 	defer gc.reloadMu.Unlock()
-	newConf := reflect.New(reflect.TypeOf(gc.Config).Elem()).Interface().(C)
+	newConf := reflect.New(reflect.TypeOf(gc.conf).Elem()).Interface().(C)
 	gc.beforeInjectCall(newConf, nil)
 	if err := gc.inject(newConf, nil); err != nil {
 		return

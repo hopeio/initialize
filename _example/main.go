@@ -19,6 +19,6 @@ func main() {
 		fmt.Println("defer")
 	})
 	spew.Dump(global.Global.Dao)
-	spew.Dump(global.Global.Config)
+	spew.Dump(global.Global.Conf())
 	fmt.Println(global.Global.RootConfig.Env)
 }

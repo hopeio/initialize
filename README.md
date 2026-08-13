@@ -21,7 +21,7 @@ With initialize you:
 1. Define root settings (app name, env, local files, remote center).
 2. Declare a `Config` struct and a `Dao` struct.
 3. Call `NewGlobal[*Config, *Dao](...)`.
-4. Use `Global.Config` / `Global.Dao` and `defer Global.Cleanup()`.
+4. Use `Global.Conf()` / `Global.Dao` and `defer Global.Cleanup()`.
 
 ## Capabilities
 
@@ -115,8 +115,8 @@ Single-env apps can omit `Env` and pass `-c path/to/config.toml`.
 
 With `Watch = true` (local files) or a config center attached, every change builds a **brand-new Config snapshot**, runs the full injection lifecycle on it, and publishes it atomically — the old object is never mutated in place:
 
-- `Global.Config` — the startup snapshot; it never changes after init and is safe to hold long-term.
-- `Global.Conf()` — returns the latest snapshot lock-free; call it on each use when you need to observe reloads.
+- `Global.Conf()` — returns the latest snapshot lock-free; the default accessor, call it on each use to observe reloads.
+- `Global.StartupConf()` — the startup snapshot; it never changes after init. Use it only when values must match what the process actually started with (e.g. the listen address).
 
 Published snapshots are immutable: never write to their fields. DAOs (connection-like resources) do not participate in hot reload.
 
