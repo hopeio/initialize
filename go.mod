@@ -1,6 +1,6 @@
 module github.com/hopeio/initialize
 
-go 1.26
+go 1.27
 
 require (
 	github.com/IBM/sarama v1.60.1
