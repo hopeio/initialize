@@ -39,6 +39,37 @@ type flagTagSettings struct {
 	Usage   string `meta:"usage"`
 }
 
+// envLookupKeys returns env var names to try: ENV uppercased, then NAME_ENV when module name is set.
+func envLookupKeys(moduleName, envKey string) []string {
+	key := strings.ToUpper(strings.TrimSpace(envKey))
+	if key == "" {
+		return nil
+	}
+	keys := []string{key}
+	mod := strings.ToUpper(strings.TrimSpace(moduleName))
+	if mod != "" && !strings.HasPrefix(key, mod+"_") {
+		keys = append(keys, mod+"_"+key)
+	}
+	return keys
+}
+
+func lookupEnvFromKeys(keys []string) (string, bool) {
+	for _, k := range keys {
+		if v, ok := os.LookupEnv(k); ok {
+			return v, true
+		}
+	}
+	return "", false
+}
+
+func bindEnvKeys(v interface{ BindEnv(...string) error }, keys ...string) {
+	for _, k := range keys {
+		if err := v.BindEnv(k); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
 func init() {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 }
@@ -130,15 +161,11 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, comman
 					log.Fatal(err)
 				}
 			}
-			// 从环境变量设置
+			// 从环境变量设置：先 ENV，再 BasicConfig.Name + "_" + ENV
 			if flagTagSettings.Env != "" {
-
-				err := gc.Viper.BindEnv(flagTagSettings.Env)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				if value, ok := os.LookupEnv(strings.ToUpper(flagTagSettings.Env)); ok {
+				envKeys := envLookupKeys(gc.RootConfig.Name, flagTagSettings.Env)
+				bindEnvKeys(gc.Viper, envKeys...)
+				if value, ok := lookupEnvFromKeys(envKeys); ok {
 					err := kvstruct.ParseStringSetReflectValue(fieldValue, value, &fieldType)
 					if err != nil {
 						log.Fatal(err)

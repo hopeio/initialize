@@ -26,6 +26,62 @@ type injectFlagNested struct {
 	Server injectFlagDefaultEnv
 }
 
+type injectFlagEnvTag struct {
+	Secret string `flag:"env:TOKEN_SECRET"`
+}
+
+func TestEnvLookupKeys(t *testing.T) {
+	if got := envLookupKeys("hoper", "TOKEN_SECRET"); len(got) != 2 || got[0] != "TOKEN_SECRET" || got[1] != "HOPER_TOKEN_SECRET" {
+		t.Fatalf("envLookupKeys(hoper, TOKEN_SECRET)=%v", got)
+	}
+	if got := envLookupKeys("hoper", "HOPER_TOKEN_SECRET"); len(got) != 1 || got[0] != "HOPER_TOKEN_SECRET" {
+		t.Fatalf("already prefixed=%v", got)
+	}
+	if got := envLookupKeys("", "TOKEN_SECRET"); len(got) != 1 || got[0] != "TOKEN_SECRET" {
+		t.Fatalf("no module=%v", got)
+	}
+}
+
+func TestInjectByFlag_EnvTagDirect(t *testing.T) {
+	t.Setenv("TOKEN_SECRET", "direct")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	gc.RootConfig.Name = "hoper"
+	conf := &injectFlagEnvTag{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Secret != "direct" {
+		t.Fatalf("Secret=%q want direct", conf.Secret)
+	}
+}
+
+func TestInjectByFlag_EnvTagModulePrefixed(t *testing.T) {
+	t.Setenv("HOPER_TOKEN_SECRET", "prefixed")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	gc.RootConfig.Name = "hoper"
+	conf := &injectFlagEnvTag{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Secret != "prefixed" {
+		t.Fatalf("Secret=%q want prefixed", conf.Secret)
+	}
+}
+
+func TestInjectByFlag_EnvTagDirectWinsOverPrefixed(t *testing.T) {
+	t.Setenv("TOKEN_SECRET", "direct")
+	t.Setenv("HOPER_TOKEN_SECRET", "prefixed")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	gc.RootConfig.Name = "hoper"
+	conf := &injectFlagEnvTag{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Secret != "direct" {
+		t.Fatalf("Secret=%q want direct (ENV before NAME_ENV)", conf.Secret)
+	}
+}
+
 func TestInjectByFlag_OverridesDefaults(t *testing.T) {
 	gc := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagTagged{}
