@@ -39,10 +39,10 @@ func (c *Config[K, V]) Build() (*ristretto.Cache[K, V], error) {
 	return ristretto.NewCache((*ristretto.Config[K, V])(c))
 }
 
-// 考虑换cache，ristretto存一个值，循环取居然还会miss(没开IgnoreInternalCost的原因),某个issue提要内存占用过大，直接初始化1.5MB
-// freecache不能存对象，可能要为每个对象写UnmarshalBinary 和 MarshalBinary
+// Consider swapping caches: ristretto can miss on get-after-set loops unless
+// IgnoreInternalCost is set; some issues report large memory use (~1.5MB floor).
+// freecache cannot store arbitrary objects without UnmarshalBinary/MarshalBinary.
 // go-cache
-
 type Cache[K ristretto.Key, V any] struct {
 	*ristretto.Cache[K, V]
 	Conf Config[K, V]

@@ -24,7 +24,7 @@ func (c *Config) AfterInject() {
 
 // Build starts an Apollo client using the embedded AppConfig.
 func (c *Config) Build() (agollo.Client, error) {
-	//初始化更新配置，这里不需要，开启实时更新时初始化会更新一次
+	// No initial sync here: with live update enabled, init already fetches once.
 	return agollo.StartWithConfig(func() (*config.AppConfig, error) {
 		return (*config.AppConfig)(c), nil
 	})

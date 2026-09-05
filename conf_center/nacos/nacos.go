@@ -56,7 +56,10 @@ func (cc *Nacos) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 		if err != nil {
 			return err
 		}
-		// nacos-go-sdk的问题，首次拉取的配置缓存在cache目录，listen拉取的缓存在cache/config，listen是异步的，如果要先同步获取配置且不在未更改配置的情况下触发listen的Onchange，就要把配置写进listen的目录，来回读取写入，浪费性能
+		// nacos-go-sdk quirk: the first GetConfig cache lives under cache/, while
+		// Listen caches under cache/config and is async. To sync once without
+		// firing OnChange when nothing changed, write into the listen cache dir
+		// (extra read/write cost).
 		cacheDir := file.GetCurrentPath() + string(os.PathSeparator) + "cache/config"
 		cacheKey := util.GetConfigCacheKey(configParam.DataId, configParam.Group, cc.Conf.ClientConfig.NamespaceId)
 		cache.WriteConfigToFile(cacheKey, cacheDir, config)

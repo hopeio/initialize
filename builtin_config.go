@@ -18,7 +18,7 @@ type builtinConfig struct {
 	Log LogConfig
 }
 
-// 全局变量,只一个实例,只提供config
+// Singleton-style wrapper: one global logger config instance.
 type LogConfig log.Config
 
 // AfterInjectWithRoot configures and replaces the default global logger using the root config's

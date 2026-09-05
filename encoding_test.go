@@ -91,7 +91,7 @@ func TestStruct2Map_NonNilPointerField(t *testing.T) {
 	}
 	src := &outer{Inner: &inner{Name: "x"}}
 	m := make(map[string]any)
-	// 非 nil 指针字段曾导致无限递归栈溢出
+	// Non-nil pointer fields used to recurse forever and overflow the stack.
 	struct2Map(src, m)
 	innerMap, ok := m["Inner"].(map[string]any)
 	if !ok || innerMap["Name"] != "x" {

@@ -86,7 +86,7 @@ func TestCloseDao_IgnoresScalarAndUnexportedFields(t *testing.T) {
 	}
 	d := &daoMixedFields{}
 	_ = d.hidden
-	// 普通字段/未导出字段/nil 指针曾导致 closeDao panic
+	// Plain / unexported / nil pointer fields used to panic in closeDao.
 	if err := closeDao(d); err != nil {
 		t.Fatal(err)
 	}
@@ -116,7 +116,8 @@ func (e *errClosingField) Init() error { return nil }
 
 func (e *errClosingField) Close() error { return errors.New("close err") }
 
-// reloadTestConfig 字段刻意不带 flag 子段（即不显式声明 name/short/env），也避开 HOST/PORT 等常见环境变量名
+// reloadTestConfig fields intentionally omit flag/env segments and avoid
+// common env names like HOST/PORT so ambient environment does not interfere.
 type reloadTestConfig struct {
 	EmbeddedPresets
 	Addr  string
@@ -146,7 +147,7 @@ func TestReloadConfig_SnapshotSwap(t *testing.T) {
 	if snap.Addr != "reloaded" || snap.Level != 7 {
 		t.Fatalf("snapshot=%+v want Addr=reloaded Level=7", snap)
 	}
-	// 启动快照保持不可变，读方不会看到撕裂状态
+	// Startup snapshot stays immutable; readers must not see torn state.
 	if startup.Addr != "" || startup.Level != 0 {
 		t.Fatalf("startup snapshot mutated: %+v", startup)
 	}
@@ -170,7 +171,7 @@ func TestConf_ConcurrentReadDuringReload(t *testing.T) {
 					return
 				default:
 					c := gc.Conf()
-					// 快照内部必须一致：Addr 与 Level 同批发布
+					// Snapshot must be consistent: Addr and Level publish together.
 					if c.Addr != "" && c.Addr != fmt.Sprintf("h%d", c.Level) {
 						panic(fmt.Sprintf("torn snapshot: %+v", c))
 					}
@@ -217,7 +218,7 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 		t.Fatalf("initial snapshot=%+v want first/1", startup)
 	}
 
-	// fsnotify 防抖 1 秒，轮询期间周期性重写文件直到快照被替换
+	// fsnotify debounce is 1s; rewrite the file until the snapshot swaps.
 	deadline := time.Now().Add(8 * time.Second)
 	for time.Now().Before(deadline) {
 		if err := os.WriteFile(localPath, []byte("addr = \"second\"\nlevel = 2\n"), 0644); err != nil {

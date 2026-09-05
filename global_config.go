@@ -39,10 +39,12 @@ type DaoPtr[T any] interface {
 // globalConfig is the central container that holds root config, builtin config,
 // user-defined Config and Dao, and drives the full initialization lifecycle.
 //
-// 并发模型（快照替换）：配置唯一的存储点是 confSnapshot，唯一的读取入口是 Conf()。
-// 热更新会构建一个全新的实例，走完整注入生命周期后原子替换 confSnapshot；
-// 快照一经发布即不可变。需要「进程启动时生效的值」的调用方，在启动期读一次
-// Conf() 自行持有即可，库不保留第一代引用。
+// Concurrency model (snapshot replace): confSnapshot is the sole storage for
+// config; Conf() is the sole read path. Hot reload builds a fresh instance,
+// runs the full inject lifecycle, then atomically swaps confSnapshot.
+// Published snapshots are immutable. Callers that need startup-time values
+// should read Conf() once during startup and keep their own copy; the library
+// does not retain a first-generation reference.
 type globalConfig[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	RootConfig    RootConfig `mapstructure:",squash"`
 	BuiltinConfig builtinConfig
@@ -50,16 +52,20 @@ type globalConfig[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	Dao DPtr
 
 	*viper.Viper
-	// 当前配置快照，热更新成功后整体替换，读方零锁
+	// confSnapshot is the current config snapshot; replaced wholesale after a
+	// successful hot reload so readers need no lock.
 	confSnapshot atomic.Pointer[C]
 	editTimes    uint32
 	defers       []func()
 	initialized  atomic.Bool
-	// 锁层次（只允许 reloadMu → mu 单向嵌套）：
-	// mu 是内层数据锁：保护 Viper 操作与 defers 的短临界区（微秒级），锁内不执行任何用户 hook，
-	// 否则 hook 里调 Defer 会自死锁；
-	// reloadMu 是外层流程锁：串行化初始注入、热更新与追加注入的完整流程（可达秒级，如 injectDao 建连），
-	// 保证从读取 Viper 到发布快照不被并发 reload 交错，避免旧快照覆盖新快照。
+	// Lock nesting is reloadMu → mu only (never the reverse):
+	// mu is the inner data lock for short Viper/defers critical sections
+	// (microseconds). Never run user hooks under mu or Defer inside a hook
+	// deadlocks.
+	// reloadMu is the outer flow lock serializing initial inject, hot reload,
+	// and extra inject (may take seconds, e.g. injectDao connecting). It keeps
+	// Viper reads through snapshot publish from overlapping concurrent reloads
+	// so an older snapshot cannot overwrite a newer one.
 	mu       sync.Mutex
 	reloadMu sync.Mutex
 }
@@ -106,8 +112,9 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...Config
 	applyTagDefaults(&gc.RootConfig)
 	gc.applyFlagConfig("", &gc.RootConfig)
 	gc.RootConfig.AfterInject()
-	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做
-	// 注册配置中心,默认注册本地文件
+	// Pluggable config centers keep the core dependency-light; serialization
+	// may follow the same pattern later. Register centers here (local file is
+	// registered by default elsewhere).
 	for _, cc := range configCenter {
 		RegisterConfigCenter(cc)
 	}
@@ -133,7 +140,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) Cleanup() {
 	defers := gc.defers
 	gc.defers = nil
 	gc.mu.Unlock()
-	// 倒序调用defer（先释放业务资源）
+	// Call defers in reverse order (release business resources first).
 	for i := len(defers) - 1; i >= 0; i-- {
 		defers[i]()
 	}
@@ -289,7 +296,8 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 			log.Error(err)
 			return err
 		}
-		// 初始注入完成前只合并数据，首次 inject 时自然读到；之后走快照替换
+		// Before initial inject finishes, only merge; the first inject will
+		// read the merged data. After that, replace the snapshot.
 		if gc.initialized.Load() {
 			gc.reloadConfig()
 		}
@@ -314,9 +322,10 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 		if err != nil {
 			log.Fatalf("config error: %v", err)
 		}
-		// 配置中心由 Cleanup 统一关闭（业务 defers 之后），不在此重复注册，避免双重 Close
+		// Config center is closed once in Cleanup (after business defers);
+		// do not register Close here to avoid a double Close.
 	}
-	// watcher 已启动，初始注入与热更新用 reloadMu 串行
+	// Watchers are running; serialize initial inject and hot reload with reloadMu.
 	gc.reloadMu.Lock()
 	defer gc.reloadMu.Unlock()
 	if err := gc.inject(conf, gc.Dao); err == nil {
@@ -376,7 +385,7 @@ func closeDao(dao Dao) error {
 		if fieldV.Kind() == reflect.Struct && fieldV.CanAddr() {
 			fieldV = fieldV.Addr()
 		}
-		// 未导出字段不能 Interface；IsNil 只对可为 nil 的 kind 合法
+		// Unexported fields cannot Interface(); IsNil is only valid for nillable kinds.
 		if !fieldV.IsValid() || !fieldV.CanInterface() {
 			continue
 		}

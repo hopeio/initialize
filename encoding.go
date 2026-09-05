@@ -62,11 +62,11 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 	var name string
 	var opt tagOptions
 	if field != nil {
-		// 判断field是否大写
+		// Skip unexported fields.
 		if !field.IsExported() {
 			return
 		}
-		// 判断是匿名字段
+		// Anonymous / mapstructure-named fields.
 		var ok bool
 		name, opt, ok = getFieldConfigName(field)
 		if !ok {
@@ -97,7 +97,7 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 					values = append(values, value.Index(i).Interface())
 				}
 			} else if slices.Contains([]reflect.Kind{reflect.Ptr, reflect.Map, reflect.Struct}, ekind) {
-				// 空 slice 时生成一个零值元素作为模板示例
+				// Empty slice: emit one zero element as a template example.
 				newconfMap := make(map[string]any)
 				values = append(values, newconfMap)
 				structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap)
@@ -117,7 +117,8 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 		}
 		structValue2Map(value, field, confMap)
 	case reflect.Struct:
-		// 如果是tls.Config 类型，则不处理,这里可能会干扰其他相同的定义
+		// Skip tls.Config (and other registered unsupported types); matching
+		// by type name may collide with similarly named local types.
 		typName := typ.String()
 		if slices.Contains(unSupportTemplateTypes, typName) {
 			return

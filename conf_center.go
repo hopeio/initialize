@@ -30,11 +30,11 @@ type ConfigCenter interface {
 }
 
 type ConfigCenterConfig struct {
-	// 配置格式
-	Format string `init:"flag:format;usage:配置格式"`
-	// 配置类型
-	Type string `init:"flag:conf_type;usage:配置类型"`
-	// config字段顺序不能变,ConfigCenter 保持在最后
+	// Config file format (toml, yaml, …).
+	Format string `init:"flag:format;usage:config format"`
+	// Config center implementation type (nacos, apollo, …).
+	Type string `init:"flag:conf_type;usage:config center type"`
+	// Field order must stay unchanged; ConfigCenter must remain last.
 	ConfigCenter ConfigCenter
 }
 
@@ -128,7 +128,7 @@ func (ld *Local) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 		if err != nil {
 			return err
 		}
-		// 部分 Add 失败时关闭已创建的 watcher，避免 fd 泄漏
+		// Close the watcher if any Add fails later to avoid leaking fds.
 		defer func() {
 			if err != nil {
 				watcher.Close()
@@ -149,7 +149,7 @@ func (ld *Local) Handle(ctx context.Context, merge func(io.Reader) error, onChan
 // watchNotify is the goroutine that listens for fsnotify write events and calls onChange,
 // debouncing rapid writes with a 1-second minimum interval per path.
 func (ld *Local) watchNotify(onChange func(reader io.Reader) error) {
-	// 路径可能重复，预先建立 path->index 映射，避免 slices.Index 定位错误
+	// Paths may repeat; prebuild path→index so we do not rely on slices.Index.
 	pathIndex := make(map[string]int, len(ld.Paths))
 	for i, p := range ld.Paths {
 		pathIndex[p] = i

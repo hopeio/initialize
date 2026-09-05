@@ -70,7 +70,7 @@ func (cc *Apollo) Close() error {
 	return nil
 }
 
-// 1. 定义你的监听器结构体
+// CustomListener adapts Apollo change events to an io.Reader handler.
 type CustomListener struct {
 	handle func(io.Reader) error
 }

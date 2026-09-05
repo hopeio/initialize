@@ -200,8 +200,8 @@ func TestGetFieldConfigName(t *testing.T) {
 }
 
 func TestNewStruct_InitTagConfigName_RenameField(t *testing.T) {
-	// 只测 init tag 对“临时注入 struct 字段名/指针绑定”的影响，
-	// 不走 viper 注入，避免对配置文件/环境敏感。
+	// Only exercise init-tag rename / pointer wiring on the temp inject struct;
+	// skip Viper so the test is not sensitive to config files or the environment.
 	gc := newGlobal[initRenameConfig, EmbeddedPresets]()
 	conf := &initRenameConfig{}
 
@@ -250,7 +250,7 @@ type injectFlagEnvTag struct {
 	Secret string `init:"env:TOKEN_SECRET"`
 }
 
-// 统一 init tag：等价语义的另一种写法
+// Equivalent semantics via a unified init tag (alternative spelling).
 type injectInitTagged struct {
 	Name string        `init:"flag:name;short_flag:n;default:def;usage:name;env:NAME_TAG"`
 	Age  int           `init:"flag:age;default:18;usage:age"`

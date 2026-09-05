@@ -121,9 +121,9 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 	dbConfig := &c.Gorm
 	dbConfig.NamingStrategy = c.NamingStrategy
 
-	// 日志
+	// Logger
 	if c.UseGormLogger {
-		// 默认日志
+		// Default GORM logger
 		logger.Default = logger.New(stdlog.New(os.Stdout, "\r", stdlog.LstdFlags), c.Logger)
 	} else {
 		logger.Default = &gormx.Logger{Logger: log.NoCallerLogger().Logger, Config: &c.Logger}

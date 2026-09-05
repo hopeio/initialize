@@ -73,7 +73,7 @@ func (cc *Http) Handle(ctx context.Context, merge func(io.Reader) error, onChang
 	}
 
 	if cc.ReloadInterval > 0 {
-		// ReloadInterval 本身即 time.Duration，不能再乘 time.Second
+		// ReloadInterval is already a time.Duration; do not multiply by time.Second.
 		watch := httpx.NewFileWatcher(cc.ReloadInterval)
 
 		callback := func(hfile *httpx.FileInfo) {

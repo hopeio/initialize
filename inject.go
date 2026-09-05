@@ -122,7 +122,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 
 					structField := daoType.Field(i)
 
-					// TODO: 加强校验,必须不为nil
+					// TODO: strengthen validation — Config() must not return nil
 					daoConfig := daoField.Config()
 					if daoConfig == nil {
 						log.Fatalf("Dao %s Config() return nil", structField.Name)
@@ -196,7 +196,8 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
 	}
 	gc.mu.Unlock()
 	if err != nil {
-		// 启动期配置错误直接退出；初始化完成后（热更新/追加注入）只记录错误，不能杀死运行中的服务
+		// Startup: fatal on config errors. After init (hot reload / extra inject):
+		// log only — never kill a running service.
 		if !gc.initialized.Load() {
 			log.Fatal(err)
 		}
@@ -270,7 +271,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) {
 				continue
 			}
 
-			// 根据DaoField接口实现获取配置和要注入的类型
+			// Init via DaoField when the field implements it.
 			if daofield, ok := inter.(DaoField); ok {
 				err := daofield.Init()
 				if err != nil {

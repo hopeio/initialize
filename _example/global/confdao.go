@@ -23,7 +23,7 @@ var (
 
 type config struct {
 	initialize.EmbeddedPresets
-	//自定义的配置
+	// Custom application config.
 	Customize serverConfig
 }
 

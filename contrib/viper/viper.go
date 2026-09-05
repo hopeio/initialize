@@ -13,7 +13,7 @@ import (
 	"os"
 )
 
-// 全局变量,只一个实例,只提供config
+// Config holds Viper settings for a single shared instance (config-only).
 type Config struct {
 	Debug             bool
 	Watch             bool
@@ -114,7 +114,7 @@ func (c *Config) build(runtimeViper *viper.Viper) error {
 	}
 
 	// open a goroutine to watch remote changes forever
-	//这段实现不够优雅
+	// This remote-watch loop is awkward; left commented for now.
 	/*	go func() {
 		for {
 			time.Sleep(time.Second * 5) // delay after each request
