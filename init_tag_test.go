@@ -53,14 +53,14 @@ func TestParseInitTagSettings_ValidTags(t *testing.T) {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 		f := s
-		if f.Name != "env" || f.Short != "e" || f.DefaultValue != "dev" || f.Usage != "environment" || f.Env != "ENV" {
+		if f.Flag != "env" || f.ShortFlag != "e" || f.DefaultValue != "dev" || f.Usage != "environment" || f.Env != "ENV" {
 			t.Fatalf("unexpected flag settings: %+v", f)
 		}
 	})
 
 	t.Run("flag env only", func(t *testing.T) {
 		s := parseInitTagSettings("env:MINIO_ACCESS_KEY")
-		if s.Name != "" || s.Env != "MINIO_ACCESS_KEY" {
+		if s.Flag != "" || s.Env != "MINIO_ACCESS_KEY" {
 			t.Fatalf("unexpected flag settings: %+v", s)
 		}
 	})
@@ -71,11 +71,18 @@ func TestParseInitTagSettings_ValidTags(t *testing.T) {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
+
+	t.Run("default only does not customize", func(t *testing.T) {
+		s := parseInitTagSettings("default:8080")
+		if s.customizesOption() || s.DefaultValue != "8080" {
+			t.Fatalf("lone default must not customizeOption: %+v", s)
+		}
+	})
 }
 
 func TestParseFlagSegment_UsageMayContainCommas(t *testing.T) {
 	s := parseInitTagSettings("flag:config;short_flag:c;usage:config file path, default ./config.xxx;env:CONFIG")
-	if s.Name != "config" || s.Short != "c" {
+	if s.Flag != "config" || s.ShortFlag != "c" {
 		t.Fatalf("unexpected settings: %+v", s)
 	}
 	if s.Usage != "config file path, default ./config.xxx" {
@@ -92,7 +99,7 @@ func TestFieldTagSettings_InitTagParsesFlagKeys(t *testing.T) {
 	}
 	f, _ := reflect.TypeOf(demo{}).FieldByName("Name")
 	s := fieldTagSettings(f)
-	if s.Name != "name" || s.Short != "n" || s.DefaultValue != "def" || s.Env != "NAME_TAG" {
+	if s.Flag != "name" || s.ShortFlag != "n" || s.DefaultValue != "def" || s.Env != "NAME_TAG" {
 		t.Fatalf("unexpected settings: %+v", s)
 	}
 }

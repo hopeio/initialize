@@ -199,7 +199,8 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 	dir := t.TempDir()
 	confPath := filepath.Join(dir, "config.toml")
 	localPath := filepath.Join(dir, "local.toml")
-	conf := "[dev]\n[dev.localconfig]\nWatch = true\nPaths = [\"" + localPath + "\"]\n"
+	// TOML string must use forward slashes; Windows backslashes look like escapes.
+	conf := "[dev]\n[dev.localconfig]\nWatch = true\nPaths = [\"" + filepath.ToSlash(localPath) + "\"]\n"
 	if err := os.WriteFile(confPath, []byte(conf), 0644); err != nil {
 		t.Fatal(err)
 	}

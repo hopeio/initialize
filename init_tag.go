@@ -46,18 +46,19 @@ const (
 type initTagSettings struct {
 	Skip         bool   `meta:"skip"`
 	ConfigName   string `meta:"config"`
-	Name         string `meta:"flag"`
-	Short        string `meta:"short_flag"`
+	Flag         string `meta:"flag"`
+	ShortFlag    string `meta:"short_flag"`
 	Env          string `meta:"env"`
 	DefaultValue string `meta:"default"`
 	Usage        string `meta:"usage"`
 }
 
-// customizesOption reports whether any explicit binding (name/short/env/default/usage)
-// is set on the field, i.e. the field opts out of the default env binding derived
-// from its field name.
+// customizesOption reports whether the field opts out of the default env/flag
+// binding derived from its field name. Only flag / short_flag / env / usage count;
+// a lone default: still receives the automatic binding (defaults are applied
+// separately by applyTagDefaults).
 func (s *initTagSettings) customizesOption() bool {
-	return s.Name != "" || s.Short != "" || s.Env != "" || s.DefaultValue != "" || s.Usage != ""
+	return s.Flag != "" || s.ShortFlag != "" || s.Env != "" || s.Usage != ""
 }
 
 // fieldTagSettings returns the "init" tag settings of a field. `init:"-"`
@@ -218,10 +219,10 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, comman
 					}
 				}
 			}
-			if !gc.initialized.Load() && settings.Name != "" {
+			if !gc.initialized.Load() && settings.Flag != "" {
 				flagv := &pflag.Flag{
-					Name:      settings.Name,
-					Shorthand: settings.Short,
+					Name:      settings.Flag,
+					Shorthand: settings.ShortFlag,
 					Usage:     settings.Usage,
 					Value:     anyValue(fieldValue),
 				}
