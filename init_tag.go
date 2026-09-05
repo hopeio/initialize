@@ -54,11 +54,10 @@ type initTagSettings struct {
 }
 
 // customizesOption reports whether the field opts out of the default env/flag
-// binding derived from its field name. Only flag / short_flag / env / usage count;
-// a lone default: still receives the automatic binding (defaults are applied
-// separately by applyTagDefaults).
+// binding derived from its field name. Only flag / short_flag / env count;
+// usage and default are metadata (defaults are applied by applyTagDefaults).
 func (s *initTagSettings) customizesOption() bool {
-	return s.Flag != "" || s.ShortFlag != "" || s.Env != "" || s.Usage != ""
+	return s.Flag != "" || s.ShortFlag != "" || s.Env != ""
 }
 
 // fieldTagSettings returns the "init" tag settings of a field. `init:"-"`

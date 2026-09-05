@@ -78,6 +78,13 @@ func TestParseInitTagSettings_ValidTags(t *testing.T) {
 			t.Fatalf("lone default must not customizeOption: %+v", s)
 		}
 	})
+
+	t.Run("usage only does not customize", func(t *testing.T) {
+		s := parseInitTagSettings("usage:listen port")
+		if s.customizesOption() || s.Usage != "listen port" {
+			t.Fatalf("lone usage must not customizeOption: %+v", s)
+		}
+	})
 }
 
 func TestParseFlagSegment_UsageMayContainCommas(t *testing.T) {
