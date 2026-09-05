@@ -49,7 +49,7 @@ type initTagSettings struct {
 	Flag         string `meta:"flag"`
 	ShortFlag    string `meta:"short_flag"`
 	Env          string `meta:"env"`
-	DefaultValue string `meta:"default"`
+	Default      string `meta:"default"`
 	Usage        string `meta:"usage"`
 }
 
@@ -300,10 +300,10 @@ func applyTagDefaultsValue(v reflect.Value) {
 			applyTagDefaultsValue(fieldValue)
 			continue
 		}
-		if settings.DefaultValue == "" {
+		if settings.Default == "" {
 			continue
 		}
-		if err := kvstruct.ParseStringSetReflectValue(fieldValue, settings.DefaultValue, &fieldType); err != nil {
+		if err := kvstruct.ParseStringSetReflectValue(fieldValue, settings.Default, &fieldType); err != nil {
 			log.Fatal(err)
 		}
 	}

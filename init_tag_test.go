@@ -53,7 +53,7 @@ func TestParseInitTagSettings_ValidTags(t *testing.T) {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 		f := s
-		if f.Flag != "env" || f.ShortFlag != "e" || f.DefaultValue != "dev" || f.Usage != "environment" || f.Env != "ENV" {
+		if f.Flag != "env" || f.ShortFlag != "e" || f.Default != "dev" || f.Usage != "environment" || f.Env != "ENV" {
 			t.Fatalf("unexpected flag settings: %+v", f)
 		}
 	})
@@ -67,14 +67,14 @@ func TestParseInitTagSettings_ValidTags(t *testing.T) {
 
 	t.Run("all", func(t *testing.T) {
 		s := parseInitTagSettings("skip;config:MyConf;flag:env;default:xyz")
-		if !s.Skip || s.ConfigName != "MyConf" || s.DefaultValue != "xyz" {
+		if !s.Skip || s.ConfigName != "MyConf" || s.Default != "xyz" {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
 	t.Run("default only does not customize", func(t *testing.T) {
 		s := parseInitTagSettings("default:8080")
-		if s.customizesOption() || s.DefaultValue != "8080" {
+		if s.customizesOption() || s.Default != "8080" {
 			t.Fatalf("lone default must not customizeOption: %+v", s)
 		}
 	})
@@ -99,7 +99,7 @@ func TestFieldTagSettings_InitTagParsesFlagKeys(t *testing.T) {
 	}
 	f, _ := reflect.TypeOf(demo{}).FieldByName("Name")
 	s := fieldTagSettings(f)
-	if s.Flag != "name" || s.ShortFlag != "n" || s.DefaultValue != "def" || s.Env != "NAME_TAG" {
+	if s.Flag != "name" || s.ShortFlag != "n" || s.Default != "def" || s.Env != "NAME_TAG" {
 		t.Fatalf("unexpected settings: %+v", s)
 	}
 }
