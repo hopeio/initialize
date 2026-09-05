@@ -103,6 +103,7 @@ func NewGlobalConfig[C any, CPtr ConfigPtr[C]](configCenter ...ConfigCenter) *gl
 // init registers config centers, loads the config file, and performs the first injection
 // into conf.
 func (gc *globalConfig[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...ConfigCenter) {
+	applyTagDefaults(&gc.RootConfig)
 	gc.applyFlagConfig("", &gc.RootConfig)
 	gc.RootConfig.AfterInject()
 	// 为支持自定义配置中心,并且遵循依赖最小化原则,配置中心改为可插拔的,考虑将配置序列话也照此重做

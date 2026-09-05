@@ -31,9 +31,9 @@ type ConfigCenter interface {
 
 type ConfigCenterConfig struct {
 	// 配置格式
-	Format string `flag:"name:format;usage:配置格式"`
+	Format string `init:"flag:format;usage:配置格式"`
 	// 配置类型
-	Type string `flag:"name:conf_type;usage:配置类型"`
+	Type string `init:"flag:conf_type;usage:配置类型"`
 	// config字段顺序不能变,ConfigCenter 保持在最后
 	ConfigCenter ConfigCenter
 }
@@ -83,7 +83,6 @@ type Client interface {
 	Set(func([]byte)) error
 	Listener(func([]byte)) error
 }
-
 
 type Local struct {
 	Watch   bool

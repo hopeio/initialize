@@ -64,7 +64,7 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 			newconfMap := make(map[string]any)
 			fieldType := typ.Field(i)
 			name := fieldType.Name
-			tagSettings := parseInitTagSettings(fieldType.Tag.Get(initTagName))
+			tagSettings := fieldTagSettings(fieldType)
 			if tagSettings.ConfigName != "" {
 				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 			}

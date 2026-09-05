@@ -7,8 +7,8 @@ import (
 
 type Config struct {
 	Endpoint        string
-	AccessKeyID     string `flag:"env:MINIO_ACCESS_KEY"`
-	SecretAccessKey string `flag:"env:MINIO_SECRET_KEY"`
+	AccessKeyID     string `init:"env:MINIO_ACCESS_KEY"`
+	SecretAccessKey string `init:"env:MINIO_SECRET_KEY"`
 	Token           string
 	SignerType      credentials.SignatureType
 	minio.Options

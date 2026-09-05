@@ -8,6 +8,7 @@ package initialize
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
 type initRenameConfig struct {
@@ -18,14 +19,14 @@ type initRenameConfig struct {
 func TestParseInitTagSettings_BaseCases(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
 		s := parseInitTagSettings("")
-		if s.Skip || s.ConfigName != "" || s.DefaultValue != "" {
+		if s.Skip || s.ConfigName != "" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
 	t.Run("dash", func(t *testing.T) {
 		s := parseInitTagSettings("-")
-		if !s.Skip || s.ConfigName != "" || s.DefaultValue != "" {
+		if !s.Skip || s.ConfigName != "" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
@@ -34,31 +35,76 @@ func TestParseInitTagSettings_BaseCases(t *testing.T) {
 func TestParseInitTagSettings_ValidTags(t *testing.T) {
 	t.Run("skip", func(t *testing.T) {
 		s := parseInitTagSettings("skip")
-		if !s.Skip || s.ConfigName != "" || s.DefaultValue != "" {
+		if !s.Skip || s.ConfigName != "" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
 	t.Run("config only", func(t *testing.T) {
 		s := parseInitTagSettings("config:MyConf")
-		if s.Skip || s.ConfigName != "MyConf" || s.DefaultValue != "" {
+		if s.Skip || s.ConfigName != "MyConf" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
-	t.Run("default only", func(t *testing.T) {
-		s := parseInitTagSettings("default:xyz")
-		if s.Skip || s.ConfigName != "" || s.DefaultValue != "xyz" {
+	t.Run("flag only", func(t *testing.T) {
+		s := parseInitTagSettings("flag:env;short_flag:e;default:dev;usage:environment;env:ENV")
+		if s.Skip || s.ConfigName != "" {
 			t.Fatalf("unexpected settings: %+v", s)
+		}
+		f := s
+		if f.Name != "env" || f.Short != "e" || f.DefaultValue != "dev" || f.Usage != "environment" || f.Env != "ENV" {
+			t.Fatalf("unexpected flag settings: %+v", f)
+		}
+	})
+
+	t.Run("flag env only", func(t *testing.T) {
+		s := parseInitTagSettings("env:MINIO_ACCESS_KEY")
+		if s.Name != "" || s.Env != "MINIO_ACCESS_KEY" {
+			t.Fatalf("unexpected flag settings: %+v", s)
 		}
 	})
 
 	t.Run("all", func(t *testing.T) {
-		s := parseInitTagSettings("skip;config:MyConf;default:xyz")
+		s := parseInitTagSettings("skip;config:MyConf;flag:env;default:xyz")
 		if !s.Skip || s.ConfigName != "MyConf" || s.DefaultValue != "xyz" {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
+}
+
+func TestParseFlagSegment_UsageMayContainCommas(t *testing.T) {
+	s := parseInitTagSettings("flag:config;short_flag:c;usage:config file path, default ./config.xxx;env:CONFIG")
+	if s.Name != "config" || s.Short != "c" {
+		t.Fatalf("unexpected settings: %+v", s)
+	}
+	if s.Usage != "config file path, default ./config.xxx" {
+		t.Fatalf("Usage=%q", s.Usage)
+	}
+	if s.Env != "CONFIG" {
+		t.Fatalf("Env=%q", s.Env)
+	}
+}
+
+func TestFieldTagSettings_InitTagParsesFlagKeys(t *testing.T) {
+	type demo struct {
+		Name string `init:"flag:name;short_flag:n;default:def;usage:name;env:NAME_TAG"`
+	}
+	f, _ := reflect.TypeOf(demo{}).FieldByName("Name")
+	s := fieldTagSettings(f)
+	if s.Name != "name" || s.Short != "n" || s.DefaultValue != "def" || s.Env != "NAME_TAG" {
+		t.Fatalf("unexpected settings: %+v", s)
+	}
+}
+
+func TestFieldTagSettings_InitDashSkips(t *testing.T) {
+	type demo struct {
+		Auto string `init:"-"`
+	}
+	f, _ := reflect.TypeOf(demo{}).FieldByName("Auto")
+	if s := fieldTagSettings(f); !s.Skip {
+		t.Fatalf("init:\"-\" should set Skip, got %+v", s)
+	}
 }
 
 func TestParseTagAndContains(t *testing.T) {
@@ -182,4 +228,220 @@ func listStructFieldNames(t reflect.Type) []string {
 		names = append(names, t.Field(i).Name)
 	}
 	return names
+}
+
+type injectFlagDefaultEnv struct {
+	Port  int
+	Debug bool
+}
+
+type injectFlagNested struct {
+	Server injectFlagDefaultEnv
+}
+
+type injectFlagEnvTag struct {
+	Secret string `init:"env:TOKEN_SECRET"`
+}
+
+// 统一 init tag：等价语义的另一种写法
+type injectInitTagged struct {
+	Name string        `init:"flag:name;short_flag:n;default:def;usage:name;env:NAME_TAG"`
+	Age  int           `init:"flag:age;default:18;usage:age"`
+	Wait time.Duration `init:"flag:wait;default:1s;usage:wait"`
+	Auto string        `init:"-"`
+}
+
+func TestEnvLookupKeys(t *testing.T) {
+	if got := envLookupKeys("hoper", "TOKEN_SECRET"); len(got) != 2 || got[0] != "TOKEN_SECRET" || got[1] != "HOPER_TOKEN_SECRET" {
+		t.Fatalf("envLookupKeys(hoper, TOKEN_SECRET)=%v", got)
+	}
+	if got := envLookupKeys("hoper", "HOPER_TOKEN_SECRET"); len(got) != 1 || got[0] != "HOPER_TOKEN_SECRET" {
+		t.Fatalf("already prefixed=%v", got)
+	}
+	if got := envLookupKeys("", "TOKEN_SECRET"); len(got) != 1 || got[0] != "TOKEN_SECRET" {
+		t.Fatalf("no module=%v", got)
+	}
+}
+
+func TestInjectByFlag_EnvTagDirect(t *testing.T) {
+	t.Setenv("TOKEN_SECRET", "direct")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	gc.RootConfig.Name = "hoper"
+	conf := &injectFlagEnvTag{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Secret != "direct" {
+		t.Fatalf("Secret=%q want direct", conf.Secret)
+	}
+}
+
+func TestInjectByFlag_EnvTagModulePrefixed(t *testing.T) {
+	t.Setenv("HOPER_TOKEN_SECRET", "prefixed")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	gc.RootConfig.Name = "hoper"
+	conf := &injectFlagEnvTag{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Secret != "prefixed" {
+		t.Fatalf("Secret=%q want prefixed", conf.Secret)
+	}
+}
+
+func TestInjectByFlag_EnvTagDirectWinsOverPrefixed(t *testing.T) {
+	t.Setenv("TOKEN_SECRET", "direct")
+	t.Setenv("HOPER_TOKEN_SECRET", "prefixed")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	gc.RootConfig.Name = "hoper"
+	conf := &injectFlagEnvTag{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Secret != "direct" {
+		t.Fatalf("Secret=%q want direct (ENV before NAME_ENV)", conf.Secret)
+	}
+}
+
+func TestInjectByFlag_OverridesDefaults(t *testing.T) {
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectInitTagged{}
+	err := gc.InjectByFlag([]string{"prog", "--name", "cli", "--age", "30", "--wait", "2h"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf.Name != "cli" {
+		t.Fatalf("Name=%q want cli", conf.Name)
+	}
+	if conf.Age != 30 {
+		t.Fatalf("Age=%d want 30", conf.Age)
+	}
+	if conf.Wait != 2*time.Hour {
+		t.Fatalf("Wait=%v want 2h", conf.Wait)
+	}
+}
+
+func TestInjectByFlag_AppliesTagDefaults(t *testing.T) {
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectInitTagged{}
+	err := gc.InjectByFlag([]string{"prog"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf.Name != "def" {
+		t.Fatalf("Name=%q want def", conf.Name)
+	}
+	if conf.Age != 18 {
+		t.Fatalf("Age=%d want 18", conf.Age)
+	}
+	if conf.Wait != time.Second {
+		t.Fatalf("Wait=%v want 1s", conf.Wait)
+	}
+}
+
+func TestInjectByFlag_DefaultEnvWithoutOption(t *testing.T) {
+	t.Setenv("PORT", "9090")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectFlagDefaultEnv{}
+	err := gc.InjectByFlag([]string{"prog"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf.Port != 9090 {
+		t.Fatalf("Port=%d want 9090", conf.Port)
+	}
+}
+
+func TestInjectByFlag_NestedStructEnvPrefix(t *testing.T) {
+	t.Setenv("SERVER_PORT", "7070")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectFlagNested{}
+	err := gc.InjectByFlag([]string{"prog"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf.Server.Port != 7070 {
+		t.Fatalf("Server.Port=%d want 7070", conf.Server.Port)
+	}
+}
+
+func TestInjectByFlag_BoolNoOptDefVal(t *testing.T) {
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectFlagDefaultEnv{}
+	err := gc.InjectByFlag([]string{"prog", "--debug"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !conf.Debug {
+		t.Fatal("Debug want true with --debug")
+	}
+
+	conf2 := &injectFlagDefaultEnv{}
+	err = gc.InjectByFlag([]string{"prog", "--debug=false"}, conf2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf2.Debug {
+		t.Fatal("Debug want false with --debug=false")
+	}
+}
+
+func TestInjectByFlag_CLIOverridesEnv(t *testing.T) {
+	t.Setenv("PORT", "1111")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectFlagDefaultEnv{}
+	err := gc.InjectByFlag([]string{"prog", "--port", "2222"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf.Port != 2222 {
+		t.Fatalf("Port=%d want 2222 (CLI over env)", conf.Port)
+	}
+}
+
+func TestInjectByFlag_InitTagDefaults(t *testing.T) {
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectInitTagged{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Name != "def" || conf.Age != 18 || conf.Wait != time.Second {
+		t.Fatalf("init tag defaults not applied: %+v", conf)
+	}
+}
+
+func TestInjectByFlag_InitTagCLI(t *testing.T) {
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectInitTagged{}
+	err := gc.InjectByFlag([]string{"prog", "--name", "cli", "--age", "30"}, conf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if conf.Name != "cli" || conf.Age != 30 {
+		t.Fatalf("Name=%q Age=%d", conf.Name, conf.Age)
+	}
+}
+
+func TestInjectByFlag_InitTagEnv(t *testing.T) {
+	t.Setenv("NAME_TAG", "fromenv")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectInitTagged{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Name != "fromenv" {
+		t.Fatalf("Name=%q want fromenv (env beats default)", conf.Name)
+	}
+}
+
+func TestInjectByFlag_InitTagSkip(t *testing.T) {
+	t.Setenv("AUTO", "nope")
+	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	conf := &injectInitTagged{}
+	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+		t.Fatal(err)
+	}
+	if conf.Auto != "" {
+		t.Fatalf("Auto=%q want empty: init:\"-\" skips env/flag binding", conf.Auto)
+	}
 }

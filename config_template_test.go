@@ -15,18 +15,18 @@ import (
 
 type UserConfig struct {
 	EmbeddedPresets
-	Name string `flag:"name:name;short:n;default:test;usage:name;env:NAME"`
-	Age  int    `flag:"name:age;short:a;default:18;usage:age;env:AGE"`
+	Name string `init:"flag:name;short_flag:n;default:test;usage:name;env:NAME"`
+	Age  int    `init:"flag:age;short_flag:a;default:18;usage:age;env:AGE"`
 }
 
 type UserSliceConfig struct {
 	EmbeddedPresets
-	Labels []string `flag:"name:labels;default:a,b;usage:labels"`
+	Labels []string `init:"flag:labels;default:a,b;usage:labels"`
 }
 
 type UserDurationConfig struct {
 	EmbeddedPresets
-	Wait time.Duration `flag:"name:wait;default:1h;usage:wait"`
+	Wait time.Duration `init:"flag:wait;default:1h;usage:wait"`
 }
 
 func TestGenConfigTemplate(t *testing.T) {

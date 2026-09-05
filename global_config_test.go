@@ -116,7 +116,7 @@ func (e *errClosingField) Init() error { return nil }
 
 func (e *errClosingField) Close() error { return errors.New("close err") }
 
-// reloadTestConfig 字段刻意不带 flag tag，也避开 HOST/PORT 等常见环境变量名
+// reloadTestConfig 字段刻意不带 flag 子段（即不显式声明 name/short/env），也避开 HOST/PORT 等常见环境变量名
 type reloadTestConfig struct {
 	EmbeddedPresets
 	Addr  string
@@ -252,4 +252,79 @@ func TestNewGlobal_PublishesSnapshotAndCleansUp(t *testing.T) {
 		t.Fatal("Dao should be allocated by NewGlobal")
 	}
 	gc.Cleanup()
+}
+
+// writeTempConfig writes content to a throwaway config.toml and returns its path.
+func writeTempConfig(t *testing.T, content string) string {
+	t.Helper()
+	confPath := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(confPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return confPath
+}
+
+// Tag defaults sit at the bottom of the chain: config file beats them, and the
+// command line beats the config file. Env from the file must beat default:dev.
+func TestConfigFileBeatsTagDefault(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() { os.Args = oldArgs })
+	os.Args = []string{"test", "-c", writeTempConfig(t,
+		"Name = \"hoper\"\nEnv = \"local\"\n\n[local]\nDebug = false\n")}
+
+	gc := NewGlobalConfig[reloadTestConfig]()
+	t.Cleanup(gc.Cleanup)
+
+	if gc.RootConfig.Env != "local" {
+		t.Fatalf("Env=%q want local, config file must beat tag default:dev", gc.RootConfig.Env)
+	}
+	if gc.RootConfig.Debug {
+		t.Fatal("Debug=true want false from [local] section")
+	}
+}
+
+func TestCommandLineBeatsConfigFile(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() { os.Args = oldArgs })
+	os.Args = []string{"test", "-c", writeTempConfig(t,
+		"Name = \"hoper\"\nEnv = \"local\"\n\n[local]\nDebug = false\n"), "-e", "prod"}
+
+	gc := NewGlobalConfig[reloadTestConfig]()
+	t.Cleanup(gc.Cleanup)
+
+	if gc.RootConfig.Env != "prod" {
+		t.Fatalf("Env=%q want prod, command line must beat config file", gc.RootConfig.Env)
+	}
+}
+
+func TestApplyTagDefaultsFillsAllKinds(t *testing.T) {
+	type sample struct {
+		Env   string `init:"flag:env;default:dev"`
+		Port  int    `init:"flag:port;default:8080"`
+		Debug bool   `init:"flag:debug;default:true"`
+	}
+	c := &sample{}
+	applyTagDefaults(c)
+	if c.Env != "dev" {
+		t.Fatalf("Env=%q want dev", c.Env)
+	}
+	if c.Port != 8080 {
+		t.Fatalf("Port=%d want 8080", c.Port)
+	}
+	if !c.Debug {
+		t.Fatal("Debug=false want true from tag default")
+	}
+}
+
+func TestTagDefaultAppliesWhenConfigOmitsEnv(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() { os.Args = oldArgs })
+	os.Args = []string{"test", "-c", writeTempConfig(t, "Name = \"hoper\"\n")}
+
+	gc := NewGlobalConfig[reloadTestConfig]()
+	t.Cleanup(gc.Cleanup)
+
+	if gc.RootConfig.Env != "dev" {
+		t.Fatalf("Env=%q want dev from tag default when config omits Env", gc.RootConfig.Env)
+	}
 }

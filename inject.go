@@ -33,7 +33,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 
 			structField := confType.Field(i)
 			name := structField.Name
-			tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
+			tagSettings := fieldTagSettings(structField)
 			if tagSettings.ConfigName != "" {
 				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 			}
@@ -75,7 +75,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 
 		structField := confType.Field(i)
 		name := structField.Name
-		tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
+		tagSettings := fieldTagSettings(structField)
 		if tagSettings.ConfigName != "" {
 			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
@@ -131,7 +131,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 					name := structField.Name
 					daoConfigValue := reflect.ValueOf(daoConfig)
 					daoConfigType := reflect.TypeOf(daoConfig)
-					tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
+					tagSettings := fieldTagSettings(structField)
 					if tagSettings.ConfigName != "" {
 						name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 					}
@@ -172,7 +172,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typV
 	for i := range value.NumField() {
 		structField := typ.Field(i)
 		name := structField.Name
-		tagSettings := parseInitTagSettings(structField.Tag.Get(initTagName))
+		tagSettings := fieldTagSettings(structField)
 		if tagSettings.ConfigName != "" {
 			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
@@ -188,6 +188,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typV
 // may safely call Defer/Conf without deadlocking.
 func (gc *globalConfig[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
 	tmpConfig := gc.newStruct(conf, dao)
+	applyTagDefaults(tmpConfig)
 	gc.mu.Lock()
 	err := gc.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
 	if err == nil {

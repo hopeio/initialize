@@ -20,7 +20,7 @@ type RootConfig struct {
 	Executable string `init:"-"` // autowired
 	ExecDir    string `init:"-"` // autowired
 	// Config file path
-	ConfPath string `flag:"name:config;short:c;usage:config file path, default ./config.xxx or ./config/config.xxx;env:CONFIG"`
+	ConfPath string `init:"flag:config;short_flag:c;usage:config file path, default ./config.xxx or ./config/config.xxx;env:CONFIG"`
 	BasicConfig
 	EnvConfig
 }
@@ -28,15 +28,15 @@ type RootConfig struct {
 // BasicConfig holds module identity fields shared across environments.
 type BasicConfig struct {
 	// Module name
-	Name string `flag:"name:name;usage:module name;env:NAME"`
+	Name string `init:"flag:name;usage:module name;env:NAME"`
 	// environment
-	Env string `flag:"name:env;short:e;default:dev;usage:environment;env:ENV"`
+	Env string `init:"flag:env;short_flag:e;default:dev;usage:environment;env:ENV"`
 }
 
 type EnvConfig struct {
-	Debug             bool     `flag:"name:debug;short:d;default:true;usage:enable debug mode;env:DEBUG"`
-	ConfigTemplateDir string   `flag:"name:conf_tmpl_dir;usage:directory to write config templates;env:CONFIG_TEMPLATE_DIR"`
-	SkipInjectDaos    []string `flag:"name:skip_inject_daos;usage:dao names to skip during injection"`
+	Debug             bool     `init:"flag:debug;short_flag:d;usage:enable debug mode;env:DEBUG"`
+	ConfigTemplateDir string   `init:"flag:conf_tmpl_dir;usage:directory to write config templates;env:CONFIG_TEMPLATE_DIR"`
+	SkipInjectDaos    []string `init:"flag:skip_inject_daos;usage:dao names to skip during injection"`
 	LocalConfig       Local
 	// Field order must stay unchanged; ConfigCenter must remain last.
 	ConfigCenter ConfigCenterConfig
@@ -171,6 +171,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) setEnvConfig() {
 			log.Warn("lack of config center config")
 			return
 		}
+		applyTagDefaults(configCenter.Config())
 		err = Decode(configCenter.Config(), configCenterConfig)
 		if err != nil {
 			log.Fatal(err)

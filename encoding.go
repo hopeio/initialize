@@ -72,7 +72,7 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 		if !ok {
 			return
 		}
-		tagSettings := parseInitTagSettings(field.Tag.Get(initTagName))
+		tagSettings := fieldTagSettings(*field)
 		if tagSettings.ConfigName != "" {
 			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
