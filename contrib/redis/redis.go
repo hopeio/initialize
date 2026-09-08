@@ -44,10 +44,15 @@ func (c *Config) Build() (*redis.Client, error) {
 	otelInstance := redisotel.GetObservabilityInstance()
 	if c.Otel.Enabled && !otelInstance.IsEnabled() {
 		if err := otelInstance.Init(&c.Otel); err != nil {
-			log.Fatalf("Failed to initialize OTel: %v", err)
+			_ = client.Close()
+			return nil, err
 		}
 	}
-	return client, client.Ping(context.Background()).Err()
+	if err := client.Ping(context.Background()).Err(); err != nil {
+		_ = client.Close()
+		return nil, err
+	}
+	return client, nil
 }
 
 type Client struct {
@@ -67,18 +72,12 @@ func (db *Client) Init() error {
 	return err
 }
 
-// Close disconnects the Redis client and shuts down the OTel instance if enabled.
+// Close disconnects the Redis client. The global OTel observability instance is
+// owned by the application (initialized via the OTel SDK setup), so it is not shut
+// down here — doing so would disable tracing/metrics for the whole process.
 func (db *Client) Close() error {
 	if db.Client == nil {
 		return nil
 	}
-	err:= db.Client.Close()
-	if err != nil {
-		return err
-	}
-	otelInstance := redisotel.GetObservabilityInstance()
-	if db.Conf.Otel.Enabled && otelInstance.IsEnabled(){
-		return otelInstance.Shutdown()
-	}
-	return nil
+	return db.Client.Close()
 }

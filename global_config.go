@@ -259,7 +259,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 		if gc.RootConfig.ConfPath != "" {
 			defaultEnvConfigPath = gc.RootConfig.ConfPath[:len(gc.RootConfig.ConfPath)-len(filepath.Ext(gc.RootConfig.ConfPath))] + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
 		} else if gc.RootConfig.ConfigCenter.Format != "" {
-			gc.Viper.SetConfigType(format)
+			gc.Viper.SetConfigType(gc.RootConfig.ConfigCenter.Format)
 			defaultEnvConfigPath = defaultConfigName + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
 		} else {
 			for _, ext := range viper.SupportedExts {

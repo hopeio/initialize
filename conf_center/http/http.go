@@ -61,6 +61,9 @@ func (cc *Http) Handle(ctx context.Context, merge func(io.Reader) error, onChang
 			}
 		})
 		if err != nil {
+			if file != nil && file.Body != nil {
+				file.Body.Close()
+			}
 			return err
 		}
 		mergeErr := merge(file.Body)

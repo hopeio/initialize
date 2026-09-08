@@ -214,7 +214,15 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
 		if c, ok := dao.(afterInjectConfigWithRoot); ok {
 			c.AfterInjectConfigWithRoot(&gc.RootConfig)
 		}
-		gc.injectDao(dao)
+		if err := gc.injectDao(dao); err != nil {
+			// Same policy as Unmarshal: fatal before the process is ready,
+			// return after init so hot reload / Inject cannot take down a live service.
+			if !gc.initialized.Load() {
+				log.Fatal(err)
+			}
+			log.Error(err)
+			return err
+		}
 	}
 	//log.Debugf("config:  %+v", tmpConfig)
 	return nil
@@ -238,21 +246,25 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
 		}
 		if field.CanInterface() {
 			inter := field.Interface()
-			if subconf, ok := inter.(afterInject); ok {
-				subconf.AfterInject()
-			}
-			if subconf, ok := inter.(afterInjectWithRoot); ok {
-				subconf.AfterInjectWithRoot(&gc.RootConfig)
+			// Guard against a nil pointer receiver: a typed-nil pointer still
+			// satisfies the interface, so dispatching hooks on it would panic.
+			if rv := reflect.ValueOf(inter); !(rv.Kind() == reflect.Ptr && rv.IsNil()) {
+				if subconf, ok := inter.(afterInject); ok {
+					subconf.AfterInject()
+				}
+				if subconf, ok := inter.(afterInjectWithRoot); ok {
+					subconf.AfterInjectWithRoot(&gc.RootConfig)
+				}
 			}
 		}
 	}
 }
 
 // injectDao initializes each DaoField in the Dao struct, skipping entries listed in RootConfig.SkipInjectDaos.
-func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) {
+func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) error {
 	v := reflect.ValueOf(dao).Elem()
 	if !v.IsValid() {
-		return
+		return nil
 	}
 	typ := v.Type()
 
@@ -273,9 +285,8 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) {
 
 			// Init via DaoField when the field implements it.
 			if daofield, ok := inter.(DaoField); ok {
-				err := daofield.Init()
-				if err != nil {
-					log.Fatal("inject", confName, "err:", err)
+				if err := daofield.Init(); err != nil {
+					return err
 				}
 			}
 		}
@@ -284,6 +295,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) {
 	if c, ok := dao.(afterInjectWithRoot); ok {
 		c.AfterInjectWithRoot(&gc.RootConfig)
 	}
+	return nil
 }
 
 // Inject injects additional Config/Dao after the global config is already initialized.
