@@ -9,6 +9,7 @@ package initialize
 import (
 	"reflect"
 	"slices"
+	"strconv"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/hopeio/gox/encoding"
@@ -16,12 +17,40 @@ import (
 	"github.com/spf13/viper"
 )
 
+// stringToBoolHookFunc decodes string values into bool. Values that strconv.ParseBool
+// rejects (e.g. an ambient DEBUG=release leaking through viper's AutomaticEnv) resolve to
+// false instead of returning an error, so a stray value never aborts config decoding.
+func stringToBoolHookFunc() mapstructure.DecodeHookFuncType {
+	return func(f reflect.Type, t reflect.Type, data any) (any, error) {
+		if f.Kind() != reflect.String {
+			return data, nil
+		}
+		bt := t
+		for bt.Kind() == reflect.Pointer {
+			bt = bt.Elem()
+		}
+		if bt.Kind() != reflect.Bool {
+			return data, nil
+		}
+		s, ok := data.(string)
+		if !ok {
+			return data, nil
+		}
+		b, err := strconv.ParseBool(s)
+		if err != nil {
+			return false, nil
+		}
+		return b, nil
+	}
+}
+
 var (
 	codecRegistry        = viper.NewCodecRegistry()
 	decoderConfigOptions = []viper.DecoderConfigOption{
 		viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.TextUnmarshallerHookFunc(),
+			stringToBoolHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),
 		)),
 		func(config *mapstructure.DecoderConfig) {
@@ -36,10 +65,6 @@ var (
 // from config template generation (e.g. types that cannot be marshaled generically).
 func RegisterUnSupportTemplateTypes(types ...string) {
 	unSupportTemplateTypes = append(unSupportTemplateTypes, types...)
-}
-
-type encoder interface {
-	Encode(format string, v map[string]any) ([]byte, error)
 }
 
 // formatDecoderConfigOption returns decoder options that set the tag name to the given format.

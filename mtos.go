@@ -7,6 +7,7 @@ import (
 var decodeHook = mapstructure.ComposeDecodeHookFunc(
 	mapstructure.StringToTimeDurationHookFunc(),
 	mapstructure.TextUnmarshallerHookFunc(),
+	stringToBoolHookFunc(),
 	mapstructure.StringToSliceHookFunc(","),
 )
 

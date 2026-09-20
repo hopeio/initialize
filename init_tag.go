@@ -44,13 +44,13 @@ const (
 //	config / skip                          config loading (rename, skip injection)
 //	flag / short_flag / env / default / usage   command line option & env binding
 type initTagSettings struct {
-	Skip         bool   `meta:"skip"`
-	ConfigName   string `meta:"config"`
-	Flag         string `meta:"flag"`
-	ShortFlag    string `meta:"short_flag"`
-	Env          string `meta:"env"`
-	Default      string `meta:"default"`
-	Usage        string `meta:"usage"`
+	Skip       bool   `meta:"skip"`
+	ConfigName string `meta:"config"`
+	Flag       string `meta:"flag"`
+	ShortFlag  string `meta:"short_flag"`
+	Env        string `meta:"env"`
+	Default    string `meta:"default"`
+	Usage      string `meta:"usage"`
 }
 
 // customizesOption reports whether the field opts out of the default env/flag
