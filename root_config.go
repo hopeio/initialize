@@ -34,8 +34,8 @@ type BasicConfig struct {
 }
 
 type EnvConfig struct {
-	Debug             bool     `init:"flag:debug;short_flag:d;usage:enable debug mode;env:DEBUG"`
-	ConfigTemplateDir string   `init:"flag:conf_tmpl_dir;usage:directory to write config templates;env:CONFIG_TEMPLATE_DIR"`
+	Debug             bool     `init:"flag:debug;short_flag:d;usage:enable debug mode"`
+	ConfigTemplateDir string   `init:"flag:conf_tmpl_dir;usage:directory to write config templates"`
 	SkipInjectDaos    []string `init:"flag:skip_inject_daos;usage:dao names to skip during injection"`
 	LocalConfig       Local
 	// Field order must stay unchanged; ConfigCenter must remain last.
