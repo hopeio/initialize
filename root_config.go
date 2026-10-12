@@ -109,10 +109,10 @@ func (a *App[C, D, CPtr, DPtr]) setEnvConfig() {
 			ccMap := make(map[string]any)
 			struct2Map(&a.RootConfig.EnvConfig.ConfigCenter, ccMap)
 			envMap[fixedFieldNameConfigCenter] = ccMap
-			for name, v := range GetRegisteredConfigCenter() {
-				cc := make(map[string]any)
-				struct2Map(v.Config(), cc)
-				ccMap[name] = cc
+			if cc := a.RootConfig.ConfigCenter.ConfigCenter; cc != nil {
+				ccValues := make(map[string]any)
+				struct2Map(cc.Config(), ccValues)
+				ccMap[cc.Type()] = ccValues
 			}
 			endocer, err := codecRegistry.Encoder(format)
 			if err != nil {
@@ -153,7 +153,8 @@ func (a *App[C, D, CPtr, DPtr]) setEnvConfig() {
 	for i := range a.RootConfig.SkipInjectDaos {
 		a.RootConfig.SkipInjectDaos[i] = strings.ToUpper(a.RootConfig.SkipInjectDaos[i])
 	}
-	var configCenter ConfigCenter
+	// The config center is injected via Start's parameter (already stored in
+	// the field above); the env config section only carries its own settings.
 	if a.RootConfig.EnvConfig.ConfigCenter.Type != "" {
 		if a.RootConfig.EnvConfig.ConfigCenter.Format == "" {
 			log.Warnf("lack of config center format, support format:%v", viper.SupportedExts)
@@ -161,9 +162,9 @@ func (a *App[C, D, CPtr, DPtr]) setEnvConfig() {
 		}
 		a.Viper.SetConfigType(a.RootConfig.EnvConfig.ConfigCenter.Format)
 
-		configCenter, ok = GetRegisteredConfigCenter()[strings.ToLower(a.RootConfig.EnvConfig.ConfigCenter.Type)]
-		if !ok {
-			log.Warnf("lack of registered config center type : %s", a.RootConfig.EnvConfig.ConfigCenter.Type)
+		configCenter := a.RootConfig.ConfigCenter.ConfigCenter
+		if configCenter == nil {
+			log.Warnf("no config center passed to Start for type: %s", a.RootConfig.EnvConfig.ConfigCenter.Type)
 			return
 		}
 		configCenterConfig, ok := a.Viper.Get(a.RootConfig.Env + ".configcenter." + a.RootConfig.EnvConfig.ConfigCenter.Type).(map[string]any)
@@ -183,6 +184,5 @@ func (a *App[C, D, CPtr, DPtr]) setEnvConfig() {
 			flagPrefix = "configcenter." + strings.ToLower(a.RootConfig.EnvConfig.ConfigCenter.Type)
 		}
 		a.applyFlagConfig(flagPrefix, configCenter.Config())
-		a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
 	}
 }

@@ -10,16 +10,14 @@ import (
 	"fmt"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/hopeio/initialize"
-	"github.com/hopeio/initialize/_example/global"
+		"github.com/hopeio/initialize/_example/global"
 	"github.com/hopeio/initialize/conf_center/nacos"
 )
 
 func main() {
-	// Register custom config centers before Start; the center configured in
-	// the config file ([ConfigCenter].Type) is resolved from this registry.
-	initialize.RegisterConfigCenter(nacos.ConfigCenter)
-	defer global.Global.Start()()
+	// The config center is passed straight to Start; the [ConfigCenter] section
+	// of the config file only carries its format and type name for flags.
+	defer global.Global.Start(nacos.ConfigCenter)()
 	global.Global.Defer(func() {
 		fmt.Println("defer")
 	})

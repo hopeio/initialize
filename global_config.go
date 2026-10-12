@@ -56,7 +56,7 @@ type App[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	// successful hot reload so readers need no lock.
 	confSnapshot atomic.Pointer[C]
 	editTimes    uint32
-	defers []func()
+	defers       []func()
 	// started is the single lifecycle flag: true once Start has begun. It guards
 	// Start against re-entry, switches the file/center watchers from
 	// merge-only to snapshot replacement, and gates Inject.
@@ -87,7 +87,6 @@ func newApp[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, 
 		RootConfig: RootConfig{
 			EnvConfig: EnvConfig{Debug: true},
 		},
-		Dao:   DPtr(new(D)),
 		Viper: viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry)),
 	}
 	return a
@@ -105,7 +104,9 @@ func newApp[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, 
 // Start; the center named in the config's [ConfigCenter].Type is picked up
 // during assembly.
 func New[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, DPtr] {
-	return newApp[C, D, CPtr, DPtr]()
+	app := newApp[C, D, CPtr, DPtr]()
+	app.Dao = DPtr(new(D))
+	return app
 }
 
 // NewConfig is a shortcut for applications that only need a Config (no custom Dao).
@@ -154,9 +155,15 @@ func (a *App[C, D, CPtr, DPtr]) boot(conf CPtr) {
 // registration order — main keeps it alive with defer:
 //
 //	func main() { defer app.Start()(); ... }
-func (a *App[C, D, CPtr, DPtr]) Start() func() {
+//
+// A config center, when used, is passed in directly: centers[0] is installed
+// as the app's config center before assembly reads the configuration.
+func (a *App[C, D, CPtr, DPtr]) Start(centers ...ConfigCenter) func() {
 	if a.started.Swap(true) {
 		return a.stop
+	}
+	if len(centers) > 0 && centers[0] != nil {
+		a.RootConfig.ConfigCenter.ConfigCenter = centers[0]
 	}
 	a.boot(CPtr(new(C)))
 	if a.Dao != nil {
@@ -269,13 +276,8 @@ func (a *App[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 	a.setEnvConfig()
 
 	var singleTemplateFileConfig bool
-	if a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
-		if a.RootConfig.Env == "" {
-			singleTemplateFileConfig = true
-		}
-		if a.RootConfig.ConfigCenter.Type != "" {
-			a.RootConfig.ConfigCenter.ConfigCenter = GetConfigCenter(a.RootConfig.ConfigCenter.Type)
-		}
+	if a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil && a.RootConfig.Env == "" {
+		singleTemplateFileConfig = true
 	}
 	cfgcenter := a.RootConfig.ConfigCenter.ConfigCenter
 	if cfgcenter != nil {
