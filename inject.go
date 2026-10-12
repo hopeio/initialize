@@ -195,7 +195,7 @@ func (a *App[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
 	if dao == nil {
 		return nil
 	}
-	return a.connectDao(dao)
+	return a.injectDao(dao)
 }
 
 // injectConfig unmarshals the merged config struct from Viper, applies flag overrides,
@@ -232,15 +232,6 @@ func (a *App[C, D, CPtr, DPtr]) injectConfig(conf Config, dao Dao) error {
 	return nil
 }
 
-// connectDao builds the actual clients (GORM/Redis/...) via each DaoField's Init
-// and then runs the dao hooks that require live clients (AfterInject, e.g. OTel
-// instrumentation). Called by Start for the primary dao and by Inject for extra
-// daos. Errors are returned to the caller, which decides the policy: Start
-// fatals, Inject logs and returns.
-func (a *App[C, D, CPtr, DPtr]) connectDao(dao Dao) error {
-	return a.injectDao(dao)
-}
-
 // afterInjectConfigCall recursively walks all fields in tmpConfig and calls AfterInject /
 // AfterInjectWithRoot on any field that implements the corresponding interface.
 func (a *App[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
@@ -273,7 +264,11 @@ func (a *App[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
 	}
 }
 
-// injectDao initializes each DaoField in the Dao struct, skipping entries listed in RootConfig.SkipInjectDaos.
+// injectDao builds the actual clients (GORM/Redis/...) via each DaoField's Init,
+// skipping entries listed in RootConfig.SkipInjectDaos, and then runs the dao
+// hooks that require live clients (AfterInject, e.g. OTel instrumentation).
+// Called by Start for the primary dao and by Inject for extra daos. Errors are
+// returned to the caller, which decides the policy: Start fatals, Inject returns.
 func (a *App[C, D, CPtr, DPtr]) injectDao(dao Dao) error {
 	v := reflect.ValueOf(dao).Elem()
 	if !v.IsValid() {
