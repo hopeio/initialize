@@ -160,12 +160,12 @@ func TestGenConfigTemplate_WritesLocalTemplate(t *testing.T) {
 	tmplDir := filepath.Join(dir, "tmpl")
 	os.Args = []string{"test", "-c", configPath, "--conf_tmpl_dir", tmplDir}
 
-	gc := NewGlobalConfig[UserConfig]()
+	g := NewGlobalConfig[UserConfig]()
 	wantFile := filepath.Join(tmplDir, prefixLocalTemplate+"toml")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Fatalf("template file missing: %v", err)
 	}
-	if gc.Conf() == nil {
+	if g.Conf() == nil {
 		t.Fatal("nil Config")
 	}
 }
@@ -182,13 +182,13 @@ func TestGenConfigTemplate_SingleFileMode(t *testing.T) {
 	tmplDir := filepath.Join(dir, "tmpl")
 	os.Args = []string{"test", "-c", configPath, "--conf_tmpl_dir", tmplDir, "-e", ""}
 
-	gc := NewGlobalConfig[UserDurationConfig]()
+	g := NewGlobalConfig[UserDurationConfig]()
 	wantFile := filepath.Join(tmplDir, prefixConfigTemplate+"toml")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Fatalf("single template file missing: %v", err)
 	}
-	if gc.Conf().Wait != time.Hour {
-		t.Fatalf("Wait=%v want default 1h", gc.Conf().Wait)
+	if g.Conf().Wait != time.Hour {
+		t.Fatalf("Wait=%v want default 1h", g.Conf().Wait)
 	}
 }
 

@@ -209,10 +209,10 @@ func TestGetFieldConfigName(t *testing.T) {
 func TestNewStruct_InitTagConfigName_RenameField(t *testing.T) {
 	// Only exercise init-tag rename / pointer wiring on the temp inject struct;
 	// skip Viper so the test is not sensitive to config files or the environment.
-	gc := newGlobal[initRenameConfig, EmbeddedPresets]()
+	g := newGlobal[initRenameConfig, EmbeddedPresets]()
 	conf := &initRenameConfig{}
 
-	tmp := gc.newStruct(conf, nil)
+	tmp := g.newStruct(conf, nil)
 	tmpV := reflect.ValueOf(tmp)
 	if tmpV.Kind() != reflect.Ptr || tmpV.Elem().Kind() != reflect.Struct {
 		t.Fatalf("unexpected tmp value: %T", tmp)
@@ -279,10 +279,10 @@ func TestEnvLookupKeys(t *testing.T) {
 
 func TestInjectByFlag_EnvTagDirect(t *testing.T) {
 	t.Setenv("TOKEN_SECRET", "direct")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
-	gc.RootConfig.Name = "hoper"
+	g := newGlobal[UserConfig, EmbeddedPresets]()
+	g.RootConfig.Name = "hoper"
 	conf := &injectFlagEnvTag{}
-	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+	if err := g.InjectByFlag([]string{"prog"}, conf); err != nil {
 		t.Fatal(err)
 	}
 	if conf.Secret != "direct" {
@@ -292,10 +292,10 @@ func TestInjectByFlag_EnvTagDirect(t *testing.T) {
 
 func TestInjectByFlag_EnvTagModulePrefixed(t *testing.T) {
 	t.Setenv("HOPER_TOKEN_SECRET", "prefixed")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
-	gc.RootConfig.Name = "hoper"
+	g := newGlobal[UserConfig, EmbeddedPresets]()
+	g.RootConfig.Name = "hoper"
 	conf := &injectFlagEnvTag{}
-	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+	if err := g.InjectByFlag([]string{"prog"}, conf); err != nil {
 		t.Fatal(err)
 	}
 	if conf.Secret != "prefixed" {
@@ -306,10 +306,10 @@ func TestInjectByFlag_EnvTagModulePrefixed(t *testing.T) {
 func TestInjectByFlag_EnvTagDirectWinsOverPrefixed(t *testing.T) {
 	t.Setenv("TOKEN_SECRET", "direct")
 	t.Setenv("HOPER_TOKEN_SECRET", "prefixed")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
-	gc.RootConfig.Name = "hoper"
+	g := newGlobal[UserConfig, EmbeddedPresets]()
+	g.RootConfig.Name = "hoper"
 	conf := &injectFlagEnvTag{}
-	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+	if err := g.InjectByFlag([]string{"prog"}, conf); err != nil {
 		t.Fatal(err)
 	}
 	if conf.Secret != "direct" {
@@ -318,9 +318,9 @@ func TestInjectByFlag_EnvTagDirectWinsOverPrefixed(t *testing.T) {
 }
 
 func TestInjectByFlag_OverridesDefaults(t *testing.T) {
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectInitTagged{}
-	err := gc.InjectByFlag([]string{"prog", "--name", "cli", "--age", "30", "--wait", "2h"}, conf)
+	err := g.InjectByFlag([]string{"prog", "--name", "cli", "--age", "30", "--wait", "2h"}, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -336,9 +336,9 @@ func TestInjectByFlag_OverridesDefaults(t *testing.T) {
 }
 
 func TestInjectByFlag_AppliesTagDefaults(t *testing.T) {
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectInitTagged{}
-	err := gc.InjectByFlag([]string{"prog"}, conf)
+	err := g.InjectByFlag([]string{"prog"}, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,9 +355,9 @@ func TestInjectByFlag_AppliesTagDefaults(t *testing.T) {
 
 func TestInjectByFlag_DefaultEnvWithoutOption(t *testing.T) {
 	t.Setenv("PORT", "9090")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagDefaultEnv{}
-	err := gc.InjectByFlag([]string{"prog"}, conf)
+	err := g.InjectByFlag([]string{"prog"}, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -368,9 +368,9 @@ func TestInjectByFlag_DefaultEnvWithoutOption(t *testing.T) {
 
 func TestInjectByFlag_NestedStructEnvPrefix(t *testing.T) {
 	t.Setenv("SERVER_PORT", "7070")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagNested{}
-	err := gc.InjectByFlag([]string{"prog"}, conf)
+	err := g.InjectByFlag([]string{"prog"}, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -380,9 +380,9 @@ func TestInjectByFlag_NestedStructEnvPrefix(t *testing.T) {
 }
 
 func TestInjectByFlag_BoolNoOptDefVal(t *testing.T) {
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagDefaultEnv{}
-	err := gc.InjectByFlag([]string{"prog", "--debug"}, conf)
+	err := g.InjectByFlag([]string{"prog", "--debug"}, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -391,7 +391,7 @@ func TestInjectByFlag_BoolNoOptDefVal(t *testing.T) {
 	}
 
 	conf2 := &injectFlagDefaultEnv{}
-	err = gc.InjectByFlag([]string{"prog", "--debug=false"}, conf2)
+	err = g.InjectByFlag([]string{"prog", "--debug=false"}, conf2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -402,9 +402,9 @@ func TestInjectByFlag_BoolNoOptDefVal(t *testing.T) {
 
 func TestInjectByFlag_CLIOverridesEnv(t *testing.T) {
 	t.Setenv("PORT", "1111")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectFlagDefaultEnv{}
-	err := gc.InjectByFlag([]string{"prog", "--port", "2222"}, conf)
+	err := g.InjectByFlag([]string{"prog", "--port", "2222"}, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -414,9 +414,9 @@ func TestInjectByFlag_CLIOverridesEnv(t *testing.T) {
 }
 
 func TestInjectByFlag_InitTagDefaults(t *testing.T) {
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectInitTagged{}
-	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+	if err := g.InjectByFlag([]string{"prog"}, conf); err != nil {
 		t.Fatal(err)
 	}
 	if conf.Name != "def" || conf.Age != 18 || conf.Wait != time.Second {
@@ -425,9 +425,9 @@ func TestInjectByFlag_InitTagDefaults(t *testing.T) {
 }
 
 func TestInjectByFlag_InitTagCLI(t *testing.T) {
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectInitTagged{}
-	err := gc.InjectByFlag([]string{"prog", "--name", "cli", "--age", "30"}, conf)
+	err := g.InjectByFlag([]string{"prog", "--name", "cli", "--age", "30"}, conf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -438,9 +438,9 @@ func TestInjectByFlag_InitTagCLI(t *testing.T) {
 
 func TestInjectByFlag_InitTagEnv(t *testing.T) {
 	t.Setenv("NAME_TAG", "fromenv")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectInitTagged{}
-	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+	if err := g.InjectByFlag([]string{"prog"}, conf); err != nil {
 		t.Fatal(err)
 	}
 	if conf.Name != "fromenv" {
@@ -450,9 +450,9 @@ func TestInjectByFlag_InitTagEnv(t *testing.T) {
 
 func TestInjectByFlag_InitTagSkip(t *testing.T) {
 	t.Setenv("AUTO", "nope")
-	gc := newGlobal[UserConfig, EmbeddedPresets]()
+	g := newGlobal[UserConfig, EmbeddedPresets]()
 	conf := &injectInitTagged{}
-	if err := gc.InjectByFlag([]string{"prog"}, conf); err != nil {
+	if err := g.InjectByFlag([]string{"prog"}, conf); err != nil {
 		t.Fatal(err)
 	}
 	if conf.Auto != "" {

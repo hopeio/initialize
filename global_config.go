@@ -36,7 +36,7 @@ type DaoPtr[T any] interface {
 	Dao
 }
 
-// globalConfig is the central container that holds root config, builtin config,
+// Global is the central container that holds root config, builtin config,
 // user-defined Config and Dao, and drives the full initialization lifecycle.
 //
 // Concurrency model (snapshot replace): confSnapshot is the sole storage for
@@ -45,7 +45,7 @@ type DaoPtr[T any] interface {
 // Published snapshots are immutable. Callers that need startup-time values
 // should read Conf() once during startup and keep their own copy; the library
 // does not retain a first-generation reference.
-type globalConfig[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
+type Global[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	RootConfig    RootConfig `mapstructure:",squash"`
 	BuiltinConfig builtinConfig
 
@@ -74,44 +74,44 @@ type globalConfig[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 // returns the newly built snapshot. Published snapshots are immutable: never write
 // to the returned value. It returns nil only before the initial injection completes
 // (i.e. before NewGlobal returns).
-func (gc *globalConfig[C, D, CPtr, DPtr]) Conf() CPtr {
-	return CPtr(gc.confSnapshot.Load())
+func (g *Global[C, D, CPtr, DPtr]) Conf() CPtr {
+	return CPtr(g.confSnapshot.Load())
 }
 
-// newGlobal allocates a globalConfig with sane defaults and a fresh Viper instance.
-func newGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *globalConfig[C, D, CPtr, DPtr] {
-	gc := &globalConfig[C, D, CPtr, DPtr]{
+// newGlobal allocates a Global with sane defaults and a fresh Viper instance.
+func newGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *Global[C, D, CPtr, DPtr] {
+	g := &Global[C, D, CPtr, DPtr]{
 		RootConfig: RootConfig{
 			EnvConfig: EnvConfig{Debug: true},
 		},
 		Viper: viper.NewWithOptions(viper.WithCodecRegistry(codecRegistry)),
 	}
-	return gc
+	return g
 }
 
-// NewGlobal creates a globalConfig by allocating zero-value instances of C and D,
+// NewGlobal creates a Global by allocating zero-value instances of C and D,
 // then runs the full initialization sequence. The library owns both instances:
 // config is read exclusively through Conf(), so callers can never hold on to a
 // stale pre-reload pointer; defaults belong in the BeforeInject hook.
 // var Global = initialize.NewGlobal[config, dao]()
-func NewGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](configCenter ...ConfigCenter) *globalConfig[C, D, CPtr, DPtr] {
-	gc := newGlobal[C, D, CPtr, DPtr]()
-	gc.Dao = DPtr(new(D))
-	gc.init(CPtr(new(C)), configCenter...)
-	return gc
+func NewGlobal[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](configCenter ...ConfigCenter) *Global[C, D, CPtr, DPtr] {
+	g := newGlobal[C, D, CPtr, DPtr]()
+	g.Dao = DPtr(new(D))
+	g.init(CPtr(new(C)), configCenter...)
+	return g
 }
 
 // NewGlobalConfig is a shortcut for applications that only need a Config (no custom Dao).
-func NewGlobalConfig[C any, CPtr ConfigPtr[C]](configCenter ...ConfigCenter) *globalConfig[C, EmbeddedPresets, CPtr, *EmbeddedPresets] {
+func NewGlobalConfig[C any, CPtr ConfigPtr[C]](configCenter ...ConfigCenter) *Global[C, EmbeddedPresets, CPtr, *EmbeddedPresets] {
 	return NewGlobal[C, EmbeddedPresets, CPtr, *EmbeddedPresets](configCenter...)
 }
 
 // init registers config centers, loads the config file, and performs the first injection
 // into conf.
-func (gc *globalConfig[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...ConfigCenter) {
-	applyTagDefaults(&gc.RootConfig)
-	gc.applyFlagConfig("", &gc.RootConfig)
-	gc.RootConfig.AfterInject()
+func (g *Global[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...ConfigCenter) {
+	applyTagDefaults(&g.RootConfig)
+	g.applyFlagConfig("", &g.RootConfig)
+	g.RootConfig.AfterInject()
 	// Pluggable config centers keep the core dependency-light; serialization
 	// may follow the same pattern later. Register centers here (local file is
 	// registered by default elsewhere).
@@ -119,13 +119,13 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...Config
 		RegisterConfigCenter(cc)
 	}
 
-	gc.defers = append(gc.defers, func() {
-		if err := closeDao(gc.Dao); err != nil {
+	g.defers = append(g.defers, func() {
+		if err := closeDao(g.Dao); err != nil {
 			log.Errorf("close Dao error: %v", err)
 		}
 	})
-	gc.loadConfig(conf)
-	gc.initialized.Store(true)
+	g.loadConfig(conf)
+	g.initialized.Store(true)
 }
 
 // var Global = initialize.NewGlobal[C,D]()
@@ -135,17 +135,17 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) init(conf CPtr, configCenter ...Config
 
 // Cleanup releases all resources in reverse registration order (defers), then closes the
 // config center and flushes the logger. Call via defer after NewGlobal.
-func (gc *globalConfig[C, D, CPtr, DPtr]) Cleanup() {
-	gc.mu.Lock()
-	defers := gc.defers
-	gc.defers = nil
-	gc.mu.Unlock()
+func (g *Global[C, D, CPtr, DPtr]) Cleanup() {
+	g.mu.Lock()
+	defers := g.defers
+	g.defers = nil
+	g.mu.Unlock()
 	// Call defers in reverse order (release business resources first).
 	for i := len(defers) - 1; i >= 0; i-- {
 		defers[i]()
 	}
-	if gc.RootConfig.ConfigCenter.ConfigCenter != nil {
-		if err := gc.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
+	if g.RootConfig.ConfigCenter.ConfigCenter != nil {
+		if err := g.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
 			log.Errorf("close config center error: %v", err)
 		}
 	}
@@ -156,33 +156,33 @@ const defaultConfigName = "config"
 
 // loadConfig discovers and reads the config file, sets up file watching,
 // connects to the config center, and performs the initial inject into conf.
-func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
+func (g *Global[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 	executable, err := os.Executable()
 	if err != nil {
 		log.Fatalf("get executable error: %v", err)
 	}
-	gc.RootConfig.Executable = executable
+	g.RootConfig.Executable = executable
 	wd, err := os.Getwd()
 	if err != nil {
 		log.Fatalf("get work dir error: %v", err)
 	}
-	gc.RootConfig.ExecDir = wd
-	gc.Viper.AutomaticEnv()
+	g.RootConfig.ExecDir = wd
+	g.Viper.AutomaticEnv()
 	var format string
 	// find config
-	if gc.RootConfig.ConfPath == "" {
+	if g.RootConfig.ConfPath == "" {
 		log.Debugf("lack of flag -c or --config, searching 'config.*' in %s or %s", wd, wd+fs.PathSeparator+"config")
 		for _, ext := range viper.SupportedExts {
 			filePath := filepath.Join(".", defaultConfigName+"."+ext)
 			if fs.Exist(filePath) {
 				log.Debugf("found file: '%s'", filePath)
-				gc.RootConfig.ConfPath = filePath
+				g.RootConfig.ConfPath = filePath
 				format = ext
 				break
 			}
 		}
 		// find in config dir
-		if gc.RootConfig.ConfPath == "" {
+		if g.RootConfig.ConfPath == "" {
 			configDir := filepath.Join(wd, "config")
 			fileInfo, err := os.Stat(configDir)
 			if err == nil && fileInfo.IsDir() {
@@ -190,7 +190,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 					filePath := filepath.Join(configDir, defaultConfigName+"."+ext)
 					if fs.Exist(filePath) {
 						log.Debugf("found file: '%s'", filePath)
-						gc.RootConfig.ConfPath = filePath
+						g.RootConfig.ConfPath = filePath
 						format = ext
 						break
 					}
@@ -202,14 +202,14 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 				log.Warn("not found config, use env and flag")
 			}*/
 	}
-	if gc.RootConfig.ConfPath != "" {
-		gc.RootConfig.ConfPath, err = filepath.Abs(gc.RootConfig.ConfPath)
+	if g.RootConfig.ConfPath != "" {
+		g.RootConfig.ConfPath, err = filepath.Abs(g.RootConfig.ConfPath)
 		if err != nil {
 			log.Fatalf("get abs path error: %v", err)
 		}
-		log.Infof("load config from: '%s'", gc.RootConfig.ConfPath)
+		log.Infof("load config from: '%s'", g.RootConfig.ConfPath)
 		if format == "" {
-			format = filepath.Ext(gc.RootConfig.ConfPath)
+			format = filepath.Ext(g.RootConfig.ConfPath)
 			if format != "" {
 				// remove .
 				format = format[1:]
@@ -217,58 +217,58 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 					log.Fatalf("unsupport config format:%s, support: %v", format, viper.SupportedExts)
 				}
 			} else {
-				log.Fatalf("config path:%s need format ext, support: %v", gc.RootConfig.ConfPath, viper.SupportedExts)
+				log.Fatalf("config path:%s need format ext, support: %v", g.RootConfig.ConfPath, viper.SupportedExts)
 			}
 		}
 
-		gc.RootConfig.ConfigCenter.Format = format
-		gc.Viper.SetConfigType(format)
-		gc.Viper.SetConfigFile(gc.RootConfig.ConfPath)
-		err := gc.Viper.ReadInConfig()
+		g.RootConfig.ConfigCenter.Format = format
+		g.Viper.SetConfigType(format)
+		g.Viper.SetConfigFile(g.RootConfig.ConfPath)
+		err := g.Viper.ReadInConfig()
 		if err != nil {
 			log.Fatal(err)
 		}
 	}
 
-	gc.setRootConfig()
-	gc.setEnvConfig()
+	g.setRootConfig()
+	g.setEnvConfig()
 
 	var singleTemplateFileConfig bool
-	if gc.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
-		if gc.RootConfig.Env == "" {
+	if g.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
+		if g.RootConfig.Env == "" {
 			singleTemplateFileConfig = true
 		}
-		if gc.RootConfig.ConfigCenter.Type != "" {
-			gc.RootConfig.ConfigCenter.ConfigCenter = GetConfigCenter(gc.RootConfig.ConfigCenter.Type)
+		if g.RootConfig.ConfigCenter.Type != "" {
+			g.RootConfig.ConfigCenter.ConfigCenter = GetConfigCenter(g.RootConfig.ConfigCenter.Type)
 		}
 	}
-	cfgcenter := gc.RootConfig.ConfigCenter.ConfigCenter
+	cfgcenter := g.RootConfig.ConfigCenter.ConfigCenter
 	if cfgcenter != nil {
-		flagPrefix := strings.Join([]string{"configcenter", strings.ToLower(gc.RootConfig.ConfigCenter.Type)}, ".")
-		if gc.RootConfig.Name != "" {
-			flagPrefix = strings.ToLower(gc.RootConfig.Name) + "." + flagPrefix
+		flagPrefix := strings.Join([]string{"configcenter", strings.ToLower(g.RootConfig.ConfigCenter.Type)}, ".")
+		if g.RootConfig.Name != "" {
+			flagPrefix = strings.ToLower(g.RootConfig.Name) + "." + flagPrefix
 		}
-		gc.applyFlagConfig(flagPrefix, cfgcenter)
+		g.applyFlagConfig(flagPrefix, cfgcenter)
 	}
 	// hook function
-	gc.beforeInjectCall(conf, gc.Dao)
-	gc.genConfigTemplate(conf, singleTemplateFileConfig)
-	localConfig := &gc.RootConfig.LocalConfig
-	if gc.RootConfig.Env != "" {
+	g.beforeInjectCall(conf, g.Dao)
+	g.genConfigTemplate(conf, singleTemplateFileConfig)
+	localConfig := &g.RootConfig.LocalConfig
+	if g.RootConfig.Env != "" {
 		var defaultEnvConfigPath string
-		if gc.RootConfig.ConfPath != "" {
-			defaultEnvConfigPath = gc.RootConfig.ConfPath[:len(gc.RootConfig.ConfPath)-len(filepath.Ext(gc.RootConfig.ConfPath))] + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
-		} else if gc.RootConfig.ConfigCenter.Format != "" {
-			gc.Viper.SetConfigType(gc.RootConfig.ConfigCenter.Format)
-			defaultEnvConfigPath = defaultConfigName + "." + gc.RootConfig.Env + "." + gc.RootConfig.ConfigCenter.Format
+		if g.RootConfig.ConfPath != "" {
+			defaultEnvConfigPath = g.RootConfig.ConfPath[:len(g.RootConfig.ConfPath)-len(filepath.Ext(g.RootConfig.ConfPath))] + "." + g.RootConfig.Env + "." + g.RootConfig.ConfigCenter.Format
+		} else if g.RootConfig.ConfigCenter.Format != "" {
+			g.Viper.SetConfigType(g.RootConfig.ConfigCenter.Format)
+			defaultEnvConfigPath = defaultConfigName + "." + g.RootConfig.Env + "." + g.RootConfig.ConfigCenter.Format
 		} else {
 			for _, ext := range viper.SupportedExts {
-				filePath := filepath.Join(".", defaultConfigName+"."+gc.RootConfig.Env+"."+ext)
+				filePath := filepath.Join(".", defaultConfigName+"."+g.RootConfig.Env+"."+ext)
 				if fs.Exist(filePath) {
 					defaultEnvConfigPath = filePath
 					log.Debugf("found file: '%s'", filePath)
-					gc.RootConfig.ConfigCenter.Format = ext
-					gc.Viper.SetConfigType(ext)
+					g.RootConfig.ConfigCenter.Format = ext
+					g.Viper.SetConfigType(ext)
 					break
 				}
 			}
@@ -280,26 +280,26 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 	}
 
 	merge := func(data io.Reader) error {
-		gc.mu.Lock()
-		defer gc.mu.Unlock()
-		err := gc.Viper.MergeConfig(data)
+		g.mu.Lock()
+		defer g.mu.Unlock()
+		err := g.Viper.MergeConfig(data)
 		if err != nil {
 			log.Fatal(err)
 		}
 		return nil
 	}
 	onChange := func(data io.Reader) error {
-		gc.mu.Lock()
-		err := gc.Viper.MergeConfig(data)
-		gc.mu.Unlock()
+		g.mu.Lock()
+		err := g.Viper.MergeConfig(data)
+		g.mu.Unlock()
 		if err != nil {
 			log.Error(err)
 			return err
 		}
 		// Before initial inject finishes, only merge; the first inject will
 		// read the merged data. After that, replace the snapshot.
-		if gc.initialized.Load() {
-			gc.reloadConfig()
+		if g.initialized.Load() {
+			g.reloadConfig()
 		}
 		return nil
 	}
@@ -310,7 +310,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 			log.Fatal(err)
 			return
 		}
-		gc.defers = append(gc.defers, func() {
+		g.defers = append(g.defers, func() {
 			if err := localConfig.Close(); err != nil {
 				log.Errorf("close local config error: %v", err)
 			}
@@ -326,10 +326,10 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 		// do not register Close here to avoid a double Close.
 	}
 	// Watchers are running; serialize initial inject and hot reload with reloadMu.
-	gc.reloadMu.Lock()
-	defer gc.reloadMu.Unlock()
-	if err := gc.inject(conf, gc.Dao); err == nil {
-		gc.confSnapshot.Store(conf)
+	g.reloadMu.Lock()
+	defer g.reloadMu.Unlock()
+	if err := g.inject(conf, g.Dao); err == nil {
+		g.confSnapshot.Store(conf)
 	}
 }
 
@@ -337,37 +337,37 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 // Config instance, runs the full injection lifecycle on it, and atomically publishes
 // it on success. Readers holding the old snapshot keep a consistent view; a failed
 // reload leaves the current snapshot untouched.
-func (gc *globalConfig[C, D, CPtr, DPtr]) reloadConfig() {
-	gc.reloadMu.Lock()
-	defer gc.reloadMu.Unlock()
+func (g *Global[C, D, CPtr, DPtr]) reloadConfig() {
+	g.reloadMu.Lock()
+	defer g.reloadMu.Unlock()
 	newConf := CPtr(new(C))
-	gc.beforeInjectCall(newConf, nil)
-	if err := gc.inject(newConf, nil); err != nil {
+	g.beforeInjectCall(newConf, nil)
+	if err := g.inject(newConf, nil); err != nil {
 		return
 	}
-	gc.confSnapshot.Store(newConf)
-	gc.editTimes++
+	g.confSnapshot.Store(newConf)
+	g.editTimes++
 }
 
 // beforeInjectCall invokes BeforeInject and BeforeInjectWithRoot on the given conf and dao.
-func (gc *globalConfig[C, D, CPtr, DPtr]) beforeInjectCall(conf Config, dao Dao) {
+func (g *Global[C, D, CPtr, DPtr]) beforeInjectCall(conf Config, dao Dao) {
 	conf.BeforeInject()
 	if c, ok := conf.(beforeInjectWithRoot); ok {
-		c.BeforeInjectWithRoot(&gc.RootConfig)
+		c.BeforeInjectWithRoot(&g.RootConfig)
 	}
 	if dao != nil {
 		dao.BeforeInject()
 		if c, ok := dao.(beforeInjectWithRoot); ok {
-			c.BeforeInjectWithRoot(&gc.RootConfig)
+			c.BeforeInjectWithRoot(&g.RootConfig)
 		}
 	}
 }
 
 // Defer registers cleanup functions that will be called in reverse order during Cleanup.
-func (gc *globalConfig[C, D, CPtr, DPtr]) Defer(deferf ...func()) {
-	gc.mu.Lock()
-	defer gc.mu.Unlock()
-	gc.defers = append(gc.defers, deferf...)
+func (g *Global[C, D, CPtr, DPtr]) Defer(deferf ...func()) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.defers = append(g.defers, deferf...)
 }
 
 // closeDao closes all DaoField instances within the Dao struct, collecting errors with multierr.

@@ -142,13 +142,13 @@ func (a anyValue) Set(v string) error {
 
 // applyFlagConfig registers and parses all "init" tagged fields in the given config structs,
 // then binds the resulting pflag set to Viper.
-func (gc *globalConfig[C, D, CPtr, DPtr]) applyFlagConfig(prefix string, confs ...any) {
+func (g *Global[C, D, CPtr, DPtr]) applyFlagConfig(prefix string, confs ...any) {
 	commandLine := newCommandLine()
 	for _, conf := range confs {
-		gc.injectFlagConfig(prefix, commandLine, reflect.ValueOf(conf))
+		g.injectFlagConfig(prefix, commandLine, reflect.ValueOf(conf))
 	}
 
-	err := gc.Viper.BindPFlags(commandLine)
+	err := g.Viper.BindPFlags(commandLine)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) applyFlagConfig(prefix string, confs .
 
 // injectFlagConfig recursively walks a config value, registers each field as a pflag flag,
 // and binds default/env values from the "init" tag.
-func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) {
+func (g *Global[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) {
 	fcValue = reflectx.DerefValue(fcValue)
 	if !fcValue.IsValid() {
 		return
@@ -194,9 +194,9 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, comman
 		}
 		if kind == reflect.Struct {
 			if fieldType.Anonymous {
-				gc.injectFlagConfig(prefix, commandLine, fieldValue)
+				g.injectFlagConfig(prefix, commandLine, fieldValue)
 			} else {
-				gc.injectFlagConfig(flag, commandLine, fieldValue)
+				g.injectFlagConfig(flag, commandLine, fieldValue)
 			}
 			continue
 		}
@@ -210,15 +210,15 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, comman
 			// Tag defaults are applied by applyTagDefaults before decode — not here.
 			// From env: try ENV, then MODULE_ENV when RootConfig.Name is set.
 			if settings.Env != "" {
-				envKeys := envLookupKeys(gc.RootConfig.Name, settings.Env)
-				bindEnvKeys(gc.Viper, envKeys...)
+				envKeys := envLookupKeys(g.RootConfig.Name, settings.Env)
+				bindEnvKeys(g.Viper, envKeys...)
 				if value, ok := lookupEnvFromKeys(envKeys); ok {
 					if err := kvstruct.ParseStringSetReflectValue(fieldValue, value, &fieldType); err != nil {
 						log.Fatal(err)
 					}
 				}
 			}
-			if !gc.initialized.Load() && settings.Flag != "" {
+			if !g.initialized.Load() && settings.Flag != "" {
 				flagv := &pflag.Flag{
 					Name:      settings.Flag,
 					Shorthand: settings.ShortFlag,
@@ -237,7 +237,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, comman
 				env = envPrefix + "_" + env
 			}
 
-			err := gc.Viper.BindEnv(env)
+			err := g.Viper.BindEnv(env)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -249,7 +249,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, comman
 				}
 			}
 			// default flag
-			if !gc.initialized.Load() {
+			if !g.initialized.Load() {
 				flagv := &pflag.Flag{
 					Name:  flag[strings.IndexByte(flag, '.')+1:],
 					Value: anyValue(fieldValue),
@@ -324,11 +324,11 @@ func parseFlag(commandLine *pflag.FlagSet) {
 }
 
 // InjectByFlag parses the given args slice and injects flag values into conf.
-func (gc *globalConfig[C, D, CPtr, DPtr]) InjectByFlag(args []string, conf any) error {
+func (g *Global[C, D, CPtr, DPtr]) InjectByFlag(args []string, conf any) error {
 	applyTagDefaults(conf)
 	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true
-	gc.injectFlagConfig("", commandLine, reflect.ValueOf(conf))
+	g.injectFlagConfig("", commandLine, reflect.ValueOf(conf))
 	return commandLine.Parse(args[1:])
 }
 

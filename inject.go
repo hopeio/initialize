@@ -19,14 +19,14 @@ import (
 
 // newStruct dynamically builds a merged struct containing all config and DAO config fields,
 // calling lifecycle hooks (Init, BeforeInject, BeforeInjectWithRoot) on each sub-config.
-func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
+func (g *Global[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 	nameValueMap := make(map[string]reflect.Value)
 	var structFields []reflect.StructField
 	var confValue reflect.Value
 	var confType reflect.Type
 	// BuiltinConfig
-	if !gc.initialized.Load() {
-		confValue = reflect.ValueOf(&gc.BuiltinConfig).Elem()
+	if !g.initialized.Load() {
+		confValue = reflect.ValueOf(&g.BuiltinConfig).Elem()
 		confType = confValue.Type()
 		for i := range confValue.NumField() {
 			field := confValue.Field(i).Addr()
@@ -47,7 +47,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 					c.BeforeInject()
 				}
 				if c, ok := inter.(beforeInjectWithRoot); ok {
-					c.BeforeInjectWithRoot(&gc.RootConfig)
+					c.BeforeInjectWithRoot(&g.RootConfig)
 				}
 			}
 			structFields = append(structFields, reflect.StructField{
@@ -94,7 +94,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 				c.BeforeInject()
 			}
 			if c, ok := inter.(beforeInjectWithRoot); ok {
-				c.BeforeInjectWithRoot(&gc.RootConfig)
+				c.BeforeInjectWithRoot(&g.RootConfig)
 			}
 		}
 
@@ -143,7 +143,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 						c.BeforeInject()
 					}
 					if c, ok := daoConfig.(beforeInjectWithRoot); ok {
-						c.BeforeInjectWithRoot(&gc.RootConfig)
+						c.BeforeInjectWithRoot(&g.RootConfig)
 					}
 
 					if _, ok := nameValueMap[name]; ok {
@@ -162,12 +162,12 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 	}
 	typ := reflect.StructOf(structFields)
 	newStruct := reflect.New(typ)
-	gc.setNewStruct(newStruct.Elem(), nameValueMap)
+	g.setNewStruct(newStruct.Elem(), nameValueMap)
 	return newStruct.Interface()
 }
 
 // setNewStruct copies values from typValueMap into the dynamically-created struct fields.
-func (gc *globalConfig[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) {
+func (g *Global[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) {
 	typ := value.Type()
 	for i := range value.NumField() {
 		structField := typ.Field(i)
@@ -184,40 +184,40 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typV
 
 // inject unmarshals the merged config struct from Viper, applies flag overrides,
 // and then invokes all AfterInject lifecycle hooks on the config and DAO.
-// Viper access happens under gc.mu; user hooks always run outside the lock so they
+// Viper access happens under g.mu; user hooks always run outside the lock so they
 // may safely call Defer/Conf without deadlocking.
-func (gc *globalConfig[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
-	tmpConfig := gc.newStruct(conf, dao)
+func (g *Global[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
+	tmpConfig := g.newStruct(conf, dao)
 	applyTagDefaults(tmpConfig)
-	gc.mu.Lock()
-	err := gc.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
+	g.mu.Lock()
+	err := g.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
 	if err == nil {
-		gc.applyFlagConfig(strings.ToLower(gc.RootConfig.Name), tmpConfig)
+		g.applyFlagConfig(strings.ToLower(g.RootConfig.Name), tmpConfig)
 	}
-	gc.mu.Unlock()
+	g.mu.Unlock()
 	if err != nil {
 		// Startup: fatal on config errors. After init (hot reload / extra inject):
 		// log only — never kill a running service.
-		if !gc.initialized.Load() {
+		if !g.initialized.Load() {
 			log.Fatal(err)
 		}
 		log.Error(err)
 		return err
 	}
-	gc.afterInjectConfigCall(tmpConfig)
+	g.afterInjectConfigCall(tmpConfig)
 	conf.AfterInject()
 	if c, ok := conf.(afterInjectWithRoot); ok {
-		c.AfterInjectWithRoot(&gc.RootConfig)
+		c.AfterInjectWithRoot(&g.RootConfig)
 	}
 	if dao != nil {
 		dao.AfterInjectConfig()
 		if c, ok := dao.(afterInjectConfigWithRoot); ok {
-			c.AfterInjectConfigWithRoot(&gc.RootConfig)
+			c.AfterInjectConfigWithRoot(&g.RootConfig)
 		}
-		if err := gc.injectDao(dao); err != nil {
+		if err := g.injectDao(dao); err != nil {
 			// Same policy as Unmarshal: fatal before the process is ready,
 			// return after init so hot reload / Inject cannot take down a live service.
-			if !gc.initialized.Load() {
+			if !g.initialized.Load() {
 				log.Fatal(err)
 			}
 			log.Error(err)
@@ -230,7 +230,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
 
 // afterInjectConfigCall recursively walks all fields in tmpConfig and calls AfterInject /
 // AfterInjectWithRoot on any field that implements the corresponding interface.
-func (gc *globalConfig[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
+func (g *Global[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
 	v := reflectx.DerefValue(reflect.ValueOf(tmpConfig))
 	if !v.IsValid() || v.Kind() != reflect.Struct {
 		return
@@ -242,7 +242,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
 			continue
 		}
 		if kind == reflect.Ptr || kind == reflect.Struct || kind == reflect.Interface {
-			gc.afterInjectConfigCall(field.Interface())
+			g.afterInjectConfigCall(field.Interface())
 		}
 		if field.CanInterface() {
 			inter := field.Interface()
@@ -253,7 +253,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
 					subconf.AfterInject()
 				}
 				if subconf, ok := inter.(afterInjectWithRoot); ok {
-					subconf.AfterInjectWithRoot(&gc.RootConfig)
+					subconf.AfterInjectWithRoot(&g.RootConfig)
 				}
 			}
 		}
@@ -261,7 +261,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) afterInjectConfigCall(tmpConfig any) {
 }
 
 // injectDao initializes each DaoField in the Dao struct, skipping entries listed in RootConfig.SkipInjectDaos.
-func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) error {
+func (g *Global[C, D, CPtr, DPtr]) injectDao(dao Dao) error {
 	v := reflect.ValueOf(dao).Elem()
 	if !v.IsValid() {
 		return nil
@@ -279,7 +279,7 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) error {
 				continue
 			}
 			confName := strings.ToUpper(structFiled.Name)
-			if slices.Contains(gc.RootConfig.SkipInjectDaos, confName) {
+			if slices.Contains(g.RootConfig.SkipInjectDaos, confName) {
 				continue
 			}
 
@@ -293,27 +293,27 @@ func (gc *globalConfig[C, D, CPtr, DPtr]) injectDao(dao Dao) error {
 	}
 	dao.AfterInject()
 	if c, ok := dao.(afterInjectWithRoot); ok {
-		c.AfterInjectWithRoot(&gc.RootConfig)
+		c.AfterInjectWithRoot(&g.RootConfig)
 	}
 	return nil
 }
 
 // Inject injects additional Config/Dao after the global config is already initialized.
 // Returns an error if the global config has not yet been initialized.
-func (gc *globalConfig[C, D, CPtr, DPtr]) Inject(conf Config, dao Dao) error {
-	if !gc.initialized.Load() {
+func (g *Global[C, D, CPtr, DPtr]) Inject(conf Config, dao Dao) error {
+	if !g.initialized.Load() {
 		return errors.New("not initialized, please call initialize.NewGlobal first")
 	}
 
 	if dao != nil {
-		gc.Defer(func() {
+		g.Defer(func() {
 			if err := closeDao(dao); err != nil {
 				log.Errorf("close Dao error: %v", err)
 			}
 		})
 	}
-	gc.reloadMu.Lock()
-	defer gc.reloadMu.Unlock()
-	gc.beforeInjectCall(conf, dao)
-	return gc.inject(conf, dao)
+	g.reloadMu.Lock()
+	defer g.reloadMu.Unlock()
+	g.beforeInjectCall(conf, dao)
+	return g.inject(conf, dao)
 }

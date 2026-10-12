@@ -39,10 +39,10 @@ func TestGlobalConfig_Cleanup_RunsDefers(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[UserConfig]()
+	g := NewGlobalConfig[UserConfig]()
 	var deferCalled bool
-	gc.Defer(func() { deferCalled = true })
-	gc.Cleanup()
+	g.Defer(func() { deferCalled = true })
+	g.Cleanup()
 	if !deferCalled {
 		t.Fatal("Cleanup should invoke Defer callbacks")
 	}
@@ -53,11 +53,11 @@ func TestGlobalConfig_Cleanup_DefersReverseOrder(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[UserConfig]()
+	g := NewGlobalConfig[UserConfig]()
 	var order []int
-	gc.Defer(func() { order = append(order, 1) })
-	gc.Defer(func() { order = append(order, 2) })
-	gc.Cleanup()
+	g.Defer(func() { order = append(order, 1) })
+	g.Defer(func() { order = append(order, 2) })
+	g.Cleanup()
 	if len(order) != 2 || order[0] != 2 || order[1] != 1 {
 		t.Fatalf("defer order=%v want [2 1]", order)
 	}
@@ -129,18 +129,18 @@ func TestReloadConfig_SnapshotSwap(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[reloadTestConfig]()
-	startup := gc.Conf()
+	g := NewGlobalConfig[reloadTestConfig]()
+	startup := g.Conf()
 	if startup == nil {
 		t.Fatal("initial snapshot should be published after NewGlobalConfig returns")
 	}
 
-	if err := gc.Viper.MergeConfigMap(map[string]any{"addr": "reloaded", "level": 7}); err != nil {
+	if err := g.Viper.MergeConfigMap(map[string]any{"addr": "reloaded", "level": 7}); err != nil {
 		t.Fatal(err)
 	}
-	gc.reloadConfig()
+	g.reloadConfig()
 
-	snap := gc.Conf()
+	snap := g.Conf()
 	if snap == startup {
 		t.Fatal("reload should publish a new snapshot instance")
 	}
@@ -158,7 +158,7 @@ func TestConf_ConcurrentReadDuringReload(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobalConfig[reloadTestConfig]()
+	g := NewGlobalConfig[reloadTestConfig]()
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 	for range 4 {
@@ -170,7 +170,7 @@ func TestConf_ConcurrentReadDuringReload(t *testing.T) {
 				case <-stop:
 					return
 				default:
-					c := gc.Conf()
+					c := g.Conf()
 					// Snapshot must be consistent: Addr and Level publish together.
 					if c.Addr != "" && c.Addr != fmt.Sprintf("h%d", c.Level) {
 						panic(fmt.Sprintf("torn snapshot: %+v", c))
@@ -180,14 +180,14 @@ func TestConf_ConcurrentReadDuringReload(t *testing.T) {
 		}()
 	}
 	for i := range 50 {
-		if err := gc.Viper.MergeConfigMap(map[string]any{"addr": fmt.Sprintf("h%d", i), "level": i}); err != nil {
+		if err := g.Viper.MergeConfigMap(map[string]any{"addr": fmt.Sprintf("h%d", i), "level": i}); err != nil {
 			t.Fatal(err)
 		}
-		gc.reloadConfig()
+		g.reloadConfig()
 	}
 	close(stop)
 	wg.Wait()
-	c := gc.Conf()
+	c := g.Conf()
 	if c.Addr != "h49" || c.Level != 49 {
 		t.Fatalf("final snapshot=%+v want h49/49", c)
 	}
@@ -210,10 +210,10 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 	}
 	os.Args = []string{"test", "-c", confPath}
 
-	gc := NewGlobalConfig[reloadTestConfig]()
-	t.Cleanup(gc.Cleanup)
+	g := NewGlobalConfig[reloadTestConfig]()
+	t.Cleanup(g.Cleanup)
 
-	startup := gc.Conf()
+	startup := g.Conf()
 	if startup.Addr != "first" || startup.Level != 1 {
 		t.Fatalf("initial snapshot=%+v want first/1", startup)
 	}
@@ -225,7 +225,7 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 			t.Fatal(err)
 		}
 		time.Sleep(600 * time.Millisecond)
-		if snap := gc.Conf(); snap.Addr == "second" {
+		if snap := g.Conf(); snap.Addr == "second" {
 			if snap.Level != 2 {
 				t.Fatalf("torn snapshot after reload: %+v", snap)
 			}
@@ -238,7 +238,7 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 			return
 		}
 	}
-	t.Fatalf("hot reload not observed, snapshot=%+v", gc.Conf())
+	t.Fatalf("hot reload not observed, snapshot=%+v", g.Conf())
 }
 
 func TestNewGlobal_PublishesSnapshotAndCleansUp(t *testing.T) {
@@ -246,14 +246,14 @@ func TestNewGlobal_PublishesSnapshotAndCleansUp(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test"}
 
-	gc := NewGlobal[UserConfig, EmbeddedPresets]()
-	if gc.Conf() == nil {
+	g := NewGlobal[UserConfig, EmbeddedPresets]()
+	if g.Conf() == nil {
 		t.Fatal("snapshot should be published after NewGlobal returns")
 	}
-	if gc.Dao == nil {
+	if g.Dao == nil {
 		t.Fatal("Dao should be allocated by NewGlobal")
 	}
-	gc.Cleanup()
+	g.Cleanup()
 }
 
 // writeTempConfig writes content to a throwaway config.toml and returns its path.
@@ -274,13 +274,13 @@ func TestConfigFileBeatsTagDefault(t *testing.T) {
 	os.Args = []string{"test", "-c", writeTempConfig(t,
 		"Name = \"hoper\"\nEnv = \"local\"\n\n[local]\nDebug = false\n")}
 
-	gc := NewGlobalConfig[reloadTestConfig]()
-	t.Cleanup(gc.Cleanup)
+	g := NewGlobalConfig[reloadTestConfig]()
+	t.Cleanup(g.Cleanup)
 
-	if gc.RootConfig.Env != "local" {
-		t.Fatalf("Env=%q want local, config file must beat tag default:dev", gc.RootConfig.Env)
+	if g.RootConfig.Env != "local" {
+		t.Fatalf("Env=%q want local, config file must beat tag default:dev", g.RootConfig.Env)
 	}
-	if gc.RootConfig.Debug {
+	if g.RootConfig.Debug {
 		t.Fatal("Debug=true want false from [local] section")
 	}
 }
@@ -291,11 +291,11 @@ func TestCommandLineBeatsConfigFile(t *testing.T) {
 	os.Args = []string{"test", "-c", writeTempConfig(t,
 		"Name = \"hoper\"\nEnv = \"local\"\n\n[local]\nDebug = false\n"), "-e", "prod"}
 
-	gc := NewGlobalConfig[reloadTestConfig]()
-	t.Cleanup(gc.Cleanup)
+	g := NewGlobalConfig[reloadTestConfig]()
+	t.Cleanup(g.Cleanup)
 
-	if gc.RootConfig.Env != "prod" {
-		t.Fatalf("Env=%q want prod, command line must beat config file", gc.RootConfig.Env)
+	if g.RootConfig.Env != "prod" {
+		t.Fatalf("Env=%q want prod, command line must beat config file", g.RootConfig.Env)
 	}
 }
 
@@ -323,10 +323,10 @@ func TestTagDefaultAppliesWhenConfigOmitsEnv(t *testing.T) {
 	t.Cleanup(func() { os.Args = oldArgs })
 	os.Args = []string{"test", "-c", writeTempConfig(t, "Name = \"hoper\"\n")}
 
-	gc := NewGlobalConfig[reloadTestConfig]()
-	t.Cleanup(gc.Cleanup)
+	g := NewGlobalConfig[reloadTestConfig]()
+	t.Cleanup(g.Cleanup)
 
-	if gc.RootConfig.Env != "dev" {
-		t.Fatalf("Env=%q want dev from tag default when config omits Env", gc.RootConfig.Env)
+	if g.RootConfig.Env != "dev" {
+		t.Fatalf("Env=%q want dev from tag default when config omits Env", g.RootConfig.Env)
 	}
 }
