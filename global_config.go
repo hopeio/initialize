@@ -156,14 +156,17 @@ func (a *App[C, D, CPtr, DPtr]) boot(conf CPtr) {
 //
 //	func main() { defer app.Start()(); ... }
 //
-// A config center, when used, is passed in directly: centers[0] is installed
-// as the app's config center before assembly reads the configuration.
+// A config center, when used, is passed as a Start argument: the arguments are
+// registered before assembly, and the one whose Type matches the config file's
+// [ConfigCenter].Type is picked up during assembly.
 func (a *App[C, D, CPtr, DPtr]) Start(centers ...ConfigCenter) func() {
 	if a.started.Swap(true) {
 		return a.stop
 	}
-	if len(centers) > 0 && centers[0] != nil {
-		a.RootConfig.ConfigCenter.ConfigCenter = centers[0]
+	for _, cc := range centers {
+		if cc != nil {
+			RegisterConfigCenter(cc)
+		}
 	}
 	a.boot(CPtr(new(C)))
 	if a.Dao != nil {
@@ -276,8 +279,13 @@ func (a *App[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 	a.setEnvConfig()
 
 	var singleTemplateFileConfig bool
-	if a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil && a.RootConfig.Env == "" {
-		singleTemplateFileConfig = true
+	if a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
+		if a.RootConfig.Env == "" {
+			singleTemplateFileConfig = true
+		}
+		if a.RootConfig.ConfigCenter.Type != "" {
+			a.RootConfig.ConfigCenter.ConfigCenter = GetConfigCenter(a.RootConfig.ConfigCenter.Type)
+		}
 	}
 	cfgcenter := a.RootConfig.ConfigCenter.ConfigCenter
 	if cfgcenter != nil {

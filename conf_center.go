@@ -11,10 +11,13 @@ import (
 	"errors"
 	"io"
 	"os"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/hopeio/gox/log"
+	stringsx "github.com/hopeio/gox/text/encoding/ascii"
 )
 
 type ConfigType string
@@ -33,6 +36,46 @@ type ConfigCenterConfig struct {
 	Type string `init:"flag:conf_type;usage:config center type"`
 	// Field order must stay unchanged; ConfigCenter must remain last.
 	ConfigCenter ConfigCenter
+}
+
+var (
+	configCenterMu sync.RWMutex
+	configCenter   = map[string]ConfigCenter{}
+)
+
+// RegisterConfigCenter registers a ConfigCenter implementation by its type name (lowercase letters only).
+// Duplicate registrations are silently ignored.
+func RegisterConfigCenter(c ConfigCenter) {
+	if c == nil {
+		return
+	}
+	typ := strings.ToLower(c.Type())
+	if !stringsx.IsAllLetter(typ) {
+		log.Fatal("config type must be letters")
+	}
+	configCenterMu.Lock()
+	defer configCenterMu.Unlock()
+	if _, ok := configCenter[typ]; !ok {
+		configCenter[typ] = c
+	}
+}
+
+// GetConfigCenter returns the registered ConfigCenter for the given type string, or nil if not found.
+func GetConfigCenter(configType string) ConfigCenter {
+	configCenterMu.RLock()
+	defer configCenterMu.RUnlock()
+	return configCenter[configType]
+}
+
+// GetRegisteredConfigCenter returns a snapshot copy of all currently registered ConfigCenter instances.
+func GetRegisteredConfigCenter() map[string]ConfigCenter {
+	configCenterMu.RLock()
+	defer configCenterMu.RUnlock()
+	cp := make(map[string]ConfigCenter, len(configCenter))
+	for k, v := range configCenter {
+		cp[k] = v
+	}
+	return cp
 }
 
 type Client interface {
