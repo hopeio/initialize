@@ -56,10 +56,7 @@ type App[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	// successful hot reload so readers need no lock.
 	confSnapshot atomic.Pointer[C]
 	editTimes    uint32
-	defers       []func()
-	// centers are the pluggable config centers passed to New; registered when
-	// Start runs (registration itself is side-effect free, connecting is not).
-	centers []ConfigCenter
+	defers []func()
 	// started is the single lifecycle flag: true once Start has begun. It guards
 	// Start against re-entry, switches the file/center watchers from
 	// merge-only to snapshot replacement, and gates Inject.
@@ -96,11 +93,6 @@ func newApp[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, 
 	return a
 }
 
-// New creates an App by allocating zero-value instances of C and D,
-// then runs the full initialization sequence. The library owns both instances:
-// config is read exclusively through Conf(), so callers can never hold on to a
-// stale pre-reload pointer; defaults belong in the BeforeInject hook.
-// var Global = initialize.New[config, dao]()
 // New allocates an App with zero-value Config and Dao instances. It is a pure
 // constructor: no config file is read, no flag parsed, no watcher started, no
 // client connected. Everything deferred to Start, which main must call before
@@ -108,16 +100,17 @@ func newApp[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, 
 //
 //	var app = initialize.New[config, dao]()
 //	func main() { defer app.Start()(); ... }
-func New[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]](configCenter ...ConfigCenter) *App[C, D, CPtr, DPtr] {
-	a := newApp[C, D, CPtr, DPtr]()
-	a.Dao = DPtr(new(D))
-	a.centers = configCenter
-	return a
+//
+// Custom config centers register globally via RegisterConfigCenter before
+// Start; the center named in the config's [ConfigCenter].Type is picked up
+// during assembly.
+func New[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, DPtr] {
+	return newApp[C, D, CPtr, DPtr]()
 }
 
 // NewConfig is a shortcut for applications that only need a Config (no custom Dao).
-func NewConfig[C any, CPtr ConfigPtr[C]](configCenter ...ConfigCenter) *App[C, EmbeddedPresets, CPtr, *EmbeddedPresets] {
-	return New[C, EmbeddedPresets, CPtr, *EmbeddedPresets](configCenter...)
+func NewConfig[C any, CPtr ConfigPtr[C]]() *App[C, EmbeddedPresets, CPtr, *EmbeddedPresets] {
+	return New[C, EmbeddedPresets, CPtr, *EmbeddedPresets]()
 }
 
 // boot runs the assembly phase of Start: root config defaults, flag/env binding,
@@ -127,12 +120,6 @@ func (a *App[C, D, CPtr, DPtr]) boot(conf CPtr) {
 	applyTagDefaults(&a.RootConfig)
 	a.applyFlagConfig("", &a.RootConfig)
 	a.RootConfig.AfterInject()
-	// Pluggable config centers keep the core dependency-light; serialization
-	// may follow the same pattern later. Register centers here (local file is
-	// registered by default elsewhere).
-	for _, cc := range a.centers {
-		RegisterConfigCenter(cc)
-	}
 
 	a.defers = append(a.defers, func() {
 		if err := closeDao(a.Dao); err != nil {
@@ -173,7 +160,7 @@ func (a *App[C, D, CPtr, DPtr]) Start() func() {
 	}
 	a.boot(CPtr(new(C)))
 	if a.Dao != nil {
-		if err := a.connectDao(a.Dao); err != nil {
+		if err := a.injectDao(a.Dao); err != nil {
 			log.Fatalf("initialize: connect dao: %v", err)
 		}
 	}

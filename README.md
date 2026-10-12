@@ -20,7 +20,7 @@ With initialize you:
 
 1. Define root settings (app name, env, local files, remote center).
 2. Declare a `Config` struct and a `Dao` struct.
-3. Call `New[Config, Dao](...)`.
+3. Call `New[Config, Dao]()`.
 4. Use `Global.Conf()` / `Global.Dao` and `defer Global.Cleanup()`.
 
 ## Capabilities

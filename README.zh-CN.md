@@ -20,7 +20,7 @@ go get github.com/hopeio/initialize@latest
 
 1. 写好根配置（应用名、环境、本地文件、远程中心）。
 2. 声明 `Config` 与 `Dao` 结构体。
-3. 调用 `New[Config, Dao](...)`。
+3. 调用 `New[Config, Dao]()`。
 4. 使用 `Global.Conf()` / `Global.Dao`，并 `defer Global.Cleanup()`。
 
 ## 能力

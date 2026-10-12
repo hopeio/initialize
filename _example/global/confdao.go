@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	Global = initialize.New[config, dao](nacos.ConfigCenter)
+	Global = initialize.New[config, dao]()
 )
 
 type config struct {
