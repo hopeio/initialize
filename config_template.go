@@ -17,8 +17,8 @@ import (
 // genConfigTemplate writes a config template file to the directory specified by ConfigTemplateDir.
 // In single-file mode the template merges builtin, user config and DAO fields into one file;
 // otherwise only the env-local fields are written.
-func (g *Global[C, D, CPtr, DPtr]) genConfigTemplate(conf CPtr, singleTemplateFileConfig bool) {
-	dir := g.RootConfig.ConfigTemplateDir
+func (a *App[C, D, CPtr, DPtr]) genConfigTemplate(conf CPtr, singleTemplateFileConfig bool) {
+	dir := a.RootConfig.ConfigTemplateDir
 	if dir == "" {
 		return
 	}
@@ -26,20 +26,20 @@ func (g *Global[C, D, CPtr, DPtr]) genConfigTemplate(conf CPtr, singleTemplateFi
 		dir += "/"
 	}
 
-	format := g.RootConfig.ConfigCenter.Format
+	format := a.RootConfig.ConfigCenter.Format
 	filename := prefixLocalTemplate + format
 
 	confMap := make(map[string]any)
 	if singleTemplateFileConfig {
 		filename = prefixConfigTemplate + string(format)
-		struct2Map(&g.RootConfig.BasicConfig, confMap)
+		struct2Map(&a.RootConfig.BasicConfig, confMap)
 		delete(confMap, fixedFieldNameEnv)
-		struct2Map(&g.RootConfig.EnvConfig, confMap)
+		struct2Map(&a.RootConfig.EnvConfig, confMap)
 		delete(confMap, fixedFieldNameConfigCenter)
 	}
-	struct2Map(&g.BuiltinConfig, confMap)
+	struct2Map(&a.BuiltinConfig, confMap)
 	struct2Map(conf, confMap)
-	daoConfig2Map(reflect.ValueOf(g.Dao).Elem(), confMap)
+	daoConfig2Map(reflect.ValueOf(a.Dao).Elem(), confMap)
 
 	endocer, err := codecRegistry.Encoder(format)
 	if err != nil {

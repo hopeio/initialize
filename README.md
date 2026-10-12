@@ -20,7 +20,7 @@ With initialize you:
 
 1. Define root settings (app name, env, local files, remote center).
 2. Declare a `Config` struct and a `Dao` struct.
-3. Call `NewGlobal[Config, Dao](...)`.
+3. Call `New[Config, Dao](...)`.
 4. Use `Global.Conf()` / `Global.Dao` and `defer Global.Cleanup()`.
 
 ## Capabilities
@@ -78,7 +78,7 @@ func (d *Dao) AfterInject() {
 	// register GORM callbacks, tune pools, …
 }
 
-var Global = initialize.NewGlobal[Config, Dao]()
+var Global = initialize.New[Config, Dao]()
 ```
 
 ```go

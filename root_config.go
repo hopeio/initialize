@@ -65,49 +65,49 @@ const (
 
 // setRootConfig unmarshals the top-level (squash) keys from Viper into RootConfig,
 // applies flag overrides, and fills in defaults for Name and ConfPath.
-func (g *Global[C, D, CPtr, DPtr]) setRootConfig() {
-	format := g.RootConfig.ConfigCenter.Format
-	confPath := g.RootConfig.ConfPath
+func (a *App[C, D, CPtr, DPtr]) setRootConfig() {
+	format := a.RootConfig.ConfigCenter.Format
+	confPath := a.RootConfig.ConfPath
 
-	err := g.Viper.Unmarshal(&g.RootConfig, decoderConfigOptions...)
+	err := a.Viper.Unmarshal(&a.RootConfig, decoderConfigOptions...)
 	if err != nil {
 		log.Fatal(err)
 	}
-	g.applyFlagConfig("", &g.RootConfig)
-	if g.RootConfig.ConfigCenter.Format == "" {
-		g.RootConfig.ConfigCenter.Format = format
+	a.applyFlagConfig("", &a.RootConfig)
+	if a.RootConfig.ConfigCenter.Format == "" {
+		a.RootConfig.ConfigCenter.Format = format
 	}
-	if g.RootConfig.Name == "" {
-		g.RootConfig.Name = stringsx.CutPart(filepath.Base(os.Args[0]), ".")
+	if a.RootConfig.Name == "" {
+		a.RootConfig.Name = stringsx.CutPart(filepath.Base(os.Args[0]), ".")
 	}
-	if g.RootConfig.ConfPath != confPath {
-		g.RootConfig.ConfPath = confPath
+	if a.RootConfig.ConfPath != confPath {
+		a.RootConfig.ConfPath = confPath
 	}
 }
 
 // setEnvConfig reads the environment-specific config section (keyed by RootConfig.Env),
 // decodes it into EnvConfig, optionally connects to a config center, and writes a config template if requested.
-func (g *Global[C, D, CPtr, DPtr]) setEnvConfig() {
-	if g.RootConfig.Env == "" {
-		if g.RootConfig.ConfPath == "" {
+func (a *App[C, D, CPtr, DPtr]) setEnvConfig() {
+	if a.RootConfig.Env == "" {
+		if a.RootConfig.ConfPath == "" {
 			log.Warn("not found config file, use env and flag")
 		} else {
 			log.Warn("lack of env configuration, try single config file mode")
 		}
 		return
 	}
-	format := g.RootConfig.ConfigCenter.Format
+	format := a.RootConfig.ConfigCenter.Format
 
 	defer func() {
-		if g.RootConfig.EnvConfig.ConfigTemplateDir != "" {
+		if a.RootConfig.EnvConfig.ConfigTemplateDir != "" {
 			// template
 			confMap := make(map[string]any)
-			struct2Map(&g.RootConfig.BasicConfig, confMap)
+			struct2Map(&a.RootConfig.BasicConfig, confMap)
 			envMap := make(map[string]any)
-			struct2Map(&g.RootConfig.EnvConfig, envMap)
-			confMap[g.RootConfig.Env] = envMap
+			struct2Map(&a.RootConfig.EnvConfig, envMap)
+			confMap[a.RootConfig.Env] = envMap
 			ccMap := make(map[string]any)
-			struct2Map(&g.RootConfig.EnvConfig.ConfigCenter, ccMap)
+			struct2Map(&a.RootConfig.EnvConfig.ConfigCenter, ccMap)
 			envMap[fixedFieldNameConfigCenter] = ccMap
 			for name, v := range GetRegisteredConfigCenter() {
 				cc := make(map[string]any)
@@ -123,7 +123,7 @@ func (g *Global[C, D, CPtr, DPtr]) setEnvConfig() {
 				log.Fatal(err)
 			}
 
-			dir := g.RootConfig.EnvConfig.ConfigTemplateDir
+			dir := a.RootConfig.EnvConfig.ConfigTemplateDir
 			err = os.MkdirAll(dir, os.ModePerm)
 			if err != nil {
 				log.Fatal(err)
@@ -138,35 +138,35 @@ func (g *Global[C, D, CPtr, DPtr]) setEnvConfig() {
 		}
 	}()
 
-	envConfig, ok := g.Viper.Get(g.RootConfig.Env).(map[string]any)
+	envConfig, ok := a.Viper.Get(a.RootConfig.Env).(map[string]any)
 	if !ok {
-		log.Warnf("lack of env configuration: %s", g.RootConfig.Env)
+		log.Warnf("lack of env configuration: %s", a.RootConfig.Env)
 		return
 	}
-	err := Decode(&g.RootConfig.EnvConfig, envConfig)
+	err := Decode(&a.RootConfig.EnvConfig, envConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
-	flagPrefix := strings.ToLower(g.RootConfig.Name)
-	g.applyFlagConfig(flagPrefix, &g.RootConfig.EnvConfig)
-	g.RootConfig.EnvConfig.AfterInject()
-	for i := range g.RootConfig.SkipInjectDaos {
-		g.RootConfig.SkipInjectDaos[i] = strings.ToUpper(g.RootConfig.SkipInjectDaos[i])
+	flagPrefix := strings.ToLower(a.RootConfig.Name)
+	a.applyFlagConfig(flagPrefix, &a.RootConfig.EnvConfig)
+	a.RootConfig.EnvConfig.AfterInject()
+	for i := range a.RootConfig.SkipInjectDaos {
+		a.RootConfig.SkipInjectDaos[i] = strings.ToUpper(a.RootConfig.SkipInjectDaos[i])
 	}
 	var configCenter ConfigCenter
-	if g.RootConfig.EnvConfig.ConfigCenter.Type != "" {
-		if g.RootConfig.EnvConfig.ConfigCenter.Format == "" {
+	if a.RootConfig.EnvConfig.ConfigCenter.Type != "" {
+		if a.RootConfig.EnvConfig.ConfigCenter.Format == "" {
 			log.Warnf("lack of config center format, support format:%v", viper.SupportedExts)
 			return
 		}
-		g.Viper.SetConfigType(g.RootConfig.EnvConfig.ConfigCenter.Format)
+		a.Viper.SetConfigType(a.RootConfig.EnvConfig.ConfigCenter.Format)
 
-		configCenter, ok = GetRegisteredConfigCenter()[strings.ToLower(g.RootConfig.EnvConfig.ConfigCenter.Type)]
+		configCenter, ok = GetRegisteredConfigCenter()[strings.ToLower(a.RootConfig.EnvConfig.ConfigCenter.Type)]
 		if !ok {
-			log.Warnf("lack of registered config center type : %s", g.RootConfig.EnvConfig.ConfigCenter.Type)
+			log.Warnf("lack of registered config center type : %s", a.RootConfig.EnvConfig.ConfigCenter.Type)
 			return
 		}
-		configCenterConfig, ok := g.Viper.Get(g.RootConfig.Env + ".configcenter." + g.RootConfig.EnvConfig.ConfigCenter.Type).(map[string]any)
+		configCenterConfig, ok := a.Viper.Get(a.RootConfig.Env + ".configcenter." + a.RootConfig.EnvConfig.ConfigCenter.Type).(map[string]any)
 		if !ok {
 			log.Warn("lack of config center config")
 			return
@@ -178,11 +178,11 @@ func (g *Global[C, D, CPtr, DPtr]) setEnvConfig() {
 		}
 
 		if flagPrefix != "" {
-			flagPrefix = flagPrefix + ".configcenter." + strings.ToLower(g.RootConfig.EnvConfig.ConfigCenter.Type)
+			flagPrefix = flagPrefix + ".configcenter." + strings.ToLower(a.RootConfig.EnvConfig.ConfigCenter.Type)
 		} else {
-			flagPrefix = "configcenter." + strings.ToLower(g.RootConfig.EnvConfig.ConfigCenter.Type)
+			flagPrefix = "configcenter." + strings.ToLower(a.RootConfig.EnvConfig.ConfigCenter.Type)
 		}
-		g.applyFlagConfig(flagPrefix, configCenter.Config())
-		g.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
+		a.applyFlagConfig(flagPrefix, configCenter.Config())
+		a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
 	}
 }
