@@ -109,7 +109,7 @@ func (a *App[C, D, CPtr, DPtr]) setEnvConfig() {
 			ccMap := make(map[string]any)
 			struct2Map(&a.RootConfig.EnvConfig.ConfigCenter, ccMap)
 			envMap[fixedFieldNameConfigCenter] = ccMap
-			for name, v := range GetRegisteredConfigCenter() {
+			for name, v := range a.registeredCenters() {
 				cc := make(map[string]any)
 				struct2Map(v.Config(), cc)
 				ccMap[name] = cc
@@ -161,7 +161,7 @@ func (a *App[C, D, CPtr, DPtr]) setEnvConfig() {
 		}
 		a.Viper.SetConfigType(a.RootConfig.EnvConfig.ConfigCenter.Format)
 
-		configCenter = GetConfigCenter(strings.ToLower(a.RootConfig.EnvConfig.ConfigCenter.Type))
+		configCenter = a.getCenter(strings.ToLower(a.RootConfig.EnvConfig.ConfigCenter.Type))
 		if configCenter == nil {
 			log.Warnf("lack of registered config center type : %s", a.RootConfig.EnvConfig.ConfigCenter.Type)
 			return

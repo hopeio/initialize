@@ -12,7 +12,6 @@ import (
 	"io"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -38,41 +37,36 @@ type ConfigCenterConfig struct {
 	ConfigCenter ConfigCenter
 }
 
-var (
-	configCenterMu sync.RWMutex
-	configCenter   = map[string]ConfigCenter{}
-)
-
-// RegisterConfigCenter registers a ConfigCenter implementation by its type name (lowercase letters only).
-// Duplicate registrations are silently ignored.
-func RegisterConfigCenter(c ConfigCenter) {
-	if c == nil {
-		return
+// registerConfigCenters registers the centers passed to Start, keyed by type
+// name (lowercase letters only). Duplicate registrations keep the first one.
+// Called only from Start, before assembly — no lock needed.
+func (a *App[C, D, CPtr, DPtr]) registerConfigCenters(centers []ConfigCenter) {
+	if a.configCenters == nil {
+		a.configCenters = make(map[string]ConfigCenter, len(centers))
 	}
-	typ := strings.ToLower(c.Type())
-	if !stringsx.IsAllLetter(typ) {
-		log.Fatal("config type must be letters")
-	}
-	configCenterMu.Lock()
-	defer configCenterMu.Unlock()
-	if _, ok := configCenter[typ]; !ok {
-		configCenter[typ] = c
+	for _, c := range centers {
+		if c == nil {
+			continue
+		}
+		typ := strings.ToLower(c.Type())
+		if !stringsx.IsAllLetter(typ) {
+			log.Fatal("config type must be letters")
+		}
+		if _, ok := a.configCenters[typ]; !ok {
+			a.configCenters[typ] = c
+		}
 	}
 }
 
-// GetConfigCenter returns the registered ConfigCenter for the given type string, or nil if not found.
-func GetConfigCenter(configType string) ConfigCenter {
-	configCenterMu.RLock()
-	defer configCenterMu.RUnlock()
-	return configCenter[configType]
+// getCenter returns the registered center for the given type, or nil if not found.
+func (a *App[C, D, CPtr, DPtr]) getCenter(configType string) ConfigCenter {
+	return a.configCenters[configType]
 }
 
-// GetRegisteredConfigCenter returns a snapshot copy of all currently registered ConfigCenter instances.
-func GetRegisteredConfigCenter() map[string]ConfigCenter {
-	configCenterMu.RLock()
-	defer configCenterMu.RUnlock()
-	cp := make(map[string]ConfigCenter, len(configCenter))
-	for k, v := range configCenter {
+// registeredCenters returns a copy of all registered centers, keyed by type.
+func (a *App[C, D, CPtr, DPtr]) registeredCenters() map[string]ConfigCenter {
+	cp := make(map[string]ConfigCenter, len(a.configCenters))
+	for k, v := range a.configCenters {
 		cp[k] = v
 	}
 	return cp

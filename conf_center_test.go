@@ -30,42 +30,35 @@ func (s *stubConfigCenter) Handle(_ context.Context, _ func(io.Reader) error, _ 
 	return nil
 }
 
-func resetConfigCenterForTest(t *testing.T) {
-	t.Helper()
-	configCenterMu.Lock()
-	configCenter = map[string]ConfigCenter{}
-	configCenterMu.Unlock()
-}
-
 func TestRegisterConfigCenter_Nil(t *testing.T) {
-	resetConfigCenterForTest(t)
-	RegisterConfigCenter(nil)
-	if len(GetRegisteredConfigCenter()) != 0 {
+	a := newApp[UserConfig, EmbeddedPresets]()
+	a.registerConfigCenters([]ConfigCenter{nil})
+	if len(a.registeredCenters()) != 0 {
 		t.Fatal("nil center should not be registered")
 	}
 }
 
 func TestRegisterConfigCenter_GetAndCopy(t *testing.T) {
-	resetConfigCenterForTest(t)
+	a := newApp[UserConfig, EmbeddedPresets]()
 	cc := &stubConfigCenter{typ: "stubcc"}
-	RegisterConfigCenter(cc)
+	a.registerConfigCenters([]ConfigCenter{cc})
 
-	got := GetConfigCenter("stubcc")
-	if got != cc {
-		t.Fatal("GetConfigCenter want registered instance")
+	got := a.getCenter("stubcc")
+	if got != ConfigCenter(cc) {
+		t.Fatal("getCenter want registered instance")
 	}
 
-	cp := GetRegisteredConfigCenter()
-	if cp["stubcc"] != cc {
+	cp := a.registeredCenters()
+	if cp["stubcc"] != ConfigCenter(cc) {
 		t.Fatal("copy map should contain registered center")
 	}
 	cp["stubcc"] = nil
-	if GetConfigCenter("stubcc") != cc {
-		t.Fatal("GetRegisteredConfigCenter should return a copy")
+	if a.getCenter("stubcc") != ConfigCenter(cc) {
+		t.Fatal("registeredCenters should return a copy")
 	}
 
-	RegisterConfigCenter(&stubConfigCenter{typ: "stubcc"})
-	if GetConfigCenter("stubcc") != cc {
+	a.registerConfigCenters([]ConfigCenter{&stubConfigCenter{typ: "stubcc"}})
+	if a.getCenter("stubcc") != ConfigCenter(cc) {
 		t.Fatal("duplicate registration should not replace existing")
 	}
 }

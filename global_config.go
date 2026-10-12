@@ -57,6 +57,10 @@ type App[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	confSnapshot atomic.Pointer[C]
 	editTimes    uint32
 	defers       []func()
+	// configCenters holds the centers passed to Start, keyed by Type(). They are
+	// registered before assembly and resolved by [ConfigCenter].Type; all access
+	// happens on the Start call stack, so no lock is needed.
+	configCenters map[string]ConfigCenter
 	// started is the single lifecycle flag: true once Start has begun. It guards
 	// Start against re-entry, switches the file/center watchers from
 	// merge-only to snapshot replacement, and gates Inject.
@@ -100,7 +104,7 @@ func newApp[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, 
 //	var app = initialize.New[config, dao]()
 //	func main() { defer app.Start()(); ... }
 //
-// Custom config centers register globally via RegisterConfigCenter before
+// Custom config centers are passed as Start arguments (registered on the app)
 // Start; the center named in the config's [ConfigCenter].Type is picked up
 // during assembly.
 func New[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]]() *App[C, D, CPtr, DPtr] {
@@ -163,11 +167,7 @@ func (a *App[C, D, CPtr, DPtr]) Start(centers ...ConfigCenter) func() {
 	if a.started.Swap(true) {
 		return a.stop
 	}
-	for _, cc := range centers {
-		if cc != nil {
-			RegisterConfigCenter(cc)
-		}
-	}
+	a.registerConfigCenters(centers)
 	a.boot(CPtr(new(C)))
 	if a.Dao != nil {
 		if err := a.injectDao(a.Dao); err != nil {
@@ -284,7 +284,7 @@ func (a *App[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 			singleTemplateFileConfig = true
 		}
 		if a.RootConfig.ConfigCenter.Type != "" {
-			a.RootConfig.ConfigCenter.ConfigCenter = GetConfigCenter(a.RootConfig.ConfigCenter.Type)
+			a.RootConfig.ConfigCenter.ConfigCenter = a.getCenter(a.RootConfig.ConfigCenter.Type)
 		}
 	}
 	cfgcenter := a.RootConfig.ConfigCenter.ConfigCenter
