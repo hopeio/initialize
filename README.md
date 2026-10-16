@@ -132,7 +132,7 @@ Published snapshots are immutable: never write to their fields. DAOs (connection
 
 Ship-ready field types under `contrib/`:
 
-`gormdb` (mysql / postgres / sqlite) · `redis` · `sarama` · `confluent` · `nats` · `nsq` · `etcd` · `elasticsearch` · `minio` · `mqtt` · `badger` · `pebble` · `bbolt` · `ristretto` · `influxdb` · `duckdb` · `flightsql` · `mail` · `apollo` · `nacos` · `viper`
+`gormdb` (mysql / postgres / sqlite) · `redis` · `sarama` · `confluent` · `nats` · `etcd` · `elasticsearch` · `minio` · `mqtt` · `badger` · `pebble` · `bbolt` · `ristretto` · `mail` · `apollo` · `nacos` · `viper`
 
 Custom type: implement `DaoField` (`Config` / `Init` / `Closer`) or use `DaoG` / `DaoConfig`.
 
