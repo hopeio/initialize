@@ -277,6 +277,17 @@ func (a *App[C, D, CPtr, DPtr]) loadConfig(conf CPtr) {
 
 	a.setRootConfig()
 	a.setEnvConfig()
+	// Namespace implicit environment lookups now that the module name is known.
+	// AutomaticEnv resolves every single-segment key straight from the environment,
+	// so an unrelated ambient variable hijacks a whole config section: key "user"
+	// picks up $USER (the login name), which replaces the [User] table with a string
+	// and silently drops all of its values at decode time. Explicit per-field
+	// bindings (init:"env:VAR") keep working, they consult VAR and NAME_VAR through
+	// os.LookupEnv directly. Must run after setRootConfig, which is where Name is
+	// resolved, and before any merge/inject Get.
+	if envPrefix := strings.TrimSpace(a.RootConfig.Name); envPrefix != "" {
+		a.Viper.SetEnvPrefix(envPrefix)
+	}
 
 	var singleTemplateFileConfig bool
 	if a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
