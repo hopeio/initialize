@@ -19,7 +19,6 @@ type Config struct {
 	Port     string
 	UserName string
 	Password string
-	From     string
 }
 
 // BeforeInject is a no-op satisfying the Config interface.
