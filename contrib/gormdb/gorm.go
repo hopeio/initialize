@@ -121,13 +121,17 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 	dbConfig := &c.Gorm
 	dbConfig.NamingStrategy = c.NamingStrategy
 
-	// Logger: set the per-connection logger on dbConfig instead of mutating the
-	// process-global gorm logger.Default, so multiple DBs don't overwrite each other.
 	if c.UseGormLogger {
 		dbConfig.Logger = logger.New(stdlog.New(os.Stdout, "\r", stdlog.LstdFlags), c.Logger)
 	} else {
 		dbConfig.Logger = &gormx.Logger{Logger: log.NoCallerLogger().Logger, Config: &c.Logger}
 	}
+	// GORM calls the package-level logger.Default directly for model/hook parse
+	// errors (schema.go), which never reach db.Logger and would print a second,
+	// native format. Replace it with the same logger. Multiple DBs share the last
+	// one, which is acceptable: they come from the same Config, and Default is only
+	// used for framework-level errors.
+	logger.Default = dbConfig.Logger
 
 	db, err := gorm.Open(dialector, dbConfig)
 	if err != nil {
