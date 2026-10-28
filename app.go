@@ -57,6 +57,9 @@ type App[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	confSnapshot atomic.Pointer[C]
 	editTimes    uint32
 	defers       []func()
+	// stopOnce backs the exported Stop: Start hands out Stop itself, so a caller
+	// that also calls Stop explicitly must not close the config center twice.
+	stopOnce sync.Once
 	// configCenters holds the centers passed to Start, keyed by Type(). They are
 	// registered before assembly and resolved by [ConfigCenter].Type; all access
 	// happens on the Start call stack, so no lock is needed.
@@ -149,23 +152,28 @@ func (a *App[C, D, CPtr, DPtr]) boot(conf CPtr) {
 //	func main() { defer app.Start()(); ... }
 //
 // Fatal on failure: a startup-phase connection error is unrecoverable, matching
-// the policy of config loading. Idempotent: a second call returns the same stop
-// function without reconnecting.
+// the policy of config loading. Idempotent: a second call returns the same
+// [App.Stop] without reconnecting.
 // Start runs the whole launch: assembly (config loading, watchers, snapshot
 // publishing) followed by connecting the dao and running the hooks that need
 // live clients (AfterInject, e.g. OTel instrumentation). Fatal on failure: a
 // startup-phase error is unrecoverable. Idempotent: a second call returns the
-// same stop function. The returned stop releases everything in reverse
+// same [App.Stop]. The returned stop releases everything in reverse
 // registration order — main keeps it alive with defer:
 //
 //	func main() { defer app.Start()(); ... }
+//
+// Processes with a paired lifecycle — a CLI framework's pre/post run hooks, or a
+// long-running command that stops the app from a signal handler — call Start and
+// [App.Stop] on either side instead; Start's return value is Stop itself, so
+// mixing the two is safe.
 //
 // A config center, when used, is passed as a Start argument: the arguments are
 // registered before assembly, and the one whose Type matches the config file's
 // [ConfigCenter].Type is picked up during assembly.
 func (a *App[C, D, CPtr, DPtr]) Start(centers ...ConfigCenter) func() {
 	if a.started.Swap(true) {
-		return a.stop
+		return a.Stop
 	}
 	a.registerConfigCenters(centers)
 	a.boot(CPtr(new(C)))
@@ -174,12 +182,25 @@ func (a *App[C, D, CPtr, DPtr]) Start(centers ...ConfigCenter) func() {
 			log.Fatalf("initialize: connect dao: %v", err)
 		}
 	}
-	return a.stop
+	return a.Stop
 }
 
-// stop releases all resources in reverse registration order (defers), then closes
-// the config center and flushes the logger. Not exported: callers receive it from
-// Start, so it is always paired with a started app.
+// Stop releases what Start acquired: the Defer callbacks in reverse registration
+// order, then the config center, then log.Sync. Exported so a caller can pair it
+// with an explicit Start (CLI pre/post hooks, signal-driven shutdown) instead of
+// carrying Start's return value around. Idempotent; calling it before Start does
+// nothing on purpose — consuming the once there would turn the real cleanup into
+// a no-op and leak the dao.
+func (a *App[C, D, CPtr, DPtr]) Stop() {
+	if !a.started.Load() {
+		log.Warn("initialize: Stop before Start does nothing (cleanup belongs to a started app)")
+		return
+	}
+	a.stopOnce.Do(a.stop)
+}
+
+// stop is Stop's worker: defers in reverse order, then the config center, then
+// log.Sync. Reached only through Stop, so it runs at most once.
 func (a *App[C, D, CPtr, DPtr]) stop() {
 	a.mu.Lock()
 	defers := a.defers

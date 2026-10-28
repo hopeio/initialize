@@ -336,3 +336,42 @@ func TestTagDefaultAppliesWhenConfigOmitsEnv(t *testing.T) {
 		t.Fatalf("Env=%q want dev from tag default when config omits Env", a.RootConfig.Env)
 	}
 }
+
+// Start 的返回值就是导出的 Stop，所以两条路只能清一次：CLI 的 pre/post hook 会显式调
+// Stop，而 main 里可能同时留着 `defer app.Start()()`。第二次必须是空操作。
+func TestApp_StopRunsOnce(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() { os.Args = oldArgs })
+	os.Args = []string{"test"}
+
+	a := NewConfig[UserConfig]()
+	var runs int
+	a.Defer(func() { runs++ })
+
+	a.Start()() // 惯用法：Start 返回的闭包
+	a.Stop()    // 显式再来一次，必须不重复跑
+	if runs != 1 {
+		t.Fatalf("defers ran %d times, want 1", runs)
+	}
+}
+
+// 未启动就 Stop 不能把 once 消费掉——那会让真正的清理变成空转、把 dao 泄漏出去。
+func TestApp_StopBeforeStartIsNoop(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() { os.Args = oldArgs })
+	os.Args = []string{"test"}
+
+	a := NewConfig[UserConfig]()
+	var ran bool
+	a.Defer(func() { ran = true })
+
+	a.Stop()
+	if ran {
+		t.Fatal("Stop before Start must not run the defers")
+	}
+
+	a.Start()()
+	if !ran {
+		t.Fatal("the once must still be free for the real cleanup after Start")
+	}
+}
