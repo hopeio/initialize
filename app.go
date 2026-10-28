@@ -57,9 +57,11 @@ type App[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	confSnapshot atomic.Pointer[C]
 	editTimes    uint32
 	defers       []func()
-	// stopOnce backs the exported Stop: Start hands out Stop itself, so a caller
-	// that also calls Stop explicitly must not close the config center twice.
-	stopOnce sync.Once
+	// stopped marks that cleanup already ran, so the exported Stop is idempotent
+	// (Start hands out Stop itself, and a caller pairing an explicit Stop with
+	// `defer app.Start()()` must not close the config center twice). It lives under
+	// mu — the same lock that owns defers — rather than a second sync primitive.
+	stopped bool
 	// configCenters holds the centers passed to Start, keyed by Type(). They are
 	// registered before assembly and resolved by [ConfigCenter].Type; all access
 	// happens on the Start call stack, so no lock is needed.
@@ -188,19 +190,27 @@ func (a *App[C, D, CPtr, DPtr]) Start(centers ...ConfigCenter) func() {
 // Stop releases what Start acquired: the Defer callbacks in reverse registration
 // order, then the config center, then log.Sync. Exported so a caller can pair it
 // with an explicit Start (CLI pre/post hooks, signal-driven shutdown) instead of
-// carrying Start's return value around. Idempotent; calling it before Start does
-// nothing on purpose — consuming the once there would turn the real cleanup into
-// a no-op and leak the dao.
+// carrying Start's return value around. Idempotent through the stopped flag under
+// mu; calling it before Start does nothing on purpose — marking it stopped there
+// would turn the real cleanup into a no-op and leak the dao.
 func (a *App[C, D, CPtr, DPtr]) Stop() {
 	if !a.started.Load() {
 		log.Warn("initialize: Stop before Start does nothing (cleanup belongs to a started app)")
 		return
 	}
-	a.stopOnce.Do(a.stop)
+	a.mu.Lock()
+	if a.stopped {
+		a.mu.Unlock()
+		return
+	}
+	a.stopped = true
+	a.mu.Unlock()
+	a.stop()
 }
 
 // stop is Stop's worker: defers in reverse order, then the config center, then
-// log.Sync. Reached only through Stop, so it runs at most once.
+// log.Sync. Reached only through Stop, which decides it runs at most once; user
+// hooks never run under mu.
 func (a *App[C, D, CPtr, DPtr]) stop() {
 	a.mu.Lock()
 	defers := a.defers
