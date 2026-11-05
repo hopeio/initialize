@@ -8,12 +8,12 @@ package initialize
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
 
 	kvstruct "github.com/hopeio/gox/kvstruct"
-	"github.com/hopeio/gox/log"
 	reflectx "github.com/hopeio/gox/reflect"
 	stringsx "github.com/hopeio/gox/strings"
 	"github.com/hopeio/gox/structtag"
@@ -62,8 +62,11 @@ func (s *initTagSettings) customizesOption() bool {
 
 // fieldTagSettings returns the "init" tag settings of a field. `init:"-"`
 // skips the field (autowired or internal), and `init:"skip"` is equivalent.
-func fieldTagSettings(field reflect.StructField) *initTagSettings {
-	return parseInitTagSettings(field.Tag.Get(initTagName))
+// A malformed tag is an assembly error: it surfaces through Start instead of
+// exiting the process, so a test binary or a CLI subcommand can report it and
+// keep running everything else.
+func fieldTagSettings(field reflect.StructField) (*initTagSettings, error) {
+	return parseInitTagSettings(field.Tag.Get(initTagName), field.Name)
 }
 
 // parseInitTagSettings parses an "init" struct tag via gox's meta parser. Every
@@ -72,18 +75,18 @@ func fieldTagSettings(field reflect.StructField) *initTagSettings {
 // line flag and environment variable. `flag:NAME` is the flag name (there is no
 // `name:` key); `short_flag:S` is the shorthand; a usage value may contain commas
 // because segments are ";"-separated.
-func parseInitTagSettings(str string) *initTagSettings {
+func parseInitTagSettings(str, fieldName string) (*initTagSettings, error) {
 	if str == "" {
-		return &initTagSettings{}
+		return &initTagSettings{}, nil
 	}
 	if str == "-" || str == "skip" {
-		return &initTagSettings{Skip: true}
+		return &initTagSettings{Skip: true}, nil
 	}
 	var s initTagSettings
 	if err := structtag.ParseSettingTagIntoStruct(str, ";", ":", &s); err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("initialize: invalid init tag on field %s: %w", fieldName, err)
 	}
-	return &s
+	return &s, nil
 }
 
 // envLookupKeys returns env var names to try: ENV uppercased, then NAME_ENV when module name is set.
@@ -109,12 +112,13 @@ func lookupEnvFromKeys(keys []string) (string, bool) {
 	return "", false
 }
 
-func bindEnvKeys(v interface{ BindEnv(...string) error }, keys ...string) {
+func bindEnvKeys(v interface{ BindEnv(...string) error }, keys ...string) error {
 	for _, k := range keys {
 		if err := v.BindEnv(k); err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("initialize: bind env %s: %w", k, err)
 		}
 	}
+	return nil
 }
 
 func init() {
@@ -142,26 +146,27 @@ func (a anyValue) Set(v string) error {
 
 // applyFlagConfig registers and parses all "init" tagged fields in the given config structs,
 // then binds the resulting pflag set to Viper.
-func (a *App[C, D, CPtr, DPtr]) applyFlagConfig(prefix string, confs ...any) {
+func (a *App[C, D, CPtr, DPtr]) applyFlagConfig(prefix string, confs ...any) error {
 	commandLine := newCommandLine()
 	for _, conf := range confs {
-		a.injectFlagConfig(prefix, commandLine, reflect.ValueOf(conf))
+		if err := a.injectFlagConfig(prefix, commandLine, reflect.ValueOf(conf)); err != nil {
+			return err
+		}
 	}
 
-	err := a.Viper.BindPFlags(commandLine)
-	if err != nil {
-		log.Fatal(err)
+	if err := a.Viper.BindPFlags(commandLine); err != nil {
+		return fmt.Errorf("initialize: bind flags to config: %w", err)
 	}
 
-	parseFlag(commandLine)
+	return parseFlag(commandLine)
 }
 
 // injectFlagConfig recursively walks a config value, registers each field as a pflag flag,
 // and binds default/env values from the "init" tag.
-func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) {
+func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pflag.FlagSet, fcValue reflect.Value) error {
 	fcValue = reflectx.DerefValue(fcValue)
 	if !fcValue.IsValid() {
-		return
+		return nil
 	}
 	fcTyp := fcValue.Type()
 	envPrefix := strings.ReplaceAll(strings.ToUpper(prefix), ".", "_")
@@ -182,7 +187,10 @@ func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pfl
 			}
 		}
 
-		settings := fieldTagSettings(fieldType)
+		settings, err := fieldTagSettings(fieldType)
+		if err != nil {
+			return err
+		}
 		// `init:"-"` / `init:"skip"`: autowired or internal field, no env/flag binding.
 		if settings.Skip {
 			continue
@@ -194,9 +202,11 @@ func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pfl
 		}
 		if kind == reflect.Struct {
 			if fieldType.Anonymous {
-				a.injectFlagConfig(prefix, commandLine, fieldValue)
-			} else {
-				a.injectFlagConfig(flag, commandLine, fieldValue)
+				if err := a.injectFlagConfig(prefix, commandLine, fieldValue); err != nil {
+					return err
+				}
+			} else if err := a.injectFlagConfig(flag, commandLine, fieldValue); err != nil {
+				return err
 			}
 			continue
 		}
@@ -211,10 +221,12 @@ func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pfl
 			// From env: try ENV, then MODULE_ENV when RootConfig.Name is set.
 			if settings.Env != "" {
 				envKeys := envLookupKeys(a.RootConfig.Name, settings.Env)
-				bindEnvKeys(a.Viper, envKeys...)
+				if err := bindEnvKeys(a.Viper, envKeys...); err != nil {
+					return err
+				}
 				if value, ok := lookupEnvFromKeys(envKeys); ok {
 					if err := kvstruct.ParseStringSetReflectValue(fieldValue, value, &fieldType); err != nil {
-						log.Fatal(err)
+						return fmt.Errorf("initialize: env %s for field %s: %w", settings.Env, fieldType.Name, err)
 					}
 				}
 			}
@@ -237,15 +249,13 @@ func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pfl
 				env = envPrefix + "_" + env
 			}
 
-			err := a.Viper.BindEnv(env)
-			if err != nil {
-				log.Fatal(err)
+			if err := a.Viper.BindEnv(env); err != nil {
+				return fmt.Errorf("initialize: bind env %s: %w", env, err)
 			}
 
 			if value, ok := os.LookupEnv(env); ok {
-				err := kvstruct.ParseStringSetReflectValue(fieldValue, value, &fieldType)
-				if err != nil {
-					log.Fatal(err)
+				if err := kvstruct.ParseStringSetReflectValue(fieldValue, value, &fieldType); err != nil {
+					return fmt.Errorf("initialize: env %s for field %s: %w", env, fieldType.Name, err)
 				}
 			}
 			// default flag
@@ -261,6 +271,7 @@ func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pfl
 			}
 		}
 	}
+	return nil
 }
 
 // applyTagDefaults writes each tag's "default" into conf before decode.
@@ -269,14 +280,14 @@ func (a *App[C, D, CPtr, DPtr]) injectFlagConfig(prefix string, commandLine *pfl
 // keeps intentional zeros (Port = 0, Debug = false) meaningful, which a
 // post-decode "fill if IsZero" check cannot express. Fields marked
 // `init:"-"` are skipped entirely.
-func applyTagDefaults(conf any) {
-	applyTagDefaultsValue(reflect.ValueOf(conf))
+func applyTagDefaults(conf any) error {
+	return applyTagDefaultsValue(reflect.ValueOf(conf))
 }
 
-func applyTagDefaultsValue(v reflect.Value) {
+func applyTagDefaultsValue(v reflect.Value) error {
 	v = reflectx.DerefValue(v)
 	if !v.IsValid() || v.Kind() != reflect.Struct {
-		return
+		return nil
 	}
 	typ := v.Type()
 	for i := range typ.NumField() {
@@ -284,7 +295,10 @@ func applyTagDefaultsValue(v reflect.Value) {
 		if !fieldType.IsExported() {
 			continue
 		}
-		settings := fieldTagSettings(fieldType)
+		settings, err := fieldTagSettings(fieldType)
+		if err != nil {
+			return err
+		}
 		if settings.Skip {
 			continue
 		}
@@ -296,16 +310,19 @@ func applyTagDefaultsValue(v reflect.Value) {
 			}
 		}
 		if fieldValue.Kind() == reflect.Struct {
-			applyTagDefaultsValue(fieldValue)
+			if err := applyTagDefaultsValue(fieldValue); err != nil {
+				return err
+			}
 			continue
 		}
 		if settings.Default == "" {
 			continue
 		}
 		if err := kvstruct.ParseStringSetReflectValue(fieldValue, settings.Default, &fieldType); err != nil {
-			log.Fatal(err)
+			return fmt.Errorf("initialize: init default %q on field %s: %w", settings.Default, fieldType.Name, err)
 		}
 	}
+	return nil
 }
 
 // newCommandLine creates a pflag.FlagSet that silently ignores unknown flags.
@@ -315,20 +332,26 @@ func newCommandLine() *pflag.FlagSet {
 	return commandLine
 }
 
-// parseFlag parses os.Args[1:] into the given flag set, fatal on error.
-func parseFlag(commandLine *pflag.FlagSet) {
-	err := commandLine.Parse(os.Args[1:])
-	if err != nil {
-		log.Fatal(err)
+// parseFlag parses os.Args[1:] into the given flag set. A bad command line is a
+// caller error, not a library error: it returns instead of exiting, so a CLI
+// entry point can print usage and only the failing subcommand stops.
+func parseFlag(commandLine *pflag.FlagSet) error {
+	if err := commandLine.Parse(os.Args[1:]); err != nil {
+		return fmt.Errorf("initialize: parse command line: %w", err)
 	}
+	return nil
 }
 
 // InjectByFlag parses the given args slice and injects flag values into conf.
 func (a *App[C, D, CPtr, DPtr]) InjectByFlag(args []string, conf any) error {
-	applyTagDefaults(conf)
+	if err := applyTagDefaults(conf); err != nil {
+		return err
+	}
 	commandLine := pflag.NewFlagSet(args[0], pflag.ContinueOnError)
 	commandLine.ParseErrorsAllowlist.UnknownFlags = true
-	a.injectFlagConfig("", commandLine, reflect.ValueOf(conf))
+	if err := a.injectFlagConfig("", commandLine, reflect.ValueOf(conf)); err != nil {
+		return err
+	}
 	return commandLine.Parse(args[1:])
 }
 

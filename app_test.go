@@ -34,6 +34,45 @@ type testDaoWithClosingField struct {
 	Store closingDaoField
 }
 
+// startable is the slice of *App a test drives. TryStart returns the failure and
+// cleanup is the exported Stop, so a broken fixture fails its own test instead of
+// exiting the process and taking the rest of the binary with it. Tests never call
+// Start: its failure policy is log.Fatal.
+type startable interface {
+	TryStart(...ConfigCenter) error
+	Stop()
+}
+
+// mustStartT starts the app for a test, fails the test when startup breaks, and
+// registers the single cleanup entry point with t.Cleanup.
+func mustStartT(t *testing.T, app startable) {
+	t.Helper()
+	if err := app.TryStart(); err != nil {
+		t.Fatalf("initialize: start app: %v", err)
+	}
+	t.Cleanup(app.Stop)
+}
+
+// The reason TryStart returns: an unreadable config file used to log.Fatal from deep
+// inside config loading and take the process down, skipping every remaining case.
+// Now the caller gets both the failure and the process.
+func TestApp_TryStart_ReturnsConfigError(t *testing.T) {
+	oldArgs := os.Args
+	t.Cleanup(func() { os.Args = oldArgs })
+	os.Args = []string{"test", "-c", filepath.Join(t.TempDir(), "missing.toml")}
+
+	a := NewConfig[UserConfig]()
+	if err := a.TryStart(); err == nil {
+		t.Fatal("a missing config file must fail TryStart")
+	}
+	if a.Conf() != nil {
+		t.Fatal("a failed launch must not publish a snapshot")
+	}
+	// The failed launch has already released what it acquired; Stop is the only
+	// cleanup entry point, and here it is a no-op rather than a second pass.
+	a.Stop()
+}
+
 func TestApp_Start_RunsDefers(t *testing.T) {
 	oldArgs := os.Args
 	t.Cleanup(func() { os.Args = oldArgs })
@@ -42,7 +81,8 @@ func TestApp_Start_RunsDefers(t *testing.T) {
 	a := NewConfig[UserConfig]()
 	var deferCalled bool
 	a.Defer(func() { deferCalled = true })
-	a.Start()()
+	mustStartT(t, a)
+	a.Stop()
 	if !deferCalled {
 		t.Fatal("Cleanup should invoke Defer callbacks")
 	}
@@ -57,7 +97,8 @@ func TestApp_Start_DefersReverseOrder(t *testing.T) {
 	var order []int
 	a.Defer(func() { order = append(order, 1) })
 	a.Defer(func() { order = append(order, 2) })
-	a.Start()()
+	mustStartT(t, a)
+	a.Stop()
 	if len(order) != 2 || order[0] != 2 || order[1] != 1 {
 		t.Fatalf("defer order=%v want [2 1]", order)
 	}
@@ -130,7 +171,7 @@ func TestReloadConfig_SnapshotSwap(t *testing.T) {
 	os.Args = []string{"test"}
 
 	a := NewConfig[reloadTestConfig]()
-	a.Start()
+	mustStartT(t, a)
 	startup := a.Conf()
 	if startup == nil {
 		t.Fatal("initial snapshot should be published after Start")
@@ -160,7 +201,7 @@ func TestConf_ConcurrentReadDuringReload(t *testing.T) {
 	os.Args = []string{"test"}
 
 	a := NewConfig[reloadTestConfig]()
-	a.Start()
+	mustStartT(t, a)
 	stop := make(chan struct{})
 	var wg sync.WaitGroup
 	for range 4 {
@@ -213,7 +254,7 @@ func TestLocalWatch_HotReloadSwapsSnapshot(t *testing.T) {
 	os.Args = []string{"test", "-c", confPath}
 
 	a := NewConfig[reloadTestConfig]()
-	t.Cleanup(a.Start())
+	mustStartT(t, a)
 
 	startup := a.Conf()
 	if startup.Addr != "first" || startup.Level != 1 {
@@ -256,7 +297,7 @@ func TestNewGlobal_PublishesSnapshotAndCleansUp(t *testing.T) {
 	if a.Conf() != nil {
 		t.Fatal("New must not publish a snapshot; Start does")
 	}
-	a.Start()()
+	mustStartT(t, a)
 	if a.Conf() == nil {
 		t.Fatal("snapshot should be published after Start")
 	}
@@ -281,7 +322,7 @@ func TestConfigFileBeatsTagDefault(t *testing.T) {
 		"Name = \"hoper\"\nEnv = \"local\"\n\n[local]\nDebug = false\n")}
 
 	a := NewConfig[reloadTestConfig]()
-	t.Cleanup(a.Start())
+	mustStartT(t, a)
 
 	if a.RootConfig.Env != "local" {
 		t.Fatalf("Env=%q want local, config file must beat tag default:dev", a.RootConfig.Env)
@@ -298,7 +339,7 @@ func TestCommandLineBeatsConfigFile(t *testing.T) {
 		"Name = \"hoper\"\nEnv = \"local\"\n\n[local]\nDebug = false\n"), "-e", "prod"}
 
 	a := NewConfig[reloadTestConfig]()
-	t.Cleanup(a.Start())
+	mustStartT(t, a)
 
 	if a.RootConfig.Env != "prod" {
 		t.Fatalf("Env=%q want prod, command line must beat config file", a.RootConfig.Env)
@@ -330,15 +371,16 @@ func TestTagDefaultAppliesWhenConfigOmitsEnv(t *testing.T) {
 	os.Args = []string{"test", "-c", writeTempConfig(t, "Name = \"hoper\"\n")}
 
 	a := NewConfig[reloadTestConfig]()
-	t.Cleanup(a.Start())
+	mustStartT(t, a)
 
 	if a.RootConfig.Env != "dev" {
 		t.Fatalf("Env=%q want dev from tag default when config omits Env", a.RootConfig.Env)
 	}
 }
 
-// Start 的返回值就是导出的 Stop，所以两条路只能清一次：CLI 的 pre/post hook 会显式调
+// Start 交回的闭包就是导出的 Stop，所以两条路只能清一次：CLI 的 pre/post hook 会显式调
 // Stop，而 main 里可能同时留着 `defer app.Start()()`。第二次必须是空操作。
+// 这里走 Start：它是进程入口那一档，成功路径也得有人钉住。
 func TestApp_StopRunsOnce(t *testing.T) {
 	oldArgs := os.Args
 	t.Cleanup(func() { os.Args = oldArgs })
@@ -348,7 +390,7 @@ func TestApp_StopRunsOnce(t *testing.T) {
 	var runs int
 	a.Defer(func() { runs++ })
 
-	a.Start()() // 惯用法：Start 返回的闭包
+	a.Start()() // main 惯用法：Start 交回的闭包就是 Stop
 	a.Stop()    // 显式再来一次，必须不重复跑
 	if runs != 1 {
 		t.Fatalf("defers ran %d times, want 1", runs)
@@ -370,7 +412,8 @@ func TestApp_StopBeforeStartIsNoop(t *testing.T) {
 		t.Fatal("Stop before Start must not run the defers")
 	}
 
-	a.Start()()
+	mustStartT(t, a)
+	a.Stop()
 	if !ran {
 		t.Fatal("the once must still be free for the real cleanup after Start")
 	}

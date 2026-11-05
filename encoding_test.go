@@ -34,6 +34,16 @@ type struct2MapSquashOuter struct {
 	Title string
 }
 
+// mustStruct2Map keeps these cases readable: struct2Map now reports a malformed init
+// tag instead of exiting, and a test that ignored that error would pass on a
+// half-written map.
+func mustStruct2Map(t *testing.T, v any, m map[string]any) {
+	t.Helper()
+	if err := struct2Map(v, m); err != nil {
+		t.Fatalf("struct2Map: %v", err)
+	}
+}
+
 func TestStruct2Map_BasicFields(t *testing.T) {
 	src := &struct2MapSample{
 		Name:   "demo",
@@ -43,7 +53,7 @@ func TestStruct2Map_BasicFields(t *testing.T) {
 	src.Nested.Enabled = true
 
 	m := make(map[string]any)
-	struct2Map(src, m)
+	mustStruct2Map(t, src, m)
 
 	if m["Name"] != "demo" {
 		t.Fatalf("Name=%v want demo", m["Name"])
@@ -72,7 +82,7 @@ func TestStruct2Map_EmptySliceCreatesTemplateElement(t *testing.T) {
 		Items []*item
 	}
 	m := make(map[string]any)
-	struct2Map(&sliceHolder{}, m)
+	mustStruct2Map(t, &sliceHolder{}, m)
 	items, ok := m["Items"].([]any)
 	if !ok || len(items) != 1 {
 		t.Fatalf("Items=%v want one template element", m["Items"])
@@ -92,7 +102,7 @@ func TestStruct2Map_NonNilPointerField(t *testing.T) {
 	src := &outer{Inner: &inner{Name: "x"}}
 	m := make(map[string]any)
 	// Non-nil pointer fields used to recurse forever and overflow the stack.
-	struct2Map(src, m)
+	mustStruct2Map(t, src, m)
 	innerMap, ok := m["Inner"].(map[string]any)
 	if !ok || innerMap["Name"] != "x" {
 		t.Fatalf("Inner=%v want map with Name=x", m["Inner"])
@@ -105,7 +115,7 @@ func TestStruct2Map_SquashAnonymous(t *testing.T) {
 		Title:                 "t",
 	}
 	m := make(map[string]any)
-	struct2Map(src, m)
+	mustStruct2Map(t, src, m)
 	if m["Count"] != 3 {
 		t.Fatalf("Count=%v want 3 (squash)", m["Count"])
 	}
@@ -161,7 +171,7 @@ func TestGenConfigTemplate_WritesLocalTemplate(t *testing.T) {
 	os.Args = []string{"test", "-c", configPath, "--conf_tmpl_dir", tmplDir}
 
 	a := NewConfig[UserConfig]()
-	a.Start()
+	mustStartT(t, a)
 	wantFile := filepath.Join(tmplDir, prefixLocalTemplate+"toml")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Fatalf("template file missing: %v", err)
@@ -184,7 +194,7 @@ func TestGenConfigTemplate_SingleFileMode(t *testing.T) {
 	os.Args = []string{"test", "-c", configPath, "--conf_tmpl_dir", tmplDir, "-e", ""}
 
 	a := NewConfig[UserDurationConfig]()
-	a.Start()
+	mustStartT(t, a)
 	wantFile := filepath.Join(tmplDir, prefixConfigTemplate+"toml")
 	if _, err := os.Stat(wantFile); err != nil {
 		t.Fatalf("single template file missing: %v", err)

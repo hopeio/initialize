@@ -43,7 +43,7 @@ func TestNoConfigFile(t *testing.T) {
 	os.Args = []string{"test", "-n", "aaa", "-a", "12"}
 
 	a := NewConfig[UserConfig]()
-	a.Start()
+	mustStartT(t, a)
 	if a.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -64,7 +64,7 @@ func TestNoConfigFileWithEnv(t *testing.T) {
 	t.Setenv("AGE", "21")
 
 	a := NewConfig[UserConfig]()
-	a.Start()
+	mustStartT(t, a)
 	if a.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -82,7 +82,7 @@ func TestNoConfigFile_Defaults(t *testing.T) {
 	os.Args = []string{"test"}
 
 	a := NewConfig[UserConfig]()
-	a.Start()
+	mustStartT(t, a)
 	if a.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -100,7 +100,7 @@ func TestNoConfigFile_SliceDefaults(t *testing.T) {
 	os.Args = []string{"test"}
 
 	a := NewConfig[UserSliceConfig]()
-	a.Start()
+	mustStartT(t, a)
 	if a.Conf() == nil {
 		t.Fatal("nil Config")
 	}
@@ -115,7 +115,7 @@ func TestNoConfigFile_DurationDefaults(t *testing.T) {
 	os.Args = []string{"test"}
 
 	a := NewConfig[UserDurationConfig]()
-	a.Start()
+	mustStartT(t, a)
 	if a.Conf() == nil {
 		t.Fatal("nil Config")
 	}

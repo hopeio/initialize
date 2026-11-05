@@ -32,16 +32,32 @@ func (s *stubConfigCenter) Handle(_ context.Context, _ func(io.Reader) error, _ 
 
 func TestRegisterConfigCenter_Nil(t *testing.T) {
 	a := newApp[UserConfig, EmbeddedPresets]()
-	a.registerConfigCenters([]ConfigCenter{nil})
+	if err := a.registerConfigCenters([]ConfigCenter{nil}); err != nil {
+		t.Fatal(err)
+	}
 	if len(a.registeredCenters()) != 0 {
 		t.Fatal("nil center should not be registered")
+	}
+}
+
+// A type name outside lowercase letters used to log.Fatal and end the process; it
+// is an error Start hands back now.
+func TestRegisterConfigCenter_RejectsNonLetterType(t *testing.T) {
+	a := newApp[UserConfig, EmbeddedPresets]()
+	if err := a.registerConfigCenters([]ConfigCenter{&stubConfigCenter{typ: "stub-cc"}}); err == nil {
+		t.Fatal("a type name with a dash must be rejected")
+	}
+	if len(a.registeredCenters()) != 0 {
+		t.Fatal("a rejected center must not be registered")
 	}
 }
 
 func TestRegisterConfigCenter_GetAndCopy(t *testing.T) {
 	a := newApp[UserConfig, EmbeddedPresets]()
 	cc := &stubConfigCenter{typ: "stubcc"}
-	a.registerConfigCenters([]ConfigCenter{cc})
+	if err := a.registerConfigCenters([]ConfigCenter{cc}); err != nil {
+		t.Fatal(err)
+	}
 
 	got := a.getCenter("stubcc")
 	if got != ConfigCenter(cc) {
@@ -57,7 +73,9 @@ func TestRegisterConfigCenter_GetAndCopy(t *testing.T) {
 		t.Fatal("registeredCenters should return a copy")
 	}
 
-	a.registerConfigCenters([]ConfigCenter{&stubConfigCenter{typ: "stubcc"}})
+	if err := a.registerConfigCenters([]ConfigCenter{&stubConfigCenter{typ: "stubcc"}}); err != nil {
+		t.Fatal(err)
+	}
 	if a.getCenter("stubcc") != ConfigCenter(cc) {
 		t.Fatal("duplicate registration should not replace existing")
 	}

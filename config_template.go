@@ -7,20 +7,20 @@
 package initialize
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 
-	"github.com/hopeio/gox/log"
 	stringsx "github.com/hopeio/gox/strings"
 )
 
 // genConfigTemplate writes a config template file to the directory specified by ConfigTemplateDir.
 // In single-file mode the template merges builtin, user config and DAO fields into one file;
 // otherwise only the env-local fields are written.
-func (a *App[C, D, CPtr, DPtr]) genConfigTemplate(conf CPtr, singleTemplateFileConfig bool) {
+func (a *App[C, D, CPtr, DPtr]) genConfigTemplate(conf CPtr, singleTemplateFileConfig bool) error {
 	dir := a.RootConfig.ConfigTemplateDir
 	if dir == "" {
-		return
+		return nil
 	}
 	if dir[len(dir)-1] != '/' {
 		dir += "/"
@@ -32,31 +32,41 @@ func (a *App[C, D, CPtr, DPtr]) genConfigTemplate(conf CPtr, singleTemplateFileC
 	confMap := make(map[string]any)
 	if singleTemplateFileConfig {
 		filename = prefixConfigTemplate + string(format)
-		struct2Map(&a.RootConfig.BasicConfig, confMap)
+		if err := struct2Map(&a.RootConfig.BasicConfig, confMap); err != nil {
+			return err
+		}
 		delete(confMap, fixedFieldNameEnv)
-		struct2Map(&a.RootConfig.EnvConfig, confMap)
+		if err := struct2Map(&a.RootConfig.EnvConfig, confMap); err != nil {
+			return err
+		}
 		delete(confMap, fixedFieldNameConfigCenter)
 	}
-	struct2Map(&a.BuiltinConfig, confMap)
-	struct2Map(conf, confMap)
-	daoConfig2Map(reflect.ValueOf(a.Dao).Elem(), confMap)
+	if err := struct2Map(&a.BuiltinConfig, confMap); err != nil {
+		return err
+	}
+	if err := struct2Map(conf, confMap); err != nil {
+		return err
+	}
+	if err := daoConfig2Map(reflect.ValueOf(a.Dao).Elem(), confMap); err != nil {
+		return err
+	}
 
-	endocer, err := codecRegistry.Encoder(format)
+	encoder, err := codecRegistry.Encoder(format)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("initialize: config template encoder %s: %w", format, err)
 	}
-	data, err := endocer.Encode(confMap)
+	data, err := encoder.Encode(confMap)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("initialize: encode config template: %w", err)
 	}
-	err = os.WriteFile(dir+filename, data, 0644)
-	if err != nil {
-		log.Fatal(err)
+	if err := os.WriteFile(dir+filename, data, 0644); err != nil {
+		return fmt.Errorf("initialize: write config template %s: %w", dir+filename, err)
 	}
+	return nil
 }
 
 // daoConfig2Map iterates over DAO fields that implement DaoField and adds their Config() result to confMap.
-func daoConfig2Map(value reflect.Value, confMap map[string]any) {
+func daoConfig2Map(value reflect.Value, confMap map[string]any) error {
 	typ := value.Type()
 	for i := range value.NumField() {
 		field := value.Field(i)
@@ -64,13 +74,19 @@ func daoConfig2Map(value reflect.Value, confMap map[string]any) {
 			newconfMap := make(map[string]any)
 			fieldType := typ.Field(i)
 			name := fieldType.Name
-			tagSettings := fieldTagSettings(fieldType)
+			tagSettings, err := fieldTagSettings(fieldType)
+			if err != nil {
+				return err
+			}
 			if tagSettings.ConfigName != "" {
 				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 			}
 
 			confMap[name] = newconfMap
-			struct2Map(field.Addr().Interface().(DaoField).Config(), newconfMap)
+			if err := struct2Map(field.Addr().Interface().(DaoField).Config(), newconfMap); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

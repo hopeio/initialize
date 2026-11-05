@@ -9,6 +9,7 @@ package initialize
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -39,8 +40,10 @@ type ConfigCenterConfig struct {
 
 // registerConfigCenters registers the centers passed to Start, keyed by type
 // name (lowercase letters only). Duplicate registrations keep the first one.
-// Called only from Start, before assembly — no lock needed.
-func (a *App[C, D, CPtr, DPtr]) registerConfigCenters(centers []ConfigCenter) {
+// Called only from Start, before assembly — no lock needed. A type name outside
+// that shape is a caller mistake and returns so Start can report it instead of
+// ending the process.
+func (a *App[C, D, CPtr, DPtr]) registerConfigCenters(centers []ConfigCenter) error {
 	if a.configCenters == nil {
 		a.configCenters = make(map[string]ConfigCenter, len(centers))
 	}
@@ -50,12 +53,13 @@ func (a *App[C, D, CPtr, DPtr]) registerConfigCenters(centers []ConfigCenter) {
 		}
 		typ := strings.ToLower(c.Type())
 		if !stringsx.IsAllLetter(typ) {
-			log.Fatal("config type must be letters")
+			return fmt.Errorf("initialize: config center type must be letters, got %q", typ)
 		}
 		if _, ok := a.configCenters[typ]; !ok {
 			a.configCenters[typ] = c
 		}
 	}
+	return nil
 }
 
 // getCenter returns the registered center for the given type, or nil if not found.

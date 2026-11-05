@@ -78,26 +78,32 @@ func formatDecoderConfigOption(format encoding.Format) []viper.DecoderConfigOpti
 }
 
 // struct2Map converts a pointer-to-struct into a nested map[string]any using mapstructure field names.
-func struct2Map(v any, confMap map[string]any) {
-	structValue2Map(reflect.ValueOf(v).Elem(), nil, confMap)
+func struct2Map(v any, confMap map[string]any) error {
+	return structValue2Map(reflect.ValueOf(v).Elem(), nil, confMap)
 }
 
 // structValue2Map recursively converts a reflect.Value (struct/ptr/slice/scalar) into confMap entries.
-func structValue2Map(value reflect.Value, field *reflect.StructField, confMap map[string]any) {
+//
+// A malformed init tag is a wiring mistake: it returns as an error so the caller can
+// report it, instead of exiting the process from deep inside reflection.
+func structValue2Map(value reflect.Value, field *reflect.StructField, confMap map[string]any) error {
 	var name string
 	var opt tagOptions
 	if field != nil {
 		// Skip unexported fields.
 		if !field.IsExported() {
-			return
+			return nil
 		}
 		// Anonymous / mapstructure-named fields.
 		var ok bool
 		name, opt, ok = getFieldConfigName(field)
 		if !ok {
-			return
+			return nil
 		}
-		tagSettings := fieldTagSettings(*field)
+		tagSettings, err := fieldTagSettings(*field)
+		if err != nil {
+			return err
+		}
 		if tagSettings.ConfigName != "" {
 			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
@@ -107,12 +113,12 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 	kind := value.Kind()
 	switch kind {
 	case reflect.Func, reflect.Chan, reflect.Interface:
-		return
+		return nil
 	case reflect.Slice, reflect.Array:
 		elem := typ.Elem()
 		ekind := elem.Kind()
 		if slices.Contains([]reflect.Kind{reflect.Func, reflect.Chan, reflect.Interface}, ekind) {
-			return
+			return nil
 		}
 
 		if field != nil {
@@ -125,7 +131,9 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 				// Empty slice: emit one zero element as a template example.
 				newconfMap := make(map[string]any)
 				values = append(values, newconfMap)
-				structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap)
+				if err := structValue2Map(reflect.New(typ.Elem()).Elem(), nil, newconfMap); err != nil {
+					return err
+				}
 			}
 			confMap[name] = values
 		}
@@ -133,30 +141,34 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 	case reflect.Ptr:
 		typName := typ.Elem().String()
 		if slices.Contains(unSupportTemplateTypes, typName) {
-			return
+			return nil
 		}
 		if value.IsNil() {
 			value = reflect.New(typ.Elem()).Elem()
 		} else {
 			value = value.Elem()
 		}
-		structValue2Map(value, field, confMap)
+		return structValue2Map(value, field, confMap)
 	case reflect.Struct:
 		// Skip tls.Config (and other registered unsupported types); matching
 		// by type name may collide with similarly named local types.
 		typName := typ.String()
 		if slices.Contains(unSupportTemplateTypes, typName) {
-			return
+			return nil
 		}
 
 		if field != nil {
 			if value.CanSet() {
 				if opt == "squash" || field.Anonymous {
-					structValue2Map(value, nil, confMap)
+					if err := structValue2Map(value, nil, confMap); err != nil {
+						return err
+					}
 				} else {
 					newconfMap := make(map[string]any)
 					confMap[name] = newconfMap
-					structValue2Map(value, nil, newconfMap)
+					if err := structValue2Map(value, nil, newconfMap); err != nil {
+						return err
+					}
 					if len(newconfMap) == 0 {
 						delete(confMap, name)
 					}
@@ -165,7 +177,9 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 		} else {
 			for i := range value.NumField() {
 				structField := typ.Field(i)
-				structValue2Map(value.Field(i), &structField, confMap)
+				if err := structValue2Map(value.Field(i), &structField, confMap); err != nil {
+					return err
+				}
 			}
 		}
 	default:
@@ -173,4 +187,5 @@ func structValue2Map(value reflect.Value, field *reflect.StructField, confMap ma
 			confMap[name] = value.Interface()
 		}
 	}
+	return nil
 }

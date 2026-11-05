@@ -8,6 +8,7 @@ package initialize
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -19,7 +20,10 @@ import (
 
 // newStruct dynamically builds a merged struct containing all config and DAO config fields,
 // calling lifecycle hooks (Init, BeforeInject, BeforeInjectWithRoot) on each sub-config.
-func (a *App[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
+// A name collision or a nil Dao config is a wiring mistake in the application, and it
+// returns as an error so the process can report it and unwind instead of exiting from
+// deep inside reflection.
+func (a *App[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) (any, error) {
 	nameValueMap := make(map[string]reflect.Value)
 	var structFields []reflect.StructField
 	var confValue reflect.Value
@@ -35,7 +39,10 @@ func (a *App[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 
 			structField := confType.Field(i)
 			name := structField.Name
-			tagSettings := fieldTagSettings(structField)
+			tagSettings, err := fieldTagSettings(structField)
+			if err != nil {
+				return nil, err
+			}
 			if tagSettings.ConfigName != "" {
 				name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 			}
@@ -77,17 +84,19 @@ func (a *App[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 
 		structField := confType.Field(i)
 		name := structField.Name
-		tagSettings := fieldTagSettings(structField)
+		tagSettings, err := fieldTagSettings(structField)
+		if err != nil {
+			return nil, err
+		}
 		if tagSettings.ConfigName != "" {
 			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
 
 		if v, ok := nameValueMap[name]; ok {
 			if v.Type() == field.Type() {
-				log.Fatalf(`exists builtin config field: %s, please delete the field`, name)
-			} else {
-				log.Fatalf(`exists builtin config field: %s, please rename or use init tag [init:"config:{{other config name}}"]`, name)
+				return nil, fmt.Errorf("initialize: exists builtin config field: %s, please delete the field", name)
 			}
+			return nil, fmt.Errorf("initialize: exists builtin config field: %s, please rename or use init tag [init:\"config:{{other config name}}\"]", name)
 		}
 
 		if field.CanInterface() {
@@ -127,13 +136,16 @@ func (a *App[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 					// TODO: strengthen validation — Config() must not return nil
 					daoConfig := daoField.Config()
 					if daoConfig == nil {
-						log.Fatalf("Dao %s Config() return nil", structField.Name)
+						return nil, fmt.Errorf("initialize: Dao %s Config() return nil", structField.Name)
 					}
 
 					name := structField.Name
 					daoConfigValue := reflect.ValueOf(daoConfig)
 					daoConfigType := reflect.TypeOf(daoConfig)
-					tagSettings := fieldTagSettings(structField)
+					tagSettings, err := fieldTagSettings(structField)
+					if err != nil {
+						return nil, err
+					}
 					if tagSettings.ConfigName != "" {
 						name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 					}
@@ -149,7 +161,7 @@ func (a *App[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 					}
 
 					if _, ok := nameValueMap[name]; ok {
-						log.Fatalf(`detected %s use same configuration with %s, please rename or use init tag [init:"config:{{otherConfigName}}"]`, structField.Name, name)
+						return nil, fmt.Errorf("initialize: detected %s use same configuration with %s, please rename or use init tag [init:\"config:{{otherConfigName}}\"]", structField.Name, name)
 					}
 
 					structFields = append(structFields, reflect.StructField{
@@ -164,17 +176,22 @@ func (a *App[C, D, CPtr, DPtr]) newStruct(conf Config, dao Dao) any {
 	}
 	typ := reflect.StructOf(structFields)
 	newStruct := reflect.New(typ)
-	a.setNewStruct(newStruct.Elem(), nameValueMap)
-	return newStruct.Interface()
+	if err := a.setNewStruct(newStruct.Elem(), nameValueMap); err != nil {
+		return nil, err
+	}
+	return newStruct.Interface(), nil
 }
 
 // setNewStruct copies values from typValueMap into the dynamically-created struct fields.
-func (a *App[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) {
+func (a *App[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typValueMap map[string]reflect.Value) error {
 	typ := value.Type()
 	for i := range value.NumField() {
 		structField := typ.Field(i)
 		name := structField.Name
-		tagSettings := fieldTagSettings(structField)
+		tagSettings, err := fieldTagSettings(structField)
+		if err != nil {
+			return err
+		}
 		if tagSettings.ConfigName != "" {
 			name = stringsx.UpperCaseFirst(tagSettings.ConfigName)
 		}
@@ -182,6 +199,7 @@ func (a *App[C, D, CPtr, DPtr]) setNewStruct(value reflect.Value, typValueMap ma
 		field := value.Field(i)
 		field.Set(typValueMap[name])
 	}
+	return nil
 }
 
 // inject runs the full lifecycle: config injection followed by dao connection.
@@ -203,15 +221,20 @@ func (a *App[C, D, CPtr, DPtr]) inject(conf Config, dao Dao) error {
 // config-only hooks (AfterInjectConfig). It never touches the network: the dao struct
 // gets its configuration but no clients are built here. Viper access happens under
 // a.mu; user hooks always run outside the lock so they may safely call Defer/Conf
-// without deadlocking. Errors are returned to the caller, which decides the policy:
-// Start fatals, hot reload and Inject log.
+// without deadlocking. Errors go to the caller: Start hands them to the process, a
+// hot reload keeps the previous snapshot, and Inject returns them to its caller.
 func (a *App[C, D, CPtr, DPtr]) injectConfig(conf Config, dao Dao) error {
-	tmpConfig := a.newStruct(conf, dao)
-	applyTagDefaults(tmpConfig)
+	tmpConfig, err := a.newStruct(conf, dao)
+	if err != nil {
+		return err
+	}
+	if err := applyTagDefaults(tmpConfig); err != nil {
+		return err
+	}
 	a.mu.Lock()
-	err := a.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
+	err = a.Viper.Unmarshal(tmpConfig, decoderConfigOptions...)
 	if err == nil {
-		a.applyFlagConfig(strings.ToLower(a.RootConfig.Name), tmpConfig)
+		err = a.applyFlagConfig(strings.ToLower(a.RootConfig.Name), tmpConfig)
 	}
 	a.mu.Unlock()
 	if err != nil {

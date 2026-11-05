@@ -16,16 +16,42 @@ type initRenameConfig struct {
 	Value string `init:"config:foo"`
 }
 
+// mustParseTag keeps the tag cases below readable: their input is valid by
+// construction, so a non-nil error is a parser regression.
+func mustParseTag(t *testing.T, str string) *initTagSettings {
+	t.Helper()
+	s, err := parseInitTagSettings(str, "Demo")
+	if err != nil {
+		t.Fatalf("parseInitTagSettings(%q): %v", str, err)
+	}
+	return s
+}
+
+// A segment whose value does not fit the field used to log.Fatal and take the whole
+// process down. It is an assembly error now, so it must reach the caller.
+func TestParseInitTagSettings_MalformedTag(t *testing.T) {
+	s, err := parseInitTagSettings("skip:maybe", "Demo")
+	if err == nil {
+		t.Fatalf("a non-bool value for skip must fail, got %+v", s)
+	}
+	if s != nil {
+		t.Fatalf("settings must be nil on error, got %+v", s)
+	}
+	if _, err := parseInitTagSettings("flag:env;skip;default:dev", "Demo"); err != nil {
+		t.Fatalf("valid tag must parse: %v", err)
+	}
+}
+
 func TestParseInitTagSettings_BaseCases(t *testing.T) {
 	t.Run("empty", func(t *testing.T) {
-		s := parseInitTagSettings("")
+		s := mustParseTag(t, "")
 		if s.Skip || s.ConfigName != "" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
 	t.Run("dash", func(t *testing.T) {
-		s := parseInitTagSettings("-")
+		s := mustParseTag(t, "-")
 		if !s.Skip || s.ConfigName != "" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
@@ -34,21 +60,21 @@ func TestParseInitTagSettings_BaseCases(t *testing.T) {
 
 func TestParseInitTagSettings_ValidTags(t *testing.T) {
 	t.Run("skip", func(t *testing.T) {
-		s := parseInitTagSettings("skip")
+		s := mustParseTag(t, "skip")
 		if !s.Skip || s.ConfigName != "" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
 	t.Run("config only", func(t *testing.T) {
-		s := parseInitTagSettings("config:MyConf")
+		s := mustParseTag(t, "config:MyConf")
 		if s.Skip || s.ConfigName != "MyConf" || s.customizesOption() {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
 	t.Run("flag only", func(t *testing.T) {
-		s := parseInitTagSettings("flag:env;short_flag:e;default:dev;usage:environment;env:ENV")
+		s := mustParseTag(t, "flag:env;short_flag:e;default:dev;usage:environment;env:ENV")
 		if s.Skip || s.ConfigName != "" {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
@@ -59,28 +85,28 @@ func TestParseInitTagSettings_ValidTags(t *testing.T) {
 	})
 
 	t.Run("flag env only", func(t *testing.T) {
-		s := parseInitTagSettings("env:MINIO_ACCESS_KEY")
+		s := mustParseTag(t, "env:MINIO_ACCESS_KEY")
 		if s.Flag != "" || s.Env != "MINIO_ACCESS_KEY" {
 			t.Fatalf("unexpected flag settings: %+v", s)
 		}
 	})
 
 	t.Run("all", func(t *testing.T) {
-		s := parseInitTagSettings("skip;config:MyConf;flag:env;default:xyz")
+		s := mustParseTag(t, "skip;config:MyConf;flag:env;default:xyz")
 		if !s.Skip || s.ConfigName != "MyConf" || s.Default != "xyz" {
 			t.Fatalf("unexpected settings: %+v", s)
 		}
 	})
 
 	t.Run("default only does not customize", func(t *testing.T) {
-		s := parseInitTagSettings("default:8080")
+		s := mustParseTag(t, "default:8080")
 		if s.customizesOption() || s.Default != "8080" {
 			t.Fatalf("lone default must not customizeOption: %+v", s)
 		}
 	})
 
 	t.Run("usage only does not customize", func(t *testing.T) {
-		s := parseInitTagSettings("usage:listen port")
+		s := mustParseTag(t, "usage:listen port")
 		if s.customizesOption() || s.Usage != "listen port" {
 			t.Fatalf("lone usage must not customizeOption: %+v", s)
 		}
@@ -88,7 +114,7 @@ func TestParseInitTagSettings_ValidTags(t *testing.T) {
 }
 
 func TestParseFlagSegment_UsageMayContainCommas(t *testing.T) {
-	s := parseInitTagSettings("flag:config;short_flag:c;usage:config file path, default ./config.xxx;env:CONFIG")
+	s := mustParseTag(t, "flag:config;short_flag:c;usage:config file path, default ./config.xxx;env:CONFIG")
 	if s.Flag != "config" || s.ShortFlag != "c" {
 		t.Fatalf("unexpected settings: %+v", s)
 	}
@@ -105,7 +131,10 @@ func TestFieldTagSettings_InitTagParsesFlagKeys(t *testing.T) {
 		Name string `init:"flag:name;short_flag:n;default:def;usage:name;env:NAME_TAG"`
 	}
 	f, _ := reflect.TypeOf(demo{}).FieldByName("Name")
-	s := fieldTagSettings(f)
+	s, err := fieldTagSettings(f)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if s.Flag != "name" || s.ShortFlag != "n" || s.Default != "def" || s.Env != "NAME_TAG" {
 		t.Fatalf("unexpected settings: %+v", s)
 	}
@@ -116,7 +145,11 @@ func TestFieldTagSettings_InitDashSkips(t *testing.T) {
 		Auto string `init:"-"`
 	}
 	f, _ := reflect.TypeOf(demo{}).FieldByName("Auto")
-	if s := fieldTagSettings(f); !s.Skip {
+	s, err := fieldTagSettings(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !s.Skip {
 		t.Fatalf("init:\"-\" should set Skip, got %+v", s)
 	}
 }
@@ -212,7 +245,10 @@ func TestNewStruct_InitTagConfigName_RenameField(t *testing.T) {
 	a := newApp[initRenameConfig, EmbeddedPresets]()
 	conf := &initRenameConfig{}
 
-	tmp := a.newStruct(conf, nil)
+	tmp, err := a.newStruct(conf, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	tmpV := reflect.ValueOf(tmp)
 	if tmpV.Kind() != reflect.Ptr || tmpV.Elem().Kind() != reflect.Struct {
 		t.Fatalf("unexpected tmp value: %T", tmp)
