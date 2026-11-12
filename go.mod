@@ -204,7 +204,7 @@ require (
 	github.com/elastic/go-elasticsearch/v8 v8.19.7
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-viper/mapstructure/v2 v2.5.0
-	github.com/hopeio/gox v1.12.0
+	github.com/hopeio/gox v1.12.1-0.20261106163623-94389b189095
 	github.com/influxdata/influxdb-client-go/v2 v2.14.0
 	github.com/minio/minio-go/v7 v7.2.1
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.5

@@ -124,7 +124,7 @@ func (c *Config) Build(dialector gorm.Dialector) (*gorm.DB, error) {
 	if c.UseGormLogger {
 		dbConfig.Logger = logger.New(stdlog.New(os.Stdout, "\r", stdlog.LstdFlags), c.Logger)
 	} else {
-		dbConfig.Logger = &gormx.Logger{Logger: log.NoCallerLogger().Logger, Config: &c.Logger}
+		dbConfig.Logger = gormx.NewLogger(log.NoCallerLogger().Logger, &c.Logger)
 	}
 	// GORM calls the package-level logger.Default directly for model/hook parse
 	// errors (schema.go), which never reach db.Logger and would print a second,
