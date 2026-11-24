@@ -39,8 +39,7 @@ type EnvConfig struct {
 	ConfigTemplateDir string   `init:"flag:conf_tmpl_dir;usage:directory to write config templates"`
 	SkipInjectDaos    []string `init:"flag:skip_inject_daos;usage:dao names to skip during injection"`
 	LocalConfig       Local
-	// Field order must stay unchanged; ConfigCenter must remain last.
-	ConfigCenter ConfigCenterConfig
+	ConfigCenter      ConfigCenterConfig
 }
 
 // resolveLocalPaths turns the configured local config paths absolute so the
@@ -220,7 +219,7 @@ func (a *App[C, D, CPtr, DPtr]) setEnvConfig() (err error) {
 		if err := a.applyFlagConfig(flagPrefix, configCenter.Config()); err != nil {
 			return err
 		}
-		a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter = configCenter
+		a.ConfigCenter = configCenter
 	}
 	return nil
 }

@@ -53,6 +53,10 @@ type App[C any, D any, CPtr ConfigPtr[C], DPtr DaoPtr[D]] struct {
 	Dao DPtr
 
 	*viper.Viper
+	// ConfigCenter is the resolved active center instance, shared by both the
+	// top-level and env-specific config sections. Registered before assembly and
+	// resolved by [ConfigCenter].Type; accessed only on the Start call stack.
+	ConfigCenter ConfigCenter
 	// confSnapshot is the current config snapshot; replaced wholesale after a
 	// successful hot reload so readers need no lock.
 	confSnapshot atomic.Pointer[C]
@@ -256,8 +260,8 @@ func (a *App[C, D, CPtr, DPtr]) stop() {
 	for i := len(defers) - 1; i >= 0; i-- {
 		defers[i]()
 	}
-	if a.RootConfig.ConfigCenter.ConfigCenter != nil {
-		if err := a.RootConfig.ConfigCenter.ConfigCenter.Close(); err != nil {
+	if a.ConfigCenter != nil {
+		if err := a.ConfigCenter.Close(); err != nil {
 			log.Errorf("close config center error: %v", err)
 		}
 	}
@@ -363,15 +367,15 @@ func (a *App[C, D, CPtr, DPtr]) loadConfig(conf CPtr) error {
 	}
 
 	var singleTemplateFileConfig bool
-	if a.RootConfig.EnvConfig.ConfigCenter.ConfigCenter == nil {
+	if a.ConfigCenter == nil {
 		if a.RootConfig.Env == "" {
 			singleTemplateFileConfig = true
 		}
 		if a.RootConfig.ConfigCenter.Type != "" {
-			a.RootConfig.ConfigCenter.ConfigCenter = a.getCenter(a.RootConfig.ConfigCenter.Type)
+			a.ConfigCenter = a.getCenter(a.RootConfig.ConfigCenter.Type)
 		}
 	}
-	cfgcenter := a.RootConfig.ConfigCenter.ConfigCenter
+	cfgcenter := a.ConfigCenter
 	if cfgcenter != nil {
 		flagPrefix := strings.Join([]string{"configcenter", strings.ToLower(a.RootConfig.ConfigCenter.Type)}, ".")
 		if a.RootConfig.Name != "" {

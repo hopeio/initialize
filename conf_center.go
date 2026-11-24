@@ -34,8 +34,6 @@ type ConfigCenterConfig struct {
 	Format string `init:"flag:format;usage:config format"`
 	// Config center implementation type (nacos, apollo, …).
 	Type string `init:"flag:conf_type;usage:config center type"`
-	// Field order must stay unchanged; ConfigCenter must remain last.
-	ConfigCenter ConfigCenter
 }
 
 // registerConfigCenters registers the centers passed to Start, keyed by type
